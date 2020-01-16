@@ -31,7 +31,6 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   QGraphicsView::mousePressEvent(event);
   qDebug() << scene()->mouseGrabberItem();
   if (scene()->mouseGrabberItem() != nullptr) {
-    qDebug() << scene()->mouseGrabberItem();
     QGraphicsView::mousePressEvent(event);
     return;
   }
@@ -39,15 +38,18 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   if (event->modifiers() == Qt::ControlModifier)
     if (event->button() == Qt::LeftButton) {
       QPointF point = mapToScene(event->pos());
+      qDebug() << point;
       //            scene()->addRect(point.x(), point.y(), 36, 18);
       QPainterPath pp;
       pp.moveTo(point);
       pp.addEllipse(point, 6, 6);
-      pp.addText(point.x(), point.y(), QFont("Arial", 12), " point 1");
+      pp.addText(point.x(), point.y(), QFont("Arial", 12),
+                 QString("Point %1").arg(ROIs.count() + 1));
       QGraphicsPathItem *path =
           scene()->addPath(pp, QPen(Qt::yellow), QBrush(Qt::yellow));
       path->setFlag(QGraphicsItem::ItemIsMovable);
-      path->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+      //      path->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+      ROIs.append(static_cast<QGraphicsItem *>(path));
       emit point_picked(point);
       return;
     }
@@ -74,6 +76,15 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     _panY0 = event->y();
     event->accept();
     return;
+  }
+  if (scene()->mouseGrabberItem() != nullptr) {
+    qDebug() << mapToScene(event->pos()) << scene()->mouseGrabberItem() << ROIs;
+    for (int i = 0; i < ROIs.count(); i++) {
+      if (ROIs[i] == scene()->mouseGrabberItem()) {
+        emit roi_position_updated(
+            QPair<int, QPointF>(i, mapToScene(event->pos())));
+      }
+    }
   }
   //        event->ignore();
   QGraphicsView::mouseMoveEvent(event);
