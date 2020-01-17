@@ -1,11 +1,67 @@
 #include "view.h"
 
 #include <QDebug>
-#include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QWheelEvent>
+
+ROI::ROI(QPointF position, QString l, shape_t sh)
+    : shape(sh), pos(position), label(l) {
+  setFlag(ItemIsSelectable, true);
+  setFlag(ItemIsMovable);
+}
+
+QRectF ROI::boundingRect() const {
+  switch (shape) {
+    case Point:
+      return QRectF(0, 0, 6, 6);
+    // FIXME: not implemented
+    case Line:
+    case Circle:
+    case Rectangle:
+    case Polygon:
+      return QRectF(0, 0, 10, 10);
+  }
+}
+
+void ROI::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+                QWidget *widget) {
+  QRectF rect = boundingRect();
+  painter->translate(pos);
+  QPen pen(Qt::red, 6);
+  painter->setFont(QFont("Arial", 12));
+  painter->drawText(20, 20, label);
+  painter->setPen(pen);
+  switch (shape) {
+    case Point:
+    case Circle:
+      painter->drawEllipse(rect);
+      break;
+    case Line:
+    case Rectangle:
+    case Polygon:
+      painter->drawRect(rect);
+      break;
+  }
+  Q_UNUSED(option)
+  Q_UNUSED(widget)
+}
+
+void ROI::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+  update();
+  QGraphicsItem::mousePressEvent(event);
+}
+
+void ROI::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+  update();
+  QGraphicsItem::mouseMoveEvent(event);
+}
+
+void ROI::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+  update();
+  QGraphicsItem::mouseReleaseEvent(event);
+}
 
 gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene) {}
 
@@ -31,6 +87,7 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   QGraphicsView::mousePressEvent(event);
   qDebug() << scene()->mouseGrabberItem();
   if (scene()->mouseGrabberItem() != nullptr) {
+    qDebug() << "Grabbed something";
     QGraphicsView::mousePressEvent(event);
     return;
   }
@@ -38,6 +95,10 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   if (event->modifiers() == Qt::ControlModifier)
     if (event->button() == Qt::LeftButton) {
       QPointF point = mapToScene(event->pos());
+      /*ROI *new_roi =
+          new ROI(point, QString("Point %1").arg(ROIs.count() + 1), ROI::Point);
+      scene()->addItem(new_roi);
+      ROIs_new.append(new_roi);*/
       qDebug() << point;
       //            scene()->addRect(point.x(), point.y(), 36, 18);
       QPainterPath pp;
@@ -77,8 +138,10 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
     return;
   }
+  qDebug() << "grabbing" << scene()->mouseGrabberItem();
   if (scene()->mouseGrabberItem() != nullptr) {
-    qDebug() << mapToScene(event->pos()) << scene()->mouseGrabberItem() << ROIs;
+    qDebug() << mapToScene(event->pos()) << scene()->mouseGrabberItem()
+             << ROIs_new.count();
     for (int i = 0; i < ROIs.count(); i++) {
       if (ROIs[i] == scene()->mouseGrabberItem()) {
         emit roi_position_updated(
