@@ -13,30 +13,37 @@ ROI::ROI(QPointF position, QString l, shape_t sh)
 }
 
 QRectF ROI::boundingRect() const {
+  QSizeF point_size = QSizeF(6, 6);
   switch (shape) {
     case Point:
-      return QRectF(0, 0, 6, 6);
+      return QRectF(
+          pos - QPointF(point_size.width() / 2, point_size.height() / 2),
+          point_size);
     // FIXME: not implemented
     case Line:
     case Circle:
     case Rectangle:
     case Polygon:
-      return QRectF(0, 0, 10, 10);
+      return QRectF(pos, point_size);
   }
 }
 
 void ROI::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 QWidget *widget) {
   QRectF rect = boundingRect();
+  auto offset = rect.size() / 2.0;
   painter->translate(pos);
   QPen pen(Qt::red, 6);
   painter->setFont(QFont("Arial", 12));
   painter->drawText(20, 20, label);
   painter->setPen(pen);
+  qDebug() << pos << rect << scenePos();
   switch (shape) {
     case Point:
     case Circle:
-      painter->drawEllipse(rect);
+      painter->drawEllipse(
+          QRectF(QPointF(0, 0) - QPointF(offset.width(), offset.height()),
+                 rect.size()));
       break;
     case Line:
     case Rectangle:
@@ -95,22 +102,22 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   if (event->modifiers() == Qt::ControlModifier)
     if (event->button() == Qt::LeftButton) {
       QPointF point = mapToScene(event->pos());
-      /*ROI *new_roi =
+      ROI *new_roi =
           new ROI(point, QString("Point %1").arg(ROIs.count() + 1), ROI::Point);
       scene()->addItem(new_roi);
-      ROIs_new.append(new_roi);*/
-      qDebug() << point;
-      //            scene()->addRect(point.x(), point.y(), 36, 18);
-      QPainterPath pp;
-      pp.moveTo(point);
-      pp.addEllipse(point, 6, 6);
-      pp.addText(point.x(), point.y(), QFont("Arial", 12),
-                 QString("Point %1").arg(ROIs.count() + 1));
-      QGraphicsPathItem *path =
-          scene()->addPath(pp, QPen(Qt::yellow), QBrush(Qt::yellow));
-      path->setFlag(QGraphicsItem::ItemIsMovable);
+      ROIs_new.append(new_roi);
+      //      scene()->addRect(point.x(), point.y(), 36, 18);
+      //      QPainterPath pp;
+      //      pp.moveTo(point);
+      //      pp.addEllipse(point, 6, 6);
+      //      pp.addText(point.x(), point.y(), QFont("Arial", 12),
+      //                 QString("Point %1").arg(ROIs.count() + 1));
+      //      qDebug() << pp.boundingRect();
+      //      QGraphicsPathItem *path =
+      //          scene()->addPath(pp, QPen(Qt::yellow), QBrush(Qt::yellow));
+      //      path->setFlag(QGraphicsItem::ItemIsMovable);
       //      path->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-      ROIs.append(static_cast<QGraphicsItem *>(path));
+      //      ROIs.append(static_cast<QGraphicsItem *>(path));
       emit point_picked(point);
       return;
     }
@@ -138,14 +145,13 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
     return;
   }
-  qDebug() << "grabbing" << scene()->mouseGrabberItem();
   if (scene()->mouseGrabberItem() != nullptr) {
-    qDebug() << mapToScene(event->pos()) << scene()->mouseGrabberItem()
-             << ROIs_new.count();
-    for (int i = 0; i < ROIs.count(); i++) {
-      if (ROIs[i] == scene()->mouseGrabberItem()) {
-        emit roi_position_updated(
-            QPair<int, QPointF>(i, mapToScene(event->pos())));
+    for (int i = 0; i < ROIs_new.count(); i++) {
+      if (ROIs_new[i] == scene()->mouseGrabberItem()) {
+        //        ROIs_new[i]->scenePos();
+        auto new_pos = mapToScene(event->pos());
+        ROIs_new[i]->update_position(new_pos);
+        emit roi_position_updated(QPair<int, QPointF>(i, new_pos));
       }
     }
   }

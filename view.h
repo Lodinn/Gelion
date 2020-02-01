@@ -11,16 +11,22 @@ class ROI : public QObject, public QGraphicsItem {
  public:
   enum shape_t { Point, Line, Circle, Rectangle, Polygon } shape;
   explicit ROI(QPointF position, QString label = QString(), shape_t t = Point);
-  QRectF boundingRect() const;
+  QRectF boundingRect() const override;
   void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-             QWidget *widget);
-  void update_position(QPointF new_pos) { pos = new_pos; }
+             QWidget *widget) override;
+  void update_position(QPointF new_pos) {
+    pos = new_pos;
+    update();
+  }
   void update_label(QString new_label) { label = new_label; }
 
  protected:
-  void mousePressEvent(QGraphicsSceneMouseEvent *event);
-  void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-  void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+  void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+
+  //  signals:
+  //    void moved();
 
  private:
   QPointF pos;
