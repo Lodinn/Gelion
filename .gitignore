@@ -86,4 +86,4 @@ CTestTestfile.cmake
 _deps
 
 # Build folder
-build/
+build*/
