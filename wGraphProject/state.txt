@@ -1,0 +1,3 @@
+https://contingencycoder.wordpress.com/2013/04/17/restoring-qt-application-state-and-geometry-part-2/
+
+http://rsdn.org/forum/cpp.qt/7176036.all
