@@ -4,6 +4,8 @@
 #include "zscene.h"
 #include "zview.h"
 
+#include <QDockWidget>
+#include <QListWidget>
 #include <QMainWindow>
 
 class MainWindow : public QMainWindow
@@ -17,10 +19,14 @@ private:
     zView *view;
     int dnum = 0;
     void closeEvent(QCloseEvent *event);
+    QDockWidget *itemslistdock = new QDockWidget(this);
+    QListWidget *itemsList;
 public slots:
     void createDock();
     void writeSettings();
     void readSettings();
+    void updateDockItemsList();
+    void itemClicked(QListWidgetItem *item);
 
 };
 

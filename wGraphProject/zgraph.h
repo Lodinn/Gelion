@@ -1,7 +1,16 @@
 #ifndef ZGRAPH_H
 #define ZGRAPH_H
 
+#include <QFont>
 #include <QGraphicsItem>
+#include <QPen>
+
+//  Семейство графических объектов серии z ... область интереса "ОИ"
+//- точка             Point         1
+//- прямоугольник     Rect          2	с возможностью поворота
+//- эллипс            Ellipse       3	с возможностью поворота
+//- полилиния         Polyline      4
+//- область(полигон)  Polygon       5
 
 class zGraph : public QGraphicsObject
 {
@@ -10,15 +19,103 @@ class zGraph : public QGraphicsObject
 public:
     explicit zGraph();
     QRectF boundingRect() const Q_DECL_OVERRIDE;
-    virtual void updateBoundingRect();
-    void setfRect();
     void setTitle(QString title);
-    QString getTitle();
-    virtual QPointF getCenter();
+    QString getTitle() const;
+    void setFont(QString family, int pointSize, int weight, bool italic);
+    virtual QRectF getTitleRectangle() const = 0;
+    virtual void updateBoundingRect() = 0;
 signals:
      void mouseMove();
+protected:
+     int fRectIndent = 12;
+     QRectF fbrect;
+     QFont ffont = QFont("Helvetica", fRectIndent*2/3, -1, true);
+     QRectF ftitleRect;
+     QPen selectedPen = QPen(Qt::green, 1, Qt::DashLine);
+     QPen basePen = QPen(Qt::blue, 1, Qt::SolidLine);
+     QBrush selectedBrush = QBrush(Qt::yellow);
+     QBrush baseBrush = QBrush(Qt::lightGray);
+     qreal fOpacity = 0.7;
+     QPen titleRectPen = QPen(Qt::black, 1, Qt::SolidLine);
+     QBrush titleRectBrush = QBrush(Qt::cyan);
+     QPen titleTextPen = QPen(Qt::darkRed, 1, Qt::SolidLine);
+protected:
+     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
 private:
-    QRectF fbrect;
+};
+
+class zPoint : public zGraph
+{
+    Q_OBJECT
+public:
+    enum { Type = UserType + 1 };  // тип объекта - точка             Point         1
+    int type() const override { return Type; }
+public:
+    explicit zPoint(const QPointF point);
+    QRectF getTitleRectangle() const Q_DECL_OVERRIDE;
+    QPainterPath shape() const Q_DECL_OVERRIDE;
+    virtual void updateBoundingRect();
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
+};
+
+class zRect : public zGraph
+{
+    Q_OBJECT
+public:
+    enum { Type = UserType + 2 };  // тип объекта - прямоугольник Rect 2	с возможностью поворота
+    int type() const override { return Type; }
+public:
+    explicit zRect(const QPointF point);
+    QRectF getTitleRectangle() const Q_DECL_OVERRIDE;
+    QPainterPath shape() const Q_DECL_OVERRIDE;
+    virtual void updateBoundingRect();
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
+    QSizeF frectSize = QSize(150,50);
+    qreal fdefaultHeigth = 50;
+protected:
+    QPointF fcenterPoint;
+    QPointF getCenterPoint();
+};
+
+class zPolygon : public zGraph
+{
+    Q_OBJECT
+public:
+    enum { Type = UserType + 5 };  // тип объекта - область(полигон)  Polygon       5
+    int type() const override { return Type; }
+public:
+    explicit zPolygon();
+    QRectF getTitleRectangle() const Q_DECL_OVERRIDE;
+    QPainterPath shape() const Q_DECL_OVERRIDE;
+    virtual void updateBoundingRect();
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
+    void addPoint(QPoint point);
+    QPolygon fpolygon;
+protected:
+    QPointF fcenterPoint;
+    QPointF getCenterPoint();
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+};
+
+class zContourRect : public QObject, public QGraphicsRectItem
+{
+    Q_OBJECT
+
+public:
+    explicit zContourRect(QPointF point);
+    ~zContourRect();
+signals:
+    void mousePress();
+    void mouseMove(int num, QPointF point);
+    void mouseRelease();
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+private:
+    int fRectIndent = 3;
+    QPen fPen = QPen(Qt::black, 1, Qt::SolidLine);
+    QBrush fBrush = QBrush(Qt::black);
 };
 
 #endif // ZGRAPH_H

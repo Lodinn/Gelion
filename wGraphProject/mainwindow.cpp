@@ -9,17 +9,36 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    resize(700,500);
+    resize(900,700);
     view = new zView();
     setCentralWidget(view);
-    QGraphicsRectItem *rect = view->scene()->addRect(-150,-150,300,250);
-    rect->setFlag(QGraphicsItem::ItemIsMovable);
-    rect->setFlag(QGraphicsItem::ItemIsSelectable);
+//    QGraphicsRectItem *rect = view->scene()->addRect(-150,-150,300,250);
+//    rect->setFlag(QGraphicsItem::ItemIsMovable);
+//    rect->setFlag(QGraphicsItem::ItemIsSelectable);
+//    rect->setData(0, "rect 1");
+
+//    rect = view->scene()->addRect(-50,-25,100,50);
+//    rect->setFlag(QGraphicsItem::ItemIsMovable);
+//    rect->setFlag(QGraphicsItem::ItemIsSelectable);
+//    rect->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+//    rect->setData(0, "rect 2 IgnoresTransformations");
 
     connect(view->dockAct, SIGNAL(triggered()), this, SLOT(createDock()));
     connect(view->closeAct, &QAction::triggered, this, &QMainWindow::close);
     connect(view->docksaveAct, SIGNAL(triggered()), this, SLOT(writeSettings()));
     connect(view->dockrestoreAct, SIGNAL(triggered()), this, SLOT(readSettings()));
+
+    itemslistdock->setObjectName("itemslistdock");
+    itemslistdock->setWindowTitle("Список графических объектов");
+    itemslistdock->setMinimumWidth(120);
+    itemsList = new QListWidget(itemslistdock);
+    connect(itemsList, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClicked(QListWidgetItem*)));
+    itemsList->addItem("ggggggggg");
+    itemslistdock->setWidget(itemsList);
+    addDockWidget(Qt::LeftDockWidgetArea, itemslistdock);
+
+    connect(view, SIGNAL(updateItemsList()), this, SLOT(updateDockItemsList()));
+    emit view->updateItemsList();
 }
 
 MainWindow::~MainWindow()
@@ -53,9 +72,24 @@ void MainWindow::readSettings(){
 
 }
 
+void MainWindow::updateDockItemsList()
+{
+    QList<QGraphicsItem *> items = view->scene()->items();
+    itemsList->clear();
+    foreach ( QGraphicsItem *it , items ) itemsList->addItem(it->data(0).toString());
+}
+
+void MainWindow::itemClicked(QListWidgetItem *item)
+{
+    int rw = itemsList->row(item);
+    qDebug() << "rw=  " << rw;
+    QList<QGraphicsItem *> items = view->scene()->items();
+    if (items[rw]->isSelected()) items[rw]->setSelected(false);
+    else items[rw]->setSelected(true);
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    qDebug() << "closeEvent";
     QSettings settings("MyCompany", "MyApp");
     QList <QDockWidget * > dockWidgets = findChildren <QDockWidget * > ( ) ;
     QList<QToolBar*> toolbars = findChildren<QToolBar*>();
@@ -90,5 +124,6 @@ void MainWindow::createDock()
     fileToolBar->setObjectName("fff");
     fileToolBar->addAction(view->dockAct);
     fileToolBar->addAction(view->docksaveAct);
+
 
 }
