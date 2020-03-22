@@ -20,6 +20,7 @@ private:
     int dnum = 0;
     void closeEvent(QCloseEvent *event);
     QDockWidget *itemslistdock = new QDockWidget(this);
+    QDockWidget *dock = new QDockWidget(this);
     QListWidget *itemsList;
 public slots:
     void createDock();
@@ -27,6 +28,8 @@ public slots:
     void readSettings();
     void updateDockItemsList();
     void itemClicked(QListWidgetItem *item);
+    void visibilityChangedDock(bool visible);
+    void setVisibleAllDocks();
 
 };
 

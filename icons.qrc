@@ -4,5 +4,10 @@
         <file>images/view.jpg</file>
         <file>icons/open.png</file>
         <file>icons/butterfly.png</file>
+        <file>images/pin_grey.png</file>
+        <file>images/polyline-64.png</file>
+        <file>images/vector_ellipse.png</file>
+        <file>images/vector_square.png</file>
+        <file>images/vector-polygon.png</file>
     </qresource>
 </RCC>

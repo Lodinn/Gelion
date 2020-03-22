@@ -24,6 +24,8 @@ class MainWindow : public QMainWindow {
   void delete_progress_dialog();
   void add_envi_hdr_pixmap();
   void show_profile(QPointF point, int id = -1);
+  void createDockWidgetForItem(zGraph *item);
+
  signals:
   void read_file(QString);
 

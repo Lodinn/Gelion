@@ -12,11 +12,11 @@ ImageHandler::ImageHandler(QObject *parent) {
 }
 
 ImageHandler::~ImageHandler() {
-  qDebug() << "Deleted imh";
+
 }
 
 void ImageHandler::read_envi_hdr(QString fname) {
-    qDebug("read_envi_hdr");
+
   QFile hdr_f(fname);
   if(!hdr_f.exists()) return;
   QSettings hdr(fname, QSettings::IniFormat);
@@ -30,7 +30,6 @@ void ImageHandler::read_envi_hdr(QString fname) {
   int dtype = hdr.value("data type").toInt();
   QString interleave = hdr.value("interleave").toString();
   interleave = interleave.toUpper();
-  qDebug() << interleave;
   if(interleave != "BIL" || dtype != 4) {
     qDebug() << "Interleave/dtype not implemented yet";
     return;
@@ -77,7 +76,6 @@ void ImageHandler::read_envi_hdr(QString fname) {
     }
     spectral_image[num_data_set].append(slice);
     emit reading_progress(z);  // &&&
-//    qDebug() << z;
     if (read_file_canceled == 1) break;
      QApplication::processEvents();
   }
@@ -159,6 +157,4 @@ void ImageHandler::set_read_file_canceled()
 {
     QApplication::processEvents();
     read_file_canceled = 1;
-    qDebug() << "set_read_file_canceled";
-//    QApplication::processEvents();
 }

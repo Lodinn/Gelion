@@ -28,13 +28,15 @@ SOURCES += \
         mainwindow.cpp \
     view.cpp \
     ImageHandler.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    zgraph.cpp
 
 HEADERS += \
         mainwindow.h \
     view.h \
     ImageHandler.h \
-    qcustomplot.h
+    qcustomplot.h \
+    zgraph.h
 
 RESOURCES += \
     icons.qrc

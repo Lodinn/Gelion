@@ -1,7 +1,7 @@
 #ifndef ZVIEW_H
 #define ZVIEW_H
 
-#include "zgraph.h"
+#include "../zgraph.h"
 
 #include <QWidget>
 #include <QGraphicsView>
@@ -25,6 +25,7 @@ public:
     QAction *dockrestoreAct;
 
     QAction *setSelAct;
+    QAction *visibleDock;
 
     //----------------------------------------------------- main
     zGraph *grabberItem = 0;
@@ -39,7 +40,7 @@ public:
 
 public slots:
     void testSlot();
-
+    void itemChange();
     void setSelectionForce();
     //----------------------------------------------------- main
     void createGrabberRects();
@@ -59,6 +60,7 @@ protected:
     void createPointGraphItem(QPoint pos);
     void wheelEvent(QWheelEvent *event) override;
 private:
+    int num = 0;
     QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);
     QAction *testAct;
     qreal zScale = 1.0;  qreal zAngle = 0.0;
@@ -68,6 +70,8 @@ private:
     void createRect();
     void showMessageWidget(QString str);
     void setGrabberCoordTozRect();
+    qreal GlobalScale = 1.0;
+    qreal GlobalRotate = 0.0;
     //----------------------------------------------------- main
 signals:
     void updateItemsList();

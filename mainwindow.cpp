@@ -4,7 +4,9 @@
 #include <QToolBar>
 #include <QtWidgets>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) { SetupUi(); }
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+    SetupUi();
+}
 
 MainWindow::~MainWindow() {
   delete scene;
@@ -22,9 +24,10 @@ void MainWindow::SetupUi() {
   resize(900, 700);
   scene = new QGraphicsScene(this);
   view = new gQGraphicsView(scene);
+  view->imgHand = im_handler;
   setCentralWidget(view);
-  QPixmap test(QString(":/images/view.jpg"));  // &&&
-  scene->addPixmap(test);                      // &&&
+  QPixmap test(QString(":/images/view.jpg"));
+  QGraphicsPixmapItem *p = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
   createActions();
   createStatusBar();
   im_handler->moveToThread(worker_thread);
@@ -39,6 +42,8 @@ void MainWindow::SetupUi() {
           [this](QPair<int, QPointF> new_pos) {
             show_profile(new_pos.second, new_pos.first);
           });
+  connect(view,SIGNAL(insertZGraphItem(zGraph*)),SLOT(createDockWidgetForItem(zGraph*)));
+  connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -49,15 +54,13 @@ void MainWindow::show_profile(QPointF point, int id) {
   if (v.length() == 0) return;
 
   int d = im_handler->get_bands_count();
-  qDebug() << point << "show_profile"
-           << "d= " << d;
+
   QVector<double> x(d), y(d);
   for (int i = 0; i < d; ++i) {
     x[i] = v[i].rx();
     y[i] = v[i].ry();
   }
 
-  qDebug() << "x[i]= " << x[d / 2] << "y[i]= " << y[d / 2];
   if (id < 0) {
     QDockWidget *dock = new QDockWidget(tr("Plot profile"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
@@ -85,21 +88,36 @@ void MainWindow::show_profile(QPointF point, int id) {
   wPlot->replot();
 }
 
+void MainWindow::createDockWidgetForItem(zGraph *item)
+{
+    QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
+    item->dockw = dockw;
+    dockw->setFloating(true);
+    dockw->resize(420,150);
+    wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
+    wPlot->resize(420,150);  wPlot->addGraph();
+// give the axes some labels:
+    wPlot->xAxis->setLabel("длина волны, нм");
+    wPlot->yAxis->setLabel("коэффициент отражения");
+// set axes ranges, so we see all data:
+    wPlot->xAxis->setRange(390, 1010);
+    wPlot->yAxis->setRange(0, 1.2);
+    item->plot = wPlot;
+    addDockWidget(Qt::BottomDockWidgetArea, dockw);
+    dockw->hide();
+}
+
 void MainWindow::createActions() {
   // file
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   QToolBar *fileToolBar = addToolBar(tr("Файл"));
-  const QIcon openIcon =
-      QIcon::fromTheme("Открыть файл...", QIcon(":/icons/open.png"));
-  QAction *openAct = new QAction(openIcon, tr("&Открыть файл..."), this);
-  QAction *closeAct = new QAction(tr("&Выход"), this);
-  closeAct->setShortcuts(QKeySequence::Close);
-  fileMenu->addAction(openAct);
-  connect(openAct, &QAction::triggered, this, &MainWindow::open);
+
+  fileMenu->addAction(view->openAct);
+  connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
   fileMenu->addSeparator();
-  fileMenu->addAction(closeAct);
-  connect(closeAct, &QAction::triggered, this, &MainWindow::close);
-  fileToolBar->addAction(openAct);
+  fileMenu->addAction(view->closeAct);
+  connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
+  fileToolBar->addAction(view->openAct);
   // edit
   QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
   QToolBar *editToolBar = addToolBar(tr("Редактирование"));
@@ -108,26 +126,32 @@ void MainWindow::createActions() {
   QAction *printAct = new QAction(printIcon, tr("&Печать"), this);
   editMenu->addAction(printAct);
   editToolBar->addAction(printAct);
+  // &&& inset items menu
+  QMenu *itemsMenu = menuBar()->addMenu("Область интереса (ОИ)");
+  QToolBar *itemsToolBar = addToolBar("Область интереса (ОИ)");
+  itemsMenu->addAction(view->pointAct);   itemsToolBar->addAction(view->pointAct);
+  itemsMenu->addAction(view->rectAct);    itemsToolBar->addAction(view->rectAct);
+  itemsMenu->addAction(view->ellipseAct); itemsToolBar->addAction(view->ellipseAct);
+  itemsMenu->addAction(view->polylineAct);    itemsToolBar->addAction(view->polylineAct);
+  itemsMenu->addAction(view->polygonAct); itemsToolBar->addAction(view->polygonAct);
+
 }
 
 void MainWindow::createStatusBar() {
-  statusBar()->showMessage(tr("Строка статусных сообщений"));
+  statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
 }
 
 void MainWindow::open() {
-  qDebug("open");
   QString fname = QFileDialog::getOpenFileName(
-      this, tr("Открытие файла данных"), "../profile/data",
+      this, tr("Открытие файла данных"), "../data",
       tr("ENVI HDR Files (*.hdr);;ENVI HDR Files (*.hdr)"));
-  qDebug("fname");
   emit read_file(fname);
 }
 
 void MainWindow::show_progress(int max_progress) {
-  qDebug("show_progress");
+
   //    QProgressDialog *progress_dialog = new QProgressDialog("Загрузка файла
   //    ...", "Отмена", 0, max_progress, this);
-  qDebug() << progress_dialog;
   if (progress_dialog != nullptr) delete progress_dialog;
   progress_dialog =
       new QProgressDialog("Загрузка файла ...", "Отмена", 0, 100, this);
@@ -144,20 +168,18 @@ void MainWindow::show_progress(int max_progress) {
 }
 
 void MainWindow::stop_reading_file() {
-  qDebug("stop_reading_file");
+
   im_handler->set_read_file_canceled();
   progress_dialog->hide();
   QApplication::processEvents();
 }
 
 void MainWindow::delete_progress_dialog() {
-  qDebug("delete_progress_dialog");
+
   if (progress_dialog != nullptr) {
     delete progress_dialog;
     progress_dialog = nullptr;
   }
-  qDebug() << progress_dialog;
-  //    delete progress_dialog;
 }
 
 void MainWindow::add_envi_hdr_pixmap() {

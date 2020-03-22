@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = wGraphProject
 TEMPLATE = app
@@ -27,9 +27,9 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     zview.cpp \
-    zgraph.cpp
+    ../zgraph.cpp
 
 HEADERS += \
         mainwindow.h \
     zview.h \
-    zgraph.h
+    ../zgraph.h

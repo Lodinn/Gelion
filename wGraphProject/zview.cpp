@@ -12,6 +12,7 @@ zView::zView(QWidget *parent)
     : QGraphicsView(parent)
 {
     this->setScene(new QGraphicsScene());  // Устанавливаем сцену в виджет
+    scene()->addPixmap(QPixmap("../wGraphProject/apple.jpg"));
     //----------------------------------------------------- main
     connect(scene(),SIGNAL(selectionChanged()),this,SLOT(createGrabberRects()));
     pointAct = new QAction(QIcon("../images/pin2_red.png"), "введите точку построения профиля", this);
@@ -32,6 +33,7 @@ zView::zView(QWidget *parent)
     closeAct = new QAction(i3, "close", this);
     docksaveAct = new QAction(i4, "docksaveAct", this);
     dockrestoreAct = new QAction(i5, "dockrestoreAct", this);
+    visibleDock = new QAction(i5, "dock visible", this);
 
     connect(testAct, SIGNAL(triggered()), this, SLOT(testSlot()));
 //  =============== ввод графических объектов
@@ -40,7 +42,7 @@ zView::zView(QWidget *parent)
     setSelAct = new QAction("выбранный объект вручную", this);
     connect(setSelAct, SIGNAL(triggered()), this, SLOT(setSelectionForce()));
 
-    zPolygon *zp = new zPolygon();
+    zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
     zp->addPoint(QPoint(50,-100));zp->addPoint(QPoint(200,30));
     zp->addPoint(QPoint(170,170));zp->addPoint(QPoint(100,170));
     zp->addPoint(QPoint(0,170));zp->addPoint(QPoint(-20,120));
@@ -48,11 +50,15 @@ zView::zView(QWidget *parent)
     zp->updateBoundingRect();
     scene()->addItem(zp);
 
-    zRect *rect = new zRect(QPointF(0,-100));
+    connect(zp,SIGNAL(itemChange()),this,SLOT(itemChange()));
+
+    zRect *rect = new zRect(QPointF(0,-100),1.0,0.0);
     rect->setTitle("rect 1");
     rect->frectSize = QSize(200,50);
     rect->updateBoundingRect();
     scene()->addItem(rect);
+
+    connect(rect,SIGNAL(itemChange()),this,SLOT(itemChange()));
 
     emit updateItemsList();
 
@@ -77,6 +83,12 @@ void zView::testSlot()
     QString text = settings.value( "text", "" ).toString();
     settings.endGroup();
     qDebug() << text;
+}
+
+void zView::itemChange()
+{
+    qDebug() << "itenChange = " << num;
+    num++;
 }
 
 void zView::setInputModePoint()
@@ -173,7 +185,6 @@ void zView::deleteGrabberRects()
         delete rect;        rect = nullptr;
     } zcRects.clear();
     if (grabberItem == 0) return;
-    grabberItem->setCursor(QCursor(Qt::ArrowCursor));
     grabberItem->disconnect();
 }
 
@@ -252,7 +263,7 @@ void zView::contextMenuEvent(QContextMenuEvent *event)
 {
     if (!contextMenuEnable) {
         contextMenuEnable = true;  return;
-    }
+    }  // if
     QMenu menu(this);
     menu.addAction(pointAct);
     menu.addAction(polygonAct);
@@ -264,6 +275,8 @@ void zView::contextMenuEvent(QContextMenuEvent *event)
     menu.addAction(dockrestoreAct);
     menu.addSeparator();
     menu.addAction(closeAct);
+    menu.addSeparator();
+    menu.addAction(visibleDock);
     contextPos = mapToScene(event->pos());
     menu.exec(event->globalPos());
 }
@@ -290,7 +303,7 @@ void zView::mousePressEvent(QMouseEvent *event)
             qreal x1 = p.rx();  qreal y1 = p.ry();
             qreal x2 = p.rx();  qreal y2 = p.ry();
             tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
-            tmpRect = new zRect(p);
+            tmpRect = new zRect(p,GlobalScale,GlobalRotate);
             tmpRect->updateBoundingRect();
             scene()->addItem(tmpRect);
             break;
@@ -416,14 +429,18 @@ void zView::wheelEvent(QWheelEvent *event)
         else sx = 0.95;
         scale(sx, sx);  zScale /= sx;
         setScaleAngle(zScale,zAngle);
-        return; }
+        GlobalScale = zScale;
+        return;
+    }  // if (event->modifiers() == Qt::ControlModifier)
     if (event->modifiers() == Qt::ShiftModifier) {
         qreal angle;
         if(event->delta() > 0) angle = 1.0;
         else angle = -1.0;
         rotate(angle);  zAngle -= angle;
         setScaleAngle(zScale,zAngle);
-        return; }
+        GlobalRotate = zAngle;
+        return;
+    }  // if (event->modifiers() == Qt::ShiftModifier)
     QGraphicsView::wheelEvent(event);
 }
 
@@ -433,14 +450,15 @@ void zView::setScaleAngle(qreal sc, qreal an)
     foreach ( QGraphicsItem *it , items ) {
         it->setData(1,sc);
         it->setData(2,an);
-        if (items.indexOf(it) > 1)
-            qgraphicsitem_cast<zGraph *>(it)->updateBoundingRect();
-    }
+//        if (items.indexOf(it) > 1)
+//            qgraphicsitem_cast<zGraph *>(it)->updateBoundingRect();
+    }  // foreach
+    qDebug() << items.count();
 }
 
 void zView::createPolygon()
 {
-    zPolygon *zp = new zPolygon();
+    zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
     zp->setTitle("Полигон 1");
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();

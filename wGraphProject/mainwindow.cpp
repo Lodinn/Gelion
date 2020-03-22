@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     resize(900,700);
     view = new zView();
     setCentralWidget(view);
+
 //    QGraphicsRectItem *rect = view->scene()->addRect(-150,-150,300,250);
 //    rect->setFlag(QGraphicsItem::ItemIsMovable);
 //    rect->setFlag(QGraphicsItem::ItemIsSelectable);
@@ -23,19 +24,29 @@ MainWindow::MainWindow(QWidget *parent)
 //    rect->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
 //    rect->setData(0, "rect 2 IgnoresTransformations");
 
+
     connect(view->dockAct, SIGNAL(triggered()), this, SLOT(createDock()));
     connect(view->closeAct, &QAction::triggered, this, &QMainWindow::close);
     connect(view->docksaveAct, SIGNAL(triggered()), this, SLOT(writeSettings()));
     connect(view->dockrestoreAct, SIGNAL(triggered()), this, SLOT(readSettings()));
 
+
+    connect(itemslistdock, SIGNAL(visibilityChanged(bool)),this,SLOT(visibilityChangedDock(bool)));
+    connect(view->visibleDock, SIGNAL(triggered()), this, SLOT(setVisibleAllDocks()));
+
     itemslistdock->setObjectName("itemslistdock");
     itemslistdock->setWindowTitle("Список графических объектов");
+    itemslistdock->setFloating(true);
+    itemslistdock->resize(500,200);
     itemslistdock->setMinimumWidth(120);
     itemsList = new QListWidget(itemslistdock);
     connect(itemsList, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClicked(QListWidgetItem*)));
     itemsList->addItem("ggggggggg");
     itemslistdock->setWidget(itemsList);
     addDockWidget(Qt::LeftDockWidgetArea, itemslistdock);
+    addDockWidget(Qt::LeftDockWidgetArea, dock);
+    QList<QDockWidget *> dockWidgets = findChildren<QDockWidget *>();
+    qDebug() << dockWidgets;
 
     connect(view, SIGNAL(updateItemsList()), this, SLOT(updateDockItemsList()));
     emit view->updateItemsList();
@@ -86,6 +97,20 @@ void MainWindow::itemClicked(QListWidgetItem *item)
     QList<QGraphicsItem *> items = view->scene()->items();
     if (items[rw]->isSelected()) items[rw]->setSelected(false);
     else items[rw]->setSelected(true);
+}
+
+void MainWindow::visibilityChangedDock(bool visible)
+{
+    qDebug() << "visibilityChangedDock" << visible;
+    QList<QDockWidget *> dockWidgets = findChildren<QDockWidget *>();
+    qDebug() << dockWidgets;
+}
+
+void MainWindow::setVisibleAllDocks()
+{
+    QList<QDockWidget *> dockWidgets = findChildren<QDockWidget *>();
+    foreach(QDockWidget *d, dockWidgets)
+        d->setVisible(true);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
