@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 MainWindow::~MainWindow() {
   delete scene;
   delete view;
+  worker_thread->wait(2000);
   delete im_handler;
   delete worker_thread;
   //    delete progress_dialog;
