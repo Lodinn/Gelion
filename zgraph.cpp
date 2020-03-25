@@ -154,6 +154,11 @@ bool zPoint::pointIn(QPointF point)
     return true;
 }
 
+QPolygonF zPoint::getTitlePolygon()
+{
+    return QPolygonF();
+}
+
 void zPoint::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (isSelected()) {
@@ -223,6 +228,11 @@ bool zPolygon::pointIn(QPointF point)
 //    path.addPolygon(fpolygon);
 //    return path.contains(point);
     return fpolygon.containsPoint(point.toPoint(),Qt::OddEvenFill);
+}
+
+QPolygonF zPolygon::getTitlePolygon()
+{
+    return QPolygonF();
 }
 
 void zPolygon::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -369,6 +379,11 @@ bool zRect::pointIn(QPointF point)
     return path.contains(point);
 }
 
+QPolygonF zRect::getTitlePolygon()
+{
+    return QPolygonF();
+}
+
 void zRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (isSelected()) {
@@ -463,6 +478,11 @@ bool zEllipse::pointIn(QPointF point)
     return path.contains(point);
 }
 
+QPolygonF zEllipse::getTitlePolygon()
+{
+    return QPolygonF();
+}
+
 void zEllipse::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (isSelected()) {
@@ -535,7 +555,7 @@ QPainterPath zPolyline::shape() const
         path.moveTo(fpolygon[i]);
         path.lineTo(fpolygon[i+1]);
     }  // for
-    path.addPolygon(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     return path;
 }
 
@@ -543,10 +563,11 @@ void zPolyline::updateBoundingRect()
 {
     fcenterPoint = getCenterPoint();
     ftitleRect = getTitleRectangle();
+    ftitlePolygon = getTitlePolygon();
     QPainterPath path;
     path.setFillRule(Qt::WindingFill); // то что надо
     path.addPolygon(fpolygon);
-    path.addRect(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     fbrect = path.boundingRect();
 }
 
@@ -563,6 +584,33 @@ bool zPolyline::pointIn(QPointF point)
     return path.intersects(QRectF(point,QSizeF(1,1)));
 }
 
+QPolygonF zPolyline::getTitlePolygon()
+{
+    QMatrix matrix;
+    QPolygonF polygon;
+
+    QPointF pcenter = getCenterPoint() / data(1).toDouble();
+    QLineF line(QPointF(0,0),pcenter);
+    qreal acenter = qAtan2(line.dy(),line.dx());
+    qreal R = qDegreesToRadians(-data(2).toDouble());
+    R += acenter;
+    pcenter.setX(line.length()*qCos(R));
+    pcenter.setY(line.length()*qSin(R));
+
+    QString title = getTitle();
+    title = QString(" %1 ").arg(title);
+    QFontMetricsF fm(ffont);
+    int tw = fm.width(title);
+    int th = fm.height();
+    QRect rect = QRect(pcenter.toPoint()-QPoint(tw/2,th/2),QSize(tw,th));
+
+    polygon = matrix.mapToPolygon(rect);
+    matrix.scale(data(1).toDouble(),data(1).toDouble());
+    matrix.rotate(data(2).toDouble()-rotation());
+
+    return matrix.map(polygon);
+}
+
 void zPolyline::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (isSelected()) {
@@ -574,6 +622,7 @@ void zPolyline::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     }
 
     painter->drawPolyline(fpolygon);
+    painter->drawPolygon(ftitlePolygon);
 
     // наименование объекта
     setOpacity(fOpacity);

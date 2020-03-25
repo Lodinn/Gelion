@@ -26,11 +26,11 @@ public:
     QString getTitle() const;
     void setFont(QString family, int pointSize, int weight, bool italic);
     virtual QRectF getTitleRectangle() const = 0;
-//    QPolygonF getTitlePolygon();
     virtual void updateBoundingRect() = 0;
     QDockWidget *dockw = nullptr;
     QCustomPlot *plot = nullptr;
     virtual bool pointIn(QPointF point) = 0;
+    virtual QPolygonF getTitlePolygon() = 0;
 signals:
      void mouseMove();
      void mouseRelease();
@@ -41,7 +41,7 @@ protected:
      QRectF fbrect;
      QFont ffont = QFont("Helvetica", fRectIndent*2/3, -1, true);
      QRectF ftitleRect;
-//     QPolygonF ftitlePolygon;
+     QPolygonF ftitlePolygon;
      QPen selectedPen = QPen(Qt::green, 1, Qt::DashLine);
      QPen basePen = QPen(Qt::green, 1, Qt::SolidLine);
      QBrush selectedBrush = QBrush(Qt::yellow,Qt::Dense7Pattern);
@@ -70,6 +70,7 @@ public:
     QPainterPath shape() const Q_DECL_OVERRIDE;
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
+    virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
 };
 
@@ -85,6 +86,7 @@ public:
     QPainterPath shape() const Q_DECL_OVERRIDE;
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
+    virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     QSizeF frectSize = QSize(150,50);
     qreal fdefaultHeigth = 50;
@@ -104,6 +106,7 @@ public:
     QPainterPath shape() const Q_DECL_OVERRIDE;
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
+    virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     QSizeF frectSize = QSize(150,50);
     qreal fdefaultHeigth = 50;
@@ -123,6 +126,7 @@ public:
     QPainterPath shape() const Q_DECL_OVERRIDE;
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
+    virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     void addPoint(QPoint point);
     QPolygon fpolygon;
@@ -142,6 +146,7 @@ public:
     QPainterPath shape() const Q_DECL_OVERRIDE;
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
+    virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     void addPoint(QPoint point);
     QPolygon fpolygon;

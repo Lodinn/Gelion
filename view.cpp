@@ -187,6 +187,7 @@ void gQGraphicsView::pressOneGrabberRect()
 {
     if (grabberItem == 0) return;
     grabberItem->setFlag(QGraphicsItem::ItemIsMovable, false);
+    grabberItem->dockw->activateWindow();
 }
 
 void gQGraphicsView::releaseOneGrabberRect()
@@ -369,6 +370,7 @@ void gQGraphicsView::setCursorToItems()
         }  //  switch
     foreach (zContourRect *rect, zcRects) rect->setCursor(Qt::CrossCursor);
     if (insertMode != gQGraphicsView::None) setCursor(Qt::CrossCursor);
+    else setCursor(Qt::ArrowCursor);
 }
 
 void gQGraphicsView::moveGrabberRects()
@@ -451,6 +453,7 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
     if (selection.length() > 0) {
         zGraph *graph  = qgraphicsitem_cast<zGraph *>(selection[0]);
         switch (graph->type()) {
+        case zPoint::Type : return;
         case zRect::Type : {        // тип объекта - прямоугольник Rect 2	с возможностью поворота
             zRect *zR = qgraphicsitem_cast<zRect *>(graph);
             qreal h = 0.0;
@@ -477,9 +480,13 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
             show_profile_for_Z(zE);
             return;
         }  // case zRect::Type
+        case zPolyline::Type : return;
+        case zPolygon::Type : return;
         }  // switch (graph->type())
     }  // if (selection.length() > 0)
     switch (insertMode) {
+    case gQGraphicsView::None : break;
+    case gQGraphicsView::Point : return;
     case gQGraphicsView::Rect : {
         if (tmpRect == nullptr) break;
         qreal h = 0;
@@ -504,6 +511,8 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
         tmpEllipse->update();
         return;
     }  // case gQGraphicsView::Ellipse
+    case gQGraphicsView::Polyline : return;
+    case gQGraphicsView::Polygon : return;
     }  // switch (insertMode)
     if (event->modifiers() == Qt::ControlModifier) {
         qreal sx;

@@ -44,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
     itemsList->addItem("ggggggggg");
     itemslistdock->setWidget(itemsList);
     addDockWidget(Qt::LeftDockWidgetArea, itemslistdock);
+
+    dock->setFeatures(dock->features() & ~QDockWidget::DockWidgetClosable);
     addDockWidget(Qt::LeftDockWidgetArea, dock);
     QList<QDockWidget *> dockWidgets = findChildren<QDockWidget *>();
     qDebug() << dockWidgets;
