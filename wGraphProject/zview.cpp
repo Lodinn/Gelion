@@ -28,7 +28,7 @@ zView::zView(QWidget *parent)
     const QIcon i3 = QIcon("../images/vector_square.png");
     const QIcon i4 = QIcon("../images/polyline-64.png");
     const QIcon i5 = QIcon("../images/vector-polygon.png");
-    testAct = new QAction(QIcon("../images/polyline-64.png"), "test", this);
+    testAct = new QAction(QIcon("../images/polyline-64.png"), "**********test", this);
     dockAct = new QAction(i2, "dock", this);
     closeAct = new QAction(i3, "close", this);
     docksaveAct = new QAction(i4, "docksaveAct", this);
@@ -36,6 +36,7 @@ zView::zView(QWidget *parent)
     visibleDock = new QAction(i5, "dock visible", this);
 
     connect(testAct, SIGNAL(triggered()), this, SLOT(testSlot()));
+
 //  =============== ввод графических объектов
 
 
@@ -43,7 +44,7 @@ zView::zView(QWidget *parent)
     connect(setSelAct, SIGNAL(triggered()), this, SLOT(setSelectionForce()));
 
     zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
-    zp->addPoint(QPoint(50,-100));zp->addPoint(QPoint(200,30));
+    zp->addPoint(QPoint(50,20));zp->addPoint(QPoint(200,30));
     zp->addPoint(QPoint(170,170));zp->addPoint(QPoint(100,170));
     zp->addPoint(QPoint(0,170));zp->addPoint(QPoint(-20,120));
     zp->setTitle("Полигон 1");
@@ -52,43 +53,96 @@ zView::zView(QWidget *parent)
 
     connect(zp,SIGNAL(itemChange()),this,SLOT(itemChange()));
 
-    zRect *rect = new zRect(QPointF(0,-100),1.0,0.0);
+    zRect *rect = new zRect(QPointF(0,300),1.0,0.0);
     rect->setTitle("rect 1");
     rect->frectSize = QSize(200,50);
     rect->updateBoundingRect();
     scene()->addItem(rect);
 
+    rect = new zRect(QPointF(300,50),1.0,0.0);
+    rect->setTitle("rect 7");
+    rect->frectSize = QSize(77,33);
+    rect->updateBoundingRect();
+    scene()->addItem(rect);
+
     connect(rect,SIGNAL(itemChange()),this,SLOT(itemChange()));
-
     emit updateItemsList();
-
-
 }
 
 zView::~zView(){}
 
+/*QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
+ QSettings ini(qApp->applicationDirPath()+"/programs/cats.ini",QSettings::IniFormat);
+ ini.setIniCodec( codec );
+ ini.beginGroup(codec->toUnicode("группа"));
+ ini.setValue(codec->toUnicode("ключ"),codec->toUnicode("валуя"));
+ ini.endGroup();
+QSettings settings("MyCompany", "MyApp");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    QMainWindow::closeEvent(event);*/
+
 void zView::testSlot()
 {
     qDebug() << "testSlot";
+    QSettings settings( "../settings_demo.ini", QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
+    settings.setIniCodec( codec );
+    QList<QGraphicsItem *> items = scene()->items();
 
-    QSettings settings( "settings_demo.conf", QSettings::IniFormat );
-    settings.beginGroup( "WidgetPosition" );
-    int x = settings.value( "x", -1 ).toInt();
-    int y = settings.value( "y", -1 ).toInt();
-    int width = settings.value( "width", -1 ).toInt();
-    int height = settings.value( "height", -1 ).toInt();
-    settings.endGroup();
-    qDebug() << x << y << width << height;
-    settings.beginGroup( "WidgetContent" );
-    QString text = settings.value( "text", "" ).toString();
-    settings.endGroup();
-    qDebug() << text;
+    settings.setValue("test/s", "fff");
+    settings.setValue("ggg/s", "hhh");
+    settings.setValue("kkk/s", "ddd");
+
+    settings.setValue("version", 1);
+    settings.setValue("docks", items.length());
+    settings.setValue("btools", 2);
+    settings.setValue("scale", GlobalScale);
+    settings.setValue("rotation", GlobalRotate);
+//    settings.setValue("geometry", saveGeometry());
+//    settings.setValue("windowState", saveState());
+
+
+//    QList<QGraphicsItem *> items = view->scene()->items();
+//    foreach ( QGraphicsItem *it , items ) itemsList->addItem(it->data(0).toString());
+    qDebug() << items << "items count = " << items.length();
+    int num = 0;
+    foreach(QGraphicsItem *it, items) {
+        if (it->type() == QGraphicsPixmapItem::Type) continue;
+        grabberItem = qgraphicsitem_cast<zGraph *>(it);
+        QStringList strlist = grabberItem->getSettings(num);
+        foreach(QString str, strlist) {
+            int index = str.indexOf("#");
+            if (index < 0) continue;
+            QString mid_Key = str.mid(0,index);
+            QString mid_Value = str.mid(index+1);
+            settings.setValue(mid_Key, mid_Value);
+            qDebug() << mid_Key << mid_Value << num;
+        }  // for
+        num++;
+    }  // for
+
+    QStringList groups = settings.childGroups();
+    qDebug() << groups;
 }
+
+/*   QSettings settings( "settings_demo.conf", QSettings::IniFormat );
+   settings.beginGroup( "WidgetPosition" );
+   int x = settings.value( "x", -1 ).toInt();
+   int y = settings.value( "y", -1 ).toInt();
+   int width = settings.value( "width", -1 ).toInt();
+   int height = settings.value( "height", -1 ).toInt();
+   settings.endGroup();
+   qDebug() << x << y << width << height;
+   settings.beginGroup( "WidgetContent" );
+   QString text = settings.value( "text", "" ).toString();
+   settings.endGroup();
+   qDebug() << text;*/
 
 void zView::itemChange()
 {
-    qDebug() << "itenChange = " << num;
-    num++;
+//    qDebug() << "itenChange = " << num;
+//    num++;
 }
 
 void zView::setInputModePoint()

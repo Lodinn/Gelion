@@ -24,6 +24,8 @@ public:
     QAction *docksaveAct;
     QAction *dockrestoreAct;
 
+    QAction *testAct;
+
     QAction *setSelAct;
     QAction *visibleDock;
 
@@ -59,10 +61,11 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void createPointGraphItem(QPoint pos);
     void wheelEvent(QWheelEvent *event) override;
+
 private:
     int num = 0;
     QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);
-    QAction *testAct;
+
     qreal zScale = 1.0;  qreal zAngle = 0.0;
     void setScaleAngle(qreal sc, qreal an);
     bool contextMenuEnable = true;

@@ -31,6 +31,8 @@ public:
     QCustomPlot *plot = nullptr;
     virtual bool pointIn(QPointF point) = 0;
     virtual QPolygonF getTitlePolygon() = 0;
+    virtual QStringList getSettings(int num) = 0;
+    char setsep = '#';
 signals:
      void mouseMove();
      void mouseRelease();
@@ -71,6 +73,7 @@ public:
     virtual void updateBoundingRect();
     virtual bool pointIn(QPointF point);
     virtual QPolygonF getTitlePolygon();
+    virtual QStringList getSettings(int num);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
 };
 
@@ -90,6 +93,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     QSizeF frectSize = QSize(150,50);
     qreal fdefaultHeigth = 50;
+    virtual QStringList getSettings(int num);
 protected:
     QPointF getCenterPoint();
 };
@@ -110,6 +114,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     QSizeF frectSize = QSize(150,50);
     qreal fdefaultHeigth = 50;
+    virtual QStringList getSettings(int num);
 protected:
     QPointF getCenterPoint();
 };
@@ -130,6 +135,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     void addPoint(QPoint point);
     QPolygon fpolygon;
+    virtual QStringList getSettings(int num);
+
 protected:
     QPointF getCenterPoint();
 };
@@ -150,6 +157,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     void addPoint(QPoint point);
     QPolygon fpolygon;
+    virtual QStringList getSettings(int num);
 protected:
     QPointF getCenterPoint();
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;

@@ -159,6 +159,16 @@ QPolygonF zPoint::getTitlePolygon()
     return QPolygonF();
 }
 
+QStringList zPoint::getSettings(int num)
+{
+    QStringList strlist;
+    // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Rectangle%1/pos%2%3,%4").arg(num).arg(setsep)
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    return strlist;
+}
+
 void zPoint::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (isSelected()) {
@@ -275,6 +285,27 @@ void zPolygon::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
 void zPolygon::addPoint(QPoint point)
 {
     fpolygon << point;
+}
+
+QStringList zPolygon::getSettings(int num)
+{
+    QStringList strlist;
+    // polygon7/title#Полигон 1
+    strlist.append(QString("Polygon%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Polygon%1/pos%2%3,%4").arg(num).arg(setsep)
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    QString xstr, ystr;
+    foreach(QPoint point, fpolygon)
+        if (fpolygon.indexOf(point) < fpolygon.length()-1) {
+            xstr.append(QString("%1,").arg(point.rx(),0,'f',2));
+            ystr.append(QString("%1,").arg(point.ry(),0,'f',2));
+        } else {
+            xstr.append(QString("%1").arg(point.rx(),0,'f',2));
+            ystr.append(QString("%1").arg(point.ry(),0,'f',2));
+        }  // if
+    strlist.append(QString("Polygon%1/x%2%3").arg(num).arg(setsep).arg(xstr));
+    strlist.append(QString("Polygon%1/y%2%3").arg(num).arg(setsep).arg(ystr));
+    return strlist;
 }
 
 QPointF zPolygon::getCenterPoint()
@@ -425,6 +456,19 @@ void zRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWi
     Q_UNUSED(widget);
 }
 
+QStringList zRect::getSettings(int num)
+{
+    QStringList strlist;
+    // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Rectangle%1/pos%2%3,%4").arg(num).arg(setsep)
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
+    strlist.append(QString("Rectangle%1/size%2%3,%4").arg(num).arg(setsep)
+                   .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
+    return strlist;
+}
+
 QPointF zRect::getCenterPoint()
 {
     qreal w = frectSize.width();
@@ -520,6 +564,19 @@ void zEllipse::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     fcenterPoint = getCenterPoint();
     Q_UNUSED(option);
     Q_UNUSED(widget);
+}
+
+QStringList zEllipse::getSettings(int num)
+{
+    QStringList strlist;
+    // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Ellipse%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Ellipse%1/pos%2%3,%4").arg(num).arg(setsep)
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
+    strlist.append(QString("Ellipse%1/size%2%3,%4").arg(num).arg(setsep)
+                   .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
+    return strlist;
 }
 
 QPointF zEllipse::getCenterPoint()
@@ -659,6 +716,27 @@ void zPolyline::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 void zPolyline::addPoint(QPoint point)
 {
     fpolygon << point;
+}
+
+QStringList zPolyline::getSettings(int num)
+{
+    QStringList strlist;
+    // polygon7/title#Полигон 1
+    strlist.append(QString("Polyline%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Polyline%1/pos%2%3,%4").arg(num).arg(setsep)
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    QString xstr, ystr;
+    foreach(QPoint point, fpolygon)
+        if (fpolygon.indexOf(point) < fpolygon.length()-1) {
+            xstr.append(QString("%1,").arg(point.rx(),0,'f',2));
+            ystr.append(QString("%1,").arg(point.ry(),0,'f',2));
+        } else {
+            xstr.append(QString("%1").arg(point.rx(),0,'f',2));
+            ystr.append(QString("%1").arg(point.ry(),0,'f',2));
+        }  // if
+    strlist.append(QString("Polyline%1/x%2%3").arg(num).arg(setsep).arg(xstr));
+    strlist.append(QString("Polyline%1/y%2%3").arg(num).arg(setsep).arg(ystr));
+    return strlist;
 }
 
 QPointF zPolyline::getCenterPoint()
