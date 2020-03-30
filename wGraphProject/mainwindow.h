@@ -23,6 +23,8 @@ private:
     QDockWidget *dock = new QDockWidget(this);
     QListWidget *itemsList;
 public slots:
+    void testSlotSaveApiState();
+    void testSlotRestoreApiState();
     void createDock();
     void writeSettings();
     void readSettings();
@@ -30,7 +32,9 @@ public slots:
     void itemClicked(QListWidgetItem *item);
     void visibilityChangedDock(bool visible);
     void setVisibleAllDocks();
-
+protected:
+    void createStaticDockWidgets();
+    void resetView();
 };
 
 #endif // MAINWINDOW_H

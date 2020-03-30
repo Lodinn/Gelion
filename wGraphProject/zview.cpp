@@ -88,6 +88,7 @@ void zView::testSlot()
     QSettings settings( "../settings_demo.ini", QSettings::IniFormat );
     QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
     settings.setIniCodec( codec );
+    settings.clear();
     QList<QGraphicsItem *> items = scene()->items();
 
     settings.setValue("test/s", "fff");
@@ -95,8 +96,6 @@ void zView::testSlot()
     settings.setValue("kkk/s", "ddd");
 
     settings.setValue("version", 1);
-    settings.setValue("docks", items.length());
-    settings.setValue("btools", 2);
     settings.setValue("scale", GlobalScale);
     settings.setValue("rotation", GlobalRotate);
 //    settings.setValue("geometry", saveGeometry());
@@ -323,6 +322,9 @@ void zView::contextMenuEvent(QContextMenuEvent *event)
     menu.addAction(polygonAct);
     menu.addAction(rectAct);
     menu.addSeparator();
+    menu.addAction(saveStateAct);
+    menu.addAction(restoreStateAct);
+    menu.addSeparator();
     menu.addAction(dockAct);
     menu.addAction(testAct);
     menu.addAction(docksaveAct);
@@ -507,7 +509,7 @@ void zView::setScaleAngle(qreal sc, qreal an)
 //        if (items.indexOf(it) > 1)
 //            qgraphicsitem_cast<zGraph *>(it)->updateBoundingRect();
     }  // foreach
-    qDebug() << items.count();
+//    qDebug() << items.count();
 }
 
 void zView::createPolygon()

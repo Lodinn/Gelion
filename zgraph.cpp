@@ -163,8 +163,8 @@ QStringList zPoint::getSettings(int num)
 {
     QStringList strlist;
     // rectangle7/title#Прямоугольник 1
-    strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
-    strlist.append(QString("Rectangle%1/pos%2%3,%4").arg(num).arg(setsep)
+    strlist.append(QString("Point%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    strlist.append(QString("Point%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
     return strlist;
 }

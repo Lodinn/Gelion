@@ -23,6 +23,9 @@ public:
     QAction *closeAct;
     QAction *docksaveAct;
     QAction *dockrestoreAct;
+    QAction *saveStateAct = new QAction("saveStateAct");
+    QAction *restoreStateAct = new QAction("restoreStateAct");
+
 
     QAction *testAct;
 
@@ -39,9 +42,11 @@ public:
     zRect *tmpRect = nullptr;
     QGraphicsProxyWidget *w = nullptr;
     //----------------------------------------------------- main
-
+    qreal GlobalScale = 1.0;
+    qreal GlobalRotate = 0.0;
 public slots:
     void testSlot();
+
     void itemChange();
     void setSelectionForce();
     //----------------------------------------------------- main
@@ -73,8 +78,7 @@ private:
     void createRect();
     void showMessageWidget(QString str);
     void setGrabberCoordTozRect();
-    qreal GlobalScale = 1.0;
-    qreal GlobalRotate = 0.0;
+
     //----------------------------------------------------- main
 signals:
     void updateItemsList();
