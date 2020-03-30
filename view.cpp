@@ -27,12 +27,17 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     polygonAct = new QAction(polygonIcon, "Добавить ОИ- [Полигон]", this);
     closeAct = new QAction("&Выход", this);
     closeAct->setShortcuts(QKeySequence::Close);
+    const QIcon winZGraphListIcon = QIcon::fromTheme("Список Объектов", QIcon(":/icons/windows2.png"));
+    winZGraphListAct = new QAction(winZGraphListIcon, "Список Объектов", this);
+    winZGraphListAct->setShortcut(QKeySequence::Preferences);
+    winZGraphListAct->setCheckable(true); winZGraphListAct->setChecked(true);
 
     connect(pointAct, SIGNAL(triggered()), this, SLOT(setInputModePoint()));
     connect(rectAct, SIGNAL(triggered()), this, SLOT(setInputModeRect()));
     connect(ellipseAct, SIGNAL(triggered()), this, SLOT(setInputModeEllipse()));
     connect(polylineAct, SIGNAL(triggered()), this, SLOT(setInputModePolyline()));
     connect(polygonAct, SIGNAL(triggered()), this, SLOT(setInputModePolygon()));
+
 
 }
 
@@ -565,7 +570,7 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
         qreal x2 = p.rx();  qreal y2 = p.ry();
         tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
         tmpRect = new zRect(p,GlobalScale,GlobalRotate);
-        tmpRect->setTitle("Прямоугольник 1");
+        tmpRect->setTitle("Прямоугольник 1");  tmpRect->aicon = QIcon(":/images/vector_square.png");
         tmpRect->updateBoundingRect();
         scene()->addItem(tmpRect);
         emit insertZGraphItem(tmpRect);
@@ -588,7 +593,7 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
             qreal x2 = p.rx();  qreal y2 = p.ry();
             tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
             tmpEllipse = new zEllipse(p,GlobalScale,GlobalRotate);
-            tmpEllipse->setTitle("Эллипс 1");
+            tmpEllipse->setTitle("Эллипс 1");  tmpEllipse->aicon = QIcon(":/images/vector_ellipse.png");
             tmpEllipse->updateBoundingRect();
             scene()->addItem(tmpEllipse);
             emit insertZGraphItem(tmpEllipse);
@@ -648,7 +653,7 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
 void gQGraphicsView::createPolygon()
 {
     zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
-    zp->setTitle("Полигон 1");
+    zp->setTitle("Полигон 1");  zp->aicon = QIcon(":/images/vector-polygon.png");
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
         zp->fpolygon.append(point.toPoint());
@@ -670,7 +675,7 @@ void gQGraphicsView::createPolygon()
 void gQGraphicsView::createPolyline()
 {
     zPolyline *zp = new zPolyline(GlobalScale,GlobalRotate);
-    zp->setTitle("Полилиния 1");
+    zp->setTitle("Полилиния 1");  zp->aicon = QIcon(":/images/polyline-64.png");
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
         zp->fpolygon.append(point.toPoint());
@@ -859,7 +864,7 @@ void gQGraphicsView::insPoint(QPoint pos)
 {
     QPointF point = mapToScene(pos);
     zPoint *zpoint = new zPoint(point);
-    zpoint->setTitle("Точка 1");
+    zpoint->setTitle("Точка 1");  zpoint->aicon = QIcon(":/images/pin_grey.png");
     zpoint->updateBoundingRect();
     scene()->addItem(zpoint);
     emit insertZGraphItem(zpoint);

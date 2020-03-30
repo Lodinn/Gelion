@@ -29,14 +29,19 @@ SOURCES += \
     view.cpp \
     ImageHandler.cpp \
     qcustomplot.cpp \
-    zgraph.cpp
+    zgraph.cpp \
+    zgraphparamdlg.cpp
 
 HEADERS += \
         mainwindow.h \
     view.h \
     ImageHandler.h \
     qcustomplot.h \
-    zgraph.h
+    zgraph.h \
+    zgraphparamdlg.h
 
 RESOURCES += \
     icons.qrc
+
+FORMS += \
+    zgraphparamdlg.ui

@@ -25,6 +25,9 @@ class MainWindow : public QMainWindow {
   void add_envi_hdr_pixmap();
   void show_profile(QPointF point, int id = -1);
   void createDockWidgetForItem(zGraph *item);
+  void winZGraphList();
+  void listWidgetClicked(QListWidgetItem *item);
+  void listWidgetDoubleClicked(QListWidgetItem *item);
 
  signals:
   void read_file(QString);
@@ -42,6 +45,10 @@ class MainWindow : public QMainWindow {
   QProgressDialog *progress_dialog = nullptr;
   QCustomPlot *wPlot;
   QVector<QCustomPlot *> plots;
+protected:
+  QDockWidget *dockZGraphList = new QDockWidget("Список Объектов", this);
+  QListWidget *listWidget = new QListWidget(dockZGraphList);
+  void createConstDockWidgets();
 };
 
 #endif  // MAINWINDOW_H

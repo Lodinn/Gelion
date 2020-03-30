@@ -5,6 +5,8 @@
 #include <QSettings>
 #include <QDebug>
 #include <QToolBar>
+#include "../zgraphparamdlg.h"
+#include "../ui_zgraphparamdlg.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -50,25 +52,67 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::NoDockWidgetArea, d1);
     QStringList strList;
 
-    QListWidget *lw = new QListWidget(d1);
+    lw = new QListWidget(d1);
 
 
     QList<QGraphicsItem *> zGrItems = view->scene()->items();
     foreach ( QGraphicsItem *it , zGrItems ) strList << it->data(0).toString();
 
+    const QIcon pointIcon = QIcon("G:/&&&proj/BPLA/images/pin_grey.png");
     lw->addItems(strList);
     d1->setWidget(lw);
     QListWidgetItem* item = 0;
     for(int i = 0; i < lw->count(); ++i) {
         item = lw->item(i);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(Qt::Unchecked);
+        item->setCheckState(Qt::Checked);
+        item->setIcon(pointIcon);
     }  // for
+
+    connect(lw, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(lwItemClicked(QListWidgetItem*)));
+    connect(lw, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(lwItemDblClicked(QListWidgetItem*)));
 
     qDebug() << dockWidgets;
 
     connect(view, SIGNAL(updateItemsList()), this, SLOT(updateDockItemsList()));
     emit view->updateItemsList();
+}
+
+void MainWindow::lwItemClicked(QListWidgetItem *item)
+{
+    int num = lw->row(item);
+    QList<QGraphicsItem *> zGrItems = view->scene()->items();
+    zGrItems[num]->setSelected(true);
+    switch (item->checkState()) {
+        case Qt::Unchecked : { zGrItems[num]->setVisible(false); return; }
+    case Qt::PartiallyChecked : { zGrItems[num]->setVisible(true); return; }
+    case Qt::Checked : { zGrItems[num]->setVisible(true); return; }
+    }  // case
+}
+
+void MainWindow::lwItemDblClicked(QListWidgetItem *item)
+{
+    zgraphParamDlg *dlg = new zgraphParamDlg(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+//    const QIcon pointIcon = QIcon("G:/&&&proj/BPLA/images/pin_grey.png");
+    QPixmap pxm = QPixmap("G:/&&&proj/BPLA/images/pin_grey.png");
+    dlg->ui->label->setPixmap(pxm);
+    dlg->ui->label->resize(pxm.size());
+
+//    int num = lw->row(item);
+//    QList<QGraphicsItem *> zGrItems = view->scene()->items();
+//    zGraph *zgr = qgraphicsitem_cast<zGraph *>(zGrItems[num]);
+//    QString title = zgr->getTitle();
+    dlg->ui->lineEditTitle->setText("alex");
+// В случае, если пользователь нажал "Ok".
+    if (dlg->exec() == QDialog::Accepted) {
+//        const QString &str1 = ledit1->text();
+//        const QString &str2 = ledit2->text();
+//        dlg->ui->lineEditTitle->setText("super title");
+        QString str = dlg->ui->lineEditTitle->text();
+        qDebug() << str;
+    }
+//
 }
 
 MainWindow::~MainWindow(){}

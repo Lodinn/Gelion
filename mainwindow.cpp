@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include "zgraphparamdlg.h"
+#include "ui_zgraphparamdlg.h"
 
 #include <QMenu>
 #include <QToolBar>
@@ -29,8 +31,11 @@ void MainWindow::SetupUi() {
   setCentralWidget(view);
   QPixmap test(QString(":/images/view.jpg"));
   QGraphicsPixmapItem *p = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
+
   createActions();
   createStatusBar();
+  createConstDockWidgets();
+
   im_handler->moveToThread(worker_thread);
   connect(this, SIGNAL(read_file(QString)), im_handler,
           SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
@@ -45,6 +50,7 @@ void MainWindow::SetupUi() {
           });
   connect(view,SIGNAL(insertZGraphItem(zGraph*)),SLOT(createDockWidgetForItem(zGraph*)));
   connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
+  connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -106,6 +112,44 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     item->plot = wPlot;
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
     dockw->hide();
+    QListWidgetItem *lwItem = new QListWidgetItem();
+    lwItem->setText(item->getTitle());
+    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+    lwItem->setCheckState(Qt::Checked);
+    lwItem->setIcon(item->aicon);
+//    listWidget->addItem(lwItem);
+    listWidget->insertItem(0, lwItem);
+}
+
+void MainWindow::winZGraphList()
+{
+    dockZGraphList->setVisible(!dockZGraphList->isVisible());
+}
+
+void MainWindow::listWidgetClicked(QListWidgetItem *item)
+{
+    if (!view->zcRects.isEmpty()) return;
+    int num = listWidget->row(item);
+    QList<QGraphicsItem *> items = view->scene()->items();
+    qDebug() << "listWidgetClicked";
+    if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
+    else items[num]->setVisible(false);
+}
+
+void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
+{
+    if (!view->zcRects.isEmpty()) return;
+    int num = listWidget->row(item);
+    QList<QGraphicsItem *> items = view->scene()->items();
+    zGraph *it = qgraphicsitem_cast<zGraph *>(items[num]);
+    zgraphParamDlg *dlg = new zgraphParamDlg(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->lineEditTitle->setText(it->getTitle());
+    if (dlg->exec() == QDialog::Accepted) {
+        QString str = dlg->ui->lineEditTitle->text();
+        it->setTitle(str);
+        item->setText(str);
+    }  // if
 }
 
 void MainWindow::createActions() {
@@ -135,11 +179,25 @@ void MainWindow::createActions() {
   itemsMenu->addAction(view->ellipseAct); itemsToolBar->addAction(view->ellipseAct);
   itemsMenu->addAction(view->polylineAct);    itemsToolBar->addAction(view->polylineAct);
   itemsMenu->addAction(view->polygonAct); itemsToolBar->addAction(view->polygonAct);
+  // &&& windows
+  QMenu *winMenu = menuBar()->addMenu("Окна");
+  QToolBar *winToolBar = addToolBar(winMenu->title());
+  winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
 
 }
 
 void MainWindow::createStatusBar() {
-  statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
+    statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
+}
+
+void MainWindow::createConstDockWidgets()
+{
+    dockZGraphList->setFloating(true);
+    dockZGraphList->setFixedSize(200,200);
+    dockZGraphList->setWidget(listWidget);
+    addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
+    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
+    connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
 }
 
 void MainWindow::open() {
@@ -186,5 +244,5 @@ void MainWindow::delete_progress_dialog() {
 void MainWindow::add_envi_hdr_pixmap() {
   QImage img = im_handler->get_rgb(true);
   QPixmap pxm = QPixmap::fromImage(img);
-  scene->addPixmap(pxm);
+  scene->addPixmap(pxm);  // p->type(); enum { Type = 7 };
 }

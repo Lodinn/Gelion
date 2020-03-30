@@ -9,5 +9,7 @@
         <file>images/vector_ellipse.png</file>
         <file>images/vector_square.png</file>
         <file>images/vector-polygon.png</file>
+        <file>icons/windows.png</file>
+        <file>icons/windows2.png</file>
     </qresource>
 </RCC>

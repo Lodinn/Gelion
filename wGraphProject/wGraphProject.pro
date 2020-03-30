@@ -27,9 +27,14 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     zview.cpp \
-    ../zgraph.cpp
+    ../zgraph.cpp \
+    ../zgraphparamdlg.cpp
 
 HEADERS += \
         mainwindow.h \
     zview.h \
-    ../zgraph.h
+    ../zgraph.h \
+    ../zgraphparamdlg.h
+
+FORMS += \
+    ../zgraphparamdlg.ui

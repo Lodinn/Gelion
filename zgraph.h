@@ -18,7 +18,6 @@
 class zGraph : public QGraphicsObject
 {
     Q_OBJECT
-
 public:
     explicit zGraph();                              // базовый объект
     QRectF boundingRect() const Q_DECL_OVERRIDE;
@@ -33,6 +32,7 @@ public:
     virtual QPolygonF getTitlePolygon() = 0;
     virtual QStringList getSettings(int num) = 0;
     char setsep = '#';
+    QIcon aicon;
 signals:
      void mouseMove();
      void mouseRelease();
@@ -166,7 +166,9 @@ protected:
 class zContourRect : public QObject, public QGraphicsRectItem
 {
     Q_OBJECT
-
+public:
+    enum { Type = UserType + 77 };  // тип объекта - прямоугольники выделения и редактирования
+    int type() const override { return Type; }
 public:
     explicit zContourRect(QPointF point);
     ~zContourRect();

@@ -22,6 +22,7 @@ private:
     QDockWidget *itemslistdock = new QDockWidget(this);
     QDockWidget *dock = new QDockWidget(this);
     QListWidget *itemsList;
+    QListWidget *lw;
 public slots:
     void testSlotSaveApiState();
     void testSlotRestoreApiState();
@@ -32,6 +33,8 @@ public slots:
     void itemClicked(QListWidgetItem *item);
     void visibilityChangedDock(bool visible);
     void setVisibleAllDocks();
+    void lwItemClicked(QListWidgetItem *item);
+    void lwItemDblClicked(QListWidgetItem *item);
 protected:
     void createStaticDockWidgets();
     void resetView();
