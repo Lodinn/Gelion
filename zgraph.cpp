@@ -218,7 +218,7 @@ QPainterPath zPolygon::shape() const
     QPainterPath path;
     path.setFillRule(Qt::WindingFill); // то что надо
     path.addPolygon(fpolygon);
-    path.addRect(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     return path;
 }
 
@@ -226,23 +226,44 @@ void zPolygon::updateBoundingRect()
 {
     fcenterPoint = getCenterPoint();
     ftitleRect = getTitleRectangle();
+    ftitlePolygon = getTitlePolygon();
     QPainterPath path;
+    path.setFillRule(Qt::WindingFill); // то что надо
     path.addPolygon(fpolygon);
-    path.addRect(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     fbrect = path.boundingRect();
 }
 
 bool zPolygon::pointIn(QPointF point)
 {
-//    QPainterPath path;
-//    path.addPolygon(fpolygon);
-//    return path.contains(point);
     return fpolygon.containsPoint(point.toPoint(),Qt::OddEvenFill);
 }
 
 QPolygonF zPolygon::getTitlePolygon()
 {
-    return QPolygonF();
+    QMatrix matrix;
+    QPolygonF polygon;
+
+    QPointF pcenter = getCenterPoint() / data(1).toDouble();
+    QLineF line(QPointF(0,0),pcenter);
+    qreal acenter = qAtan2(line.dy(),line.dx());
+    qreal R = qDegreesToRadians(-data(2).toDouble());
+    R += acenter;
+    pcenter.setX(line.length()*qCos(R));
+    pcenter.setY(line.length()*qSin(R));
+
+    QString title = getTitle();
+    title = QString(" %1 ").arg(title);
+    QFontMetricsF fm(ffont);
+    int tw = fm.width(title);
+    int th = fm.height();
+    QRect rect = QRect(pcenter.toPoint()-QPoint(tw/2,th/2),QSize(tw,th));
+
+    polygon = matrix.mapToPolygon(rect);
+    matrix.scale(data(1).toDouble(),data(1).toDouble());
+    matrix.rotate(data(2).toDouble()-rotation());
+
+    return matrix.map(polygon);
 }
 
 void zPolygon::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -255,6 +276,7 @@ void zPolygon::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
         painter->setBrush(baseBrush);
     }
     painter->drawPolygon(fpolygon);
+    painter->drawPolygon(ftitlePolygon);
     // наименование объекта
     setOpacity(fOpacity);
     QString title = getTitle();
@@ -387,7 +409,7 @@ QPainterPath zRect::shape() const
     QPainterPath path;
     qreal w = frectSize.width();  qreal h = frectSize.height();
     path.addRect(0,-h/2,w,h);
-//    path.addRect(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     return path;
 }
 
@@ -395,10 +417,11 @@ void zRect::updateBoundingRect()
 {
     fcenterPoint = getCenterPoint();
     ftitleRect = getTitleRectangle();
+    ftitlePolygon = getTitlePolygon();
     QPainterPath path;
     qreal w = frectSize.width();  qreal h = frectSize.height();
     path.addRect(0,-h/2,w,h);
-    path.addRect(ftitleRect);
+    path.addPolygon(ftitlePolygon);
     fbrect = path.boundingRect();
 }
 
@@ -412,7 +435,29 @@ bool zRect::pointIn(QPointF point)
 
 QPolygonF zRect::getTitlePolygon()
 {
-    return QPolygonF();
+    QMatrix matrix;
+    QPolygonF polygon;
+
+    QPointF pcenter = getCenterPoint() / data(1).toDouble();
+    QLineF line(QPointF(0,0),pcenter);
+    qreal acenter = qAtan2(line.dy(),line.dx());
+    qreal R = qDegreesToRadians(rotation()-data(2).toDouble());
+    R += acenter;
+    pcenter.setX(line.length()*qCos(R));
+    pcenter.setY(line.length()*qSin(R));
+
+    QString title = getTitle();
+    title = QString(" %1 ").arg(title);
+    QFontMetricsF fm(ffont);
+    int tw = fm.width(title);
+    int th = fm.height();
+    QRect rect = QRect(pcenter.toPoint()-QPoint(tw/2,th/2),QSize(tw,th));
+
+    polygon = matrix.mapToPolygon(rect);
+    matrix.scale(data(1).toDouble(),data(1).toDouble());
+    matrix.rotate(data(2).toDouble()-rotation());
+
+    return matrix.map(polygon);
 }
 
 void zRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -428,6 +473,7 @@ void zRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWi
 //    painter->setCompositionMode(QPainter::RasterOp_SourceXorDestination);
 //    painter->setCompositionMode(QPainter::CompositionMode_Xor);
     painter->drawRect(0,-h/2,w,h);
+    painter->drawPolygon(ftitlePolygon);
     if (isSelected()) {
         painter->drawLine(0,0,w,0);
         painter->drawLine(w/2,-h/2,w/2,h/2);
@@ -500,6 +546,7 @@ QPainterPath zEllipse::shape() const
     QPainterPath path;
     qreal w = frectSize.width();  qreal h = frectSize.height();
     path.addEllipse(0,-h/2,w,h);
+    path.addPolygon(ftitlePolygon);
     return path;
 }
 
@@ -507,10 +554,12 @@ void zEllipse::updateBoundingRect()
 {
     fcenterPoint = getCenterPoint();
     ftitleRect = getTitleRectangle();
+    ftitlePolygon = getTitlePolygon();
     QPainterPath path;
+    path.setFillRule(Qt::WindingFill); // то что надо
     qreal w = frectSize.width();  qreal h = frectSize.height();
-    path.addRect(0,-h/2,w,h);
-    path.addRect(ftitleRect);
+    path.addEllipse(0,-h/2,w,h);
+    path.addPolygon(ftitlePolygon);
     fbrect = path.boundingRect();
 }
 
@@ -524,7 +573,29 @@ bool zEllipse::pointIn(QPointF point)
 
 QPolygonF zEllipse::getTitlePolygon()
 {
-    return QPolygonF();
+    QMatrix matrix;
+    QPolygonF polygon;
+
+    QPointF pcenter = getCenterPoint() / data(1).toDouble();
+    QLineF line(QPointF(0,0),pcenter);
+    qreal acenter = qAtan2(line.dy(),line.dx());
+    qreal R = qDegreesToRadians(rotation()-data(2).toDouble());
+    R += acenter;
+    pcenter.setX(line.length()*qCos(R));
+    pcenter.setY(line.length()*qSin(R));
+
+    QString title = getTitle();
+    title = QString(" %1 ").arg(title);
+    QFontMetricsF fm(ffont);
+    int tw = fm.width(title);
+    int th = fm.height();
+    QRect rect = QRect(pcenter.toPoint()-QPoint(tw/2,th/2),QSize(tw,th));
+
+    polygon = matrix.mapToPolygon(rect);
+    matrix.scale(data(1).toDouble(),data(1).toDouble());
+    matrix.rotate(data(2).toDouble()-rotation());
+
+    return matrix.map(polygon);
 }
 
 void zEllipse::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -538,6 +609,7 @@ void zEllipse::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     }
     qreal w = frectSize.width();  qreal h = frectSize.height();
     painter->drawEllipse(0,-h/2,w,h);
+    painter->drawPolygon(ftitlePolygon);
     if (isSelected()) {
         painter->drawLine(0,0,w,0);
         painter->drawLine(w/2,-h/2,w/2,h/2);
@@ -704,10 +776,10 @@ void zPolyline::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->drawText(ftitleRect,QString(" %1 ").arg(title));
     painter->restore();                                     // ===
     fcenterPoint = getCenterPoint();
-    painter->drawLine(fcenterPoint.x(),fcenterPoint.y()-30,fcenterPoint.x(),fcenterPoint.y()+30);
-    painter->drawLine(fcenterPoint.x()-30,fcenterPoint.y(),fcenterPoint.x()+30,fcenterPoint.y());
-    painter->drawLine(0,0-20,0,0+20);
-    painter->drawLine(0-20,0,0+20,0);
+//    painter->drawLine(fcenterPoint.x(),fcenterPoint.y()-30,fcenterPoint.x(),fcenterPoint.y()+30);
+//    painter->drawLine(fcenterPoint.x()-30,fcenterPoint.y(),fcenterPoint.x()+30,fcenterPoint.y());
+//    painter->drawLine(0,0-20,0,0+20);
+//    painter->drawLine(0-20,0,0+20,0);
 
     Q_UNUSED(option);
     Q_UNUSED(widget);

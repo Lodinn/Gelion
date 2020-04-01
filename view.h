@@ -40,6 +40,8 @@ public:
     QAction *polygonAct;
     QAction *closeAct;
     QAction *winZGraphListAct;
+    QAction *winZGraphListShowAllAct;
+    QAction *winZGraphListHideAllAct;
     zGraph *grabberItem = 0;
     QList<zContourRect *> zcRects;
     zRect *tmpRect = nullptr;

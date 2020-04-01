@@ -51,6 +51,8 @@ void MainWindow::SetupUi() {
   connect(view,SIGNAL(insertZGraphItem(zGraph*)),SLOT(createDockWidgetForItem(zGraph*)));
   connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
   connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));
+  connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
+  connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -114,6 +116,8 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     dockw->hide();
     QListWidgetItem *lwItem = new QListWidgetItem();
     lwItem->setText(item->getTitle());
+    QFont font = lwItem->font();  font.setBold(true);
+    lwItem->setFont(font);
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
@@ -124,6 +128,28 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 void MainWindow::winZGraphList()
 {
     dockZGraphList->setVisible(!dockZGraphList->isVisible());
+}
+
+void MainWindow::winZGraphProfilesShowAll()
+{
+    QList<QGraphicsItem *> items = view->scene()->items();
+    foreach (QGraphicsItem *it, items) {
+        if (it->type() == QGraphicsPixmapItem::Type) continue;
+        if (it->type() == zContourRect::Type) continue;
+        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
+        zitem->dockw->setVisible(true);
+    }  // for
+}
+
+void MainWindow::winZGraphProfilesHideAll()
+{
+    QList<QGraphicsItem *> items = view->scene()->items();
+    foreach (QGraphicsItem *it, items) {
+        if (it->type() == QGraphicsPixmapItem::Type) continue;
+        if (it->type() == zContourRect::Type) continue;
+        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
+        zitem->dockw->setVisible(false);
+    }  // for
 }
 
 void MainWindow::listWidgetClicked(QListWidgetItem *item)
@@ -145,10 +171,15 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
     zgraphParamDlg *dlg = new zgraphParamDlg(this);
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
     dlg->ui->lineEditTitle->setText(it->getTitle());
+    dlg->ui->checkBoxWdock->setChecked(it->dockw->isVisible());
     if (dlg->exec() == QDialog::Accepted) {
         QString str = dlg->ui->lineEditTitle->text();
-        it->setTitle(str);
+        it->setTitle(str);  it->dockw->setWindowTitle(str);
+        it->updateBoundingRect();
+        it->dockw->setVisible(dlg->ui->checkBoxWdock->isChecked());
         item->setText(str);
+        QFont font = item->font();  font.setBold(dlg->ui->checkBoxWdock->isChecked());
+        item->setFont(font);
     }  // if
 }
 
@@ -183,8 +214,21 @@ void MainWindow::createActions() {
   QMenu *winMenu = menuBar()->addMenu("Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
+  winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
+  winMenu->addAction(view->winZGraphListHideAllAct);   winToolBar->addAction(view->winZGraphListHideAllAct);
+  winMenu->addSeparator();      winToolBar->addSeparator();
 
 }
+
+/*QDockWidget *dock = new QDockWidget(tr("Customers"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    customerList = new QListWidget(dock);
+    customerList->addItems(QStringList()
+            << "John Doe, Harmony Enterprises, 12 Lakeside, Ambleton"
+    dock->setWidget(customerList);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    viewMenu->addAction(dock->toggleViewAction());
+*/
 
 void MainWindow::createStatusBar() {
     statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
@@ -195,7 +239,9 @@ void MainWindow::createConstDockWidgets()
     dockZGraphList->setFloating(true);
     dockZGraphList->setFixedSize(200,200);
     dockZGraphList->setWidget(listWidget);
+//    dockZGraphList->setWindowFlag(Qt::WindowCloseButtonHint, false);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
+//    connect(dockZGraphList, SIGNAL(visibilityChanged()), this, SLOT(winZGraphList()));
     connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
     connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
 }

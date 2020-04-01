@@ -28,6 +28,8 @@ class MainWindow : public QMainWindow {
   void winZGraphList();
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
+  void winZGraphProfilesShowAll();
+  void winZGraphProfilesHideAll();
 
  signals:
   void read_file(QString);

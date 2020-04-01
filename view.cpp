@@ -31,6 +31,10 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     winZGraphListAct = new QAction(winZGraphListIcon, "Список Объектов", this);
     winZGraphListAct->setShortcut(QKeySequence::Preferences);
     winZGraphListAct->setCheckable(true); winZGraphListAct->setChecked(true);
+    const QIcon ShowAllIcon = QIcon::fromTheme("Показать все профили", QIcon(":/icons/profs_show.png"));
+    const QIcon HideAllIcon = QIcon::fromTheme("Скрыть все профили", QIcon(":/icons/profs_hide.png"));
+    winZGraphListShowAllAct = new QAction(ShowAllIcon, "Показать все профили", this);
+    winZGraphListHideAllAct = new QAction(HideAllIcon, "Скрыть все профили", this);
 
     connect(pointAct, SIGNAL(triggered()), this, SLOT(setInputModePoint()));
     connect(rectAct, SIGNAL(triggered()), this, SLOT(setInputModeRect()));
@@ -543,6 +547,8 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
 void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
   setCursorToItems();
   QGraphicsView::mousePressEvent(event);
+  if (event->modifiers() == Qt::ControlModifier)
+      insertMode = gQGraphicsView::Point;
   switch (insertMode) {
   case gQGraphicsView::None : {
       if (scene()->mouseGrabberItem() != nullptr) return;

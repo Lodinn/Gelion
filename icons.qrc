@@ -11,5 +11,7 @@
         <file>images/vector-polygon.png</file>
         <file>icons/windows.png</file>
         <file>icons/windows2.png</file>
+        <file>icons/profs_hide.png</file>
+        <file>icons/profs_show.png</file>
     </qresource>
 </RCC>
