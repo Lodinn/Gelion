@@ -13,5 +13,6 @@
         <file>icons/windows2.png</file>
         <file>icons/profs_hide.png</file>
         <file>icons/profs_show.png</file>
+        <file>icons/list-channel.jpg</file>
     </qresource>
 </RCC>

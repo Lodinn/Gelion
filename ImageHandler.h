@@ -13,10 +13,11 @@ public:
 public slots:
   void read_envi_hdr(QString fname);
   QVector<QVector<double> > get_band(uint16_t band);
-  QImage get_rgb(bool enhance_contrast = false);
+  QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
   QVector<QPointF> get_profile(QPoint p);
   int get_bands_count();
   void set_read_file_canceled();
+  QList<QString> getWaveLengthsList(int precision);
 private:
   // index order (from outer to inner): z, y, x
   int read_file_canceled = 0;

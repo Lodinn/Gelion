@@ -51,6 +51,7 @@ void MainWindow::SetupUi() {
   connect(view,SIGNAL(insertZGraphItem(zGraph*)),SLOT(createDockWidgetForItem(zGraph*)));
   connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
   connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));
+  connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));
   connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
   connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
 }
@@ -128,6 +129,11 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 void MainWindow::winZGraphList()
 {
     dockZGraphList->setVisible(!dockZGraphList->isVisible());
+}
+
+void MainWindow::channelList()
+{
+    dockChannelList->setVisible(!dockChannelList->isVisible());
 }
 
 void MainWindow::winZGraphProfilesShowAll()
@@ -214,6 +220,7 @@ void MainWindow::createActions() {
   QMenu *winMenu = menuBar()->addMenu("Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
+  winMenu->addAction(view->channelListAct);   winToolBar->addAction(view->channelListAct);
   winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
   winMenu->addAction(view->winZGraphListHideAllAct);   winToolBar->addAction(view->winZGraphListHideAllAct);
   winMenu->addSeparator();      winToolBar->addSeparator();
@@ -234,6 +241,13 @@ void MainWindow::createStatusBar() {
     statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
 }
 
+void MainWindow::toggleViewAction(bool b)
+{
+    qDebug()<< "toggleViewAction bool b = " << b;
+}
+
+/*void QMainWindow::splitDockWidget ( QDockWidget * first, QDockWidget * second, Qt::Orientation orientation )*/
+
 void MainWindow::createConstDockWidgets()
 {
     dockZGraphList->setFloating(true);
@@ -241,9 +255,14 @@ void MainWindow::createConstDockWidgets()
     dockZGraphList->setWidget(listWidget);
 //    dockZGraphList->setWindowFlag(Qt::WindowCloseButtonHint, false);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
+    connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 //    connect(dockZGraphList, SIGNAL(visibilityChanged()), this, SLOT(winZGraphList()));
     connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
     connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
+    dockChannelList->setFloating(true);
+    dockChannelList->setFixedSize(220,700);
+    dockChannelList->setWidget(chListWidget);
+    addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
 }
 
 void MainWindow::open() {
@@ -287,8 +306,44 @@ void MainWindow::delete_progress_dialog() {
   }
 }
 
+void MainWindow::createDockWidgetForChannels()
+{
+    chListWidget->clear();
+    auto strlist = im_handler->getWaveLengthsList(2);
+    foreach(QString str, strlist) {
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        lwItem->setText(str);
+        chListWidget->addItem(lwItem);
+    }  // for
+//    chListWidget->setItemSelected(chListWidget->item(0), true);
+    chListWidget->setCurrentRow(0);
+    connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
+}
+
+void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
+{
+    int num = chListWidget->row(lwItem);
+    QImage img;
+    if (num == 0) img = im_handler->get_rgb(true,60,53,12);
+    else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
+    QPixmap pxm = QPixmap::fromImage(img);
+    mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
+    qDebug() << "itemClickedChannelList num =" << num;
+}
+
+/*QListWidgetItem *lwItem = new QListWidgetItem();
+    lwItem->setText(item->getTitle());
+    QFont font = lwItem->font();  font.setBold(true);
+    lwItem->setFont(font);
+    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+    lwItem->setCheckState(Qt::Checked);
+    lwItem->setIcon(item->aicon);
+//    listWidget->addItem(lwItem);
+    listWidget->insertItem(0, lwItem);*/
+
 void MainWindow::add_envi_hdr_pixmap() {
-  QImage img = im_handler->get_rgb(true);
+  QImage img = im_handler->get_rgb(true,60,53,12);
   QPixmap pxm = QPixmap::fromImage(img);
-  scene->addPixmap(pxm);  // p->type(); enum { Type = 7 };
+  mainPixmap = scene->addPixmap(pxm);  // p->type(); enum { Type = 7 };
+  createDockWidgetForChannels();
 }

@@ -31,6 +31,11 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     winZGraphListAct = new QAction(winZGraphListIcon, "Список Объектов", this);
     winZGraphListAct->setShortcut(QKeySequence::Preferences);
     winZGraphListAct->setCheckable(true); winZGraphListAct->setChecked(true);
+
+    const QIcon channelListIcon = QIcon::fromTheme("Список Каналов", QIcon(":/icons/list-channel.jpg"));
+    channelListAct = new QAction(channelListIcon, "Список Каналов", this);
+    channelListAct->setCheckable(true); channelListAct->setChecked(true);
+
     const QIcon ShowAllIcon = QIcon::fromTheme("Показать все профили", QIcon(":/icons/profs_show.png"));
     const QIcon HideAllIcon = QIcon::fromTheme("Скрыть все профили", QIcon(":/icons/profs_hide.png"));
     winZGraphListShowAllAct = new QAction(ShowAllIcon, "Показать все профили", this);
@@ -772,6 +777,13 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
     return;
   }  // if (PAN)
+  if (event->modifiers() == Qt::ControlModifier) {
+      setMouseTracking(true);
+      setCursor(Qt::CrossCursor);
+      qDebug() << event->pos();
+   }   else
+      setMouseTracking(false);
+
   switch (insertMode) {
   case gQGraphicsView::Rect : {         // тип объекта - прямоугольник Rect 2	с возможностью поворота
       if (tmpRect == nullptr) return;

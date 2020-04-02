@@ -26,10 +26,14 @@ class MainWindow : public QMainWindow {
   void show_profile(QPointF point, int id = -1);
   void createDockWidgetForItem(zGraph *item);
   void winZGraphList();
+  void channelList();
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
   void winZGraphProfilesShowAll();
   void winZGraphProfilesHideAll();
+  void toggleViewAction(bool b);
+  void createDockWidgetForChannels();
+  void itemClickedChannelList(QListWidgetItem *lwItem);
 
  signals:
   void read_file(QString);
@@ -40,6 +44,7 @@ class MainWindow : public QMainWindow {
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;
+  QGraphicsPixmapItem *mainPixmap;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;
@@ -50,6 +55,8 @@ class MainWindow : public QMainWindow {
 protected:
   QDockWidget *dockZGraphList = new QDockWidget("Список Объектов", this);
   QListWidget *listWidget = new QListWidget(dockZGraphList);
+  QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
+  QListWidget *chListWidget = new QListWidget(dockChannelList);
   void createConstDockWidgets();
 };
 

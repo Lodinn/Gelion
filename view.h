@@ -40,6 +40,7 @@ public:
     QAction *polygonAct;
     QAction *closeAct;
     QAction *winZGraphListAct;
+    QAction *channelListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
     zGraph *grabberItem = 0;
