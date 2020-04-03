@@ -325,14 +325,14 @@ QStringList zPolygon::getSettings(int num)
     strlist.append(QString("Polygon%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
     QString xstr, ystr;
-    foreach(QPoint point, fpolygon)
-        if (fpolygon.indexOf(point) < fpolygon.length()-1) {
-            xstr.append(QString("%1,").arg(point.rx(),0,'f',2));
-            ystr.append(QString("%1,").arg(point.ry(),0,'f',2));
-        } else {
-            xstr.append(QString("%1").arg(point.rx(),0,'f',2));
-            ystr.append(QString("%1").arg(point.ry(),0,'f',2));
-        }  // if
+    foreach(QPoint point, fpolygon) {
+      xstr.append(QString::number(point.rx(), 'f', 2));
+      ystr.append(QString::number(point.ry(), 'f', 2));
+      if (fpolygon.indexOf(point) < fpolygon.length()-1) {
+        xstr.append(",");
+        ystr.append(",");
+      }
+    }
     strlist.append(QString("Polygon%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polygon%1/y%2%3").arg(num).arg(setsep).arg(ystr));
     return strlist;
@@ -806,14 +806,14 @@ QStringList zPolyline::getSettings(int num)
     strlist.append(QString("Polyline%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
     QString xstr, ystr;
-    foreach(QPoint point, fpolygon)
-        if (fpolygon.indexOf(point) < fpolygon.length()-1) {
-            xstr.append(QString("%1,").arg(point.rx(),0,'f',2));
-            ystr.append(QString("%1,").arg(point.ry(),0,'f',2));
-        } else {
-            xstr.append(QString("%1").arg(point.rx(),0,'f',2));
-            ystr.append(QString("%1").arg(point.ry(),0,'f',2));
-        }  // if
+    foreach(QPoint point, fpolygon) {
+      xstr.append(QString::number(point.rx(), 'f', 2));
+      ystr.append(QString::number(point.ry(), 'f', 2));
+      if (fpolygon.indexOf(point) < fpolygon.length()-1) {
+        xstr.append(",");
+        ystr.append(",");
+      }
+    }
     strlist.append(QString("Polyline%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polyline%1/y%2%3").arg(num).arg(setsep).arg(ystr));
     return strlist;
