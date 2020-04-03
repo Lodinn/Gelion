@@ -48,7 +48,9 @@ void MainWindow::SetupUi() {
           [this](QPair<int, QPointF> new_pos) {
             show_profile(new_pos.second, new_pos.first);
           });
-  connect(view,SIGNAL(insertZGraphItem(zGraph*)),SLOT(createDockWidgetForItem(zGraph*)));
+  connect(view,SIGNAL(insertZGraphItem(zGraph*)),this,SLOT(createDockWidgetForItem(zGraph*)));
+  connect(view,SIGNAL(setZGraphDockToggled(zGraph*)),this,SLOT(setZGraphDockToggled(zGraph*)));
+
   connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
   connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));
   connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));
@@ -122,8 +124,13 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
-//    listWidget->addItem(lwItem);
     listWidget->insertItem(0, lwItem);
+    connect(item, SIGNAL(mouseDblClick(zGraph*)), this, SLOT(zGraphMouseDblClick(zGraph*)));
+}
+
+void MainWindow::setZGraphDockToggled(zGraph *item)
+{
+    connect(item->dockw->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 }
 
 void MainWindow::winZGraphList()
@@ -163,17 +170,12 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
     if (!view->zcRects.isEmpty()) return;
     int num = listWidget->row(item);
     QList<QGraphicsItem *> items = view->scene()->items();
-    qDebug() << "listWidgetClicked";
     if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
     else items[num]->setVisible(false);
 }
 
-void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
+void MainWindow::zGparhEditDialog(QListWidgetItem *item, zGraph *it)
 {
-    if (!view->zcRects.isEmpty()) return;
-    int num = listWidget->row(item);
-    QList<QGraphicsItem *> items = view->scene()->items();
-    zGraph *it = qgraphicsitem_cast<zGraph *>(items[num]);
     zgraphParamDlg *dlg = new zgraphParamDlg(this);
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
     dlg->ui->lineEditTitle->setText(it->getTitle());
@@ -187,6 +189,29 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
         QFont font = item->font();  font.setBold(dlg->ui->checkBoxWdock->isChecked());
         item->setFont(font);
     }  // if
+}
+
+void MainWindow::zGraphMouseDblClick(zGraph *it)
+{
+//    if (!view->zcRects.isEmpty()) return;
+//    if (!view->tmpLines.isEmpty()) return;
+//    QList<QGraphicsItem *> items = view->scene()->items();
+    auto zGraphList = view->getZGraphItemsList();
+    int num = zGraphList.indexOf(it);
+    QListWidgetItem *item = listWidget->item(num);
+    zGparhEditDialog(item, it);
+}
+
+void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
+{
+//    if (!view->zcRects.isEmpty()) return;
+//    if (!view->tmpLines.isEmpty()) return;
+    int num = listWidget->row(item);
+//    QList<QGraphicsItem *> items = view->scene()->items();
+//    zGraph *it = qgraphicsitem_cast<zGraph *>(items[num]);
+    auto zGraphList = view->getZGraphItemsList();
+    zGraph *it = zGraphList[num];
+    zGparhEditDialog(item, it);
 }
 
 void MainWindow::createActions() {
@@ -243,7 +268,24 @@ void MainWindow::createStatusBar() {
 
 void MainWindow::toggleViewAction(bool b)
 {
-    qDebug()<< "toggleViewAction bool b = " << b;
+    Q_UNUSED(b);
+    QList<QGraphicsItem *> items = view->scene()->items();
+    int num = 0;
+    foreach (QGraphicsItem *it, items) {
+        if (it->type() == QGraphicsPixmapItem::Type) continue;
+        if (it->type() == zContourRect::Type) continue;
+        if (it->type() == QGraphicsLineItem::Type) continue;
+        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
+        auto lwItem = listWidget->item(num);
+        QFont font = lwItem->font();
+        font.setBold(zitem->dockw->isVisible());
+        lwItem->setFont(font);
+        num++;
+    }  // for
+    view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
+    view->channelListAct->setChecked(dockChannelList->isVisible());
+
+
 }
 
 /*void QMainWindow::splitDockWidget ( QDockWidget * first, QDockWidget * second, Qt::Orientation orientation )*/
@@ -251,7 +293,7 @@ void MainWindow::toggleViewAction(bool b)
 void MainWindow::createConstDockWidgets()
 {
     dockZGraphList->setFloating(true);
-    dockZGraphList->setFixedSize(200,200);
+    dockZGraphList->setFixedSize(220,200);
     dockZGraphList->setWidget(listWidget);
 //    dockZGraphList->setWindowFlag(Qt::WindowCloseButtonHint, false);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
@@ -263,6 +305,7 @@ void MainWindow::createConstDockWidgets()
     dockChannelList->setFixedSize(220,700);
     dockChannelList->setWidget(chListWidget);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
+    connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 }
 
 void MainWindow::open() {
@@ -328,7 +371,6 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
     QPixmap pxm = QPixmap::fromImage(img);
     mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
-    qDebug() << "itemClickedChannelList num =" << num;
 }
 
 /*QListWidgetItem *lwItem = new QListWidgetItem();

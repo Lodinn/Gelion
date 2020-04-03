@@ -48,6 +48,7 @@ public:
     zRect *tmpRect = nullptr;
     zEllipse *tmpEllipse = nullptr;
     QList<QGraphicsLineItem *> tmpLines;
+    QList<zGraph *> getZGraphItemsList();
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -77,6 +78,7 @@ public:
   bool contextMenuEnable = true;
  signals:
   void insertZGraphItem(zGraph *item);
+  void setZGraphDockToggled(zGraph *item);
 
   void point_picked(QPointF);
   // FIXME: keeping two separate index lists here and in mainwindow. Subclass

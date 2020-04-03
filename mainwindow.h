@@ -25,6 +25,8 @@ class MainWindow : public QMainWindow {
   void add_envi_hdr_pixmap();
   void show_profile(QPointF point, int id = -1);
   void createDockWidgetForItem(zGraph *item);
+  void setZGraphDockToggled(zGraph *item);
+  void zGraphMouseDblClick(zGraph *it);
   void winZGraphList();
   void channelList();
   void listWidgetClicked(QListWidgetItem *item);
@@ -34,6 +36,7 @@ class MainWindow : public QMainWindow {
   void toggleViewAction(bool b);
   void createDockWidgetForChannels();
   void itemClickedChannelList(QListWidgetItem *lwItem);
+  void zGparhEditDialog(QListWidgetItem *item, zGraph *it);
 
  signals:
   void read_file(QString);

@@ -286,9 +286,24 @@ void gQGraphicsView::moveOneGrabberRect(int num, QPointF point)
     }  // switch
 }
 
+QList<zGraph *> gQGraphicsView::getZGraphItemsList()
+{
+    QList<zGraph *> zglist;
+    QList<QGraphicsItem *> items = scene()->items();
+    foreach(QGraphicsItem *it, items)
+        switch (it->type()) {
+        case zPoint::Type : { zglist.append(qgraphicsitem_cast<zGraph *>(it)); break; }
+        case zRect::Type : { zglist.append(qgraphicsitem_cast<zGraph *>(it)); break; }
+        case zEllipse::Type : { zglist.append(qgraphicsitem_cast<zGraph *>(it)); break; }
+        case zPolyline::Type : { zglist.append(qgraphicsitem_cast<zGraph *>(it)); break; }
+        case zPolygon::Type : { zglist.append(qgraphicsitem_cast<zGraph *>(it)); break; }
+        default: continue;
+        }  //  switch
+    return zglist;
+}
+
 void gQGraphicsView::show_profile_for_Z(zGraph *item)
 {
-    qDebug("in show_profile_for_Z");
     switch (item->type()) {
     case zPoint::Type : {
         int d = imgHand->get_bands_count();
@@ -303,8 +318,7 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
         item->plot->replot();
         return;
     }  // case zPoint::Type
-    case zRect::Type : { multiPointsReplotRect(item);
-        qDebug("out show_profile_for_Z"); return; }  // case zRect::Type
+    case zRect::Type : { multiPointsReplotRect(item);   return; }  // case zRect::Type
     case zEllipse::Type : { multiPointsReplotRect(item);  return; }  // case zEllipse::Type
     case zPolyline::Type : { multiPointsReplotPoly(item);  return; }  // case zPolyline::Type
     case zPolygon::Type : { multiPointsReplotPoly(item);  return; }  // case zPolygon::Type
@@ -363,7 +377,6 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
                 count++;
             }  // if
         }  // for
-    qDebug() << "count = " << count << "d = " << d;
     if (count > 0) for (int i = 0; i < d; ++i) y[i] = y[i] / count;
     else return;
     item->plot->graph(0)->setData(x, y);
@@ -593,6 +606,8 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
         insertMode = gQGraphicsView::None;
         setCursor(Qt::ArrowCursor);
         setMouseTracking(false);
+        emit setZGraphDockToggled(tmpRect);
+        tmpRect = nullptr;
       }  // if (tmpLines.isEmpty())
     }  // case gQGraphicsView::Rect
     break;
@@ -617,6 +632,8 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
             insertMode = gQGraphicsView::None;
             setCursor(Qt::ArrowCursor);
             setMouseTracking(false);
+            emit setZGraphDockToggled(tmpEllipse);
+            tmpEllipse = nullptr;
         }  // if (tmpLines.isEmpty())
     }  // case gQGraphicsView::Ellipse
     break;
@@ -681,6 +698,8 @@ void gQGraphicsView::createPolygon()
         delete item;
     }  // foreach
     tmpLines.clear();
+
+    emit setZGraphDockToggled(zp);
 }
 
 void gQGraphicsView::createPolyline()
@@ -704,6 +723,8 @@ void gQGraphicsView::createPolyline()
         delete item;
     }  // foreach
     tmpLines.clear();
+
+    emit setZGraphDockToggled(zp);
 
 }
   /*qDebug() << scene()->mouseGrabberItem();
@@ -748,7 +769,7 @@ void gQGraphicsView::createPolyline()
 
 void gQGraphicsView:: createRect()
 {
-    tmpRect = nullptr;
+//    tmpRect = nullptr;
     foreach (QGraphicsLineItem *item, tmpLines) {
         scene()->removeItem(item);
         delete item;
@@ -758,7 +779,7 @@ void gQGraphicsView:: createRect()
 
 void gQGraphicsView::createEllipse()
 {
-    tmpEllipse = nullptr;
+//    tmpEllipse = nullptr;
     foreach (QGraphicsLineItem *item, tmpLines) {
         scene()->removeItem(item);
         delete item;
@@ -780,7 +801,6 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
   if (event->modifiers() == Qt::ControlModifier) {
       setMouseTracking(true);
       setCursor(Qt::CrossCursor);
-      qDebug() << event->pos();
    }   else
       setMouseTracking(false);
 
@@ -888,6 +908,7 @@ void gQGraphicsView::insPoint(QPoint pos)
     emit insertZGraphItem(zpoint);
     zpoint->dockw->show();
     show_profile_for_Z(zpoint);
+    emit setZGraphDockToggled(zpoint);
 }
 
 ROI::ROI(QPointF position, QString l, shape_t sh)

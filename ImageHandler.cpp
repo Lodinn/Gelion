@@ -95,7 +95,6 @@ QImage ImageHandler::get_rgb(bool enhance_contrast, int red, int green, int blue
   double redWLen = wavelengths[num_data_set][red];
   double greenWLen = wavelengths[num_data_set][green];
   double blueWLen = wavelengths[num_data_set][blue];
-  qDebug() << blueWLen << greenWLen << redWLen;
   int index_blue = std::lower_bound(wavelengths[num_data_set].begin(), wavelengths[num_data_set].end(), blueWLen) - wavelengths[num_data_set].begin(),
       index_green = std::lower_bound(wavelengths[num_data_set].begin(), wavelengths[num_data_set].end(), greenWLen) - wavelengths[num_data_set].begin(),
       index_red = std::lower_bound(wavelengths[num_data_set].begin(), wavelengths[num_data_set].end(), redWLen) - wavelengths[num_data_set].begin();
