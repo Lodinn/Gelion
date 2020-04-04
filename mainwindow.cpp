@@ -30,7 +30,7 @@ void MainWindow::SetupUi() {
   view->imgHand = im_handler;
   setCentralWidget(view);
   QPixmap test(QString(":/images/view.jpg"));
-  QGraphicsPixmapItem *p = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
+  mainPixmap = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
 
   createActions();
   createStatusBar();
@@ -125,7 +125,6 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
     listWidget->insertItem(0, lwItem);
-    connect(item, SIGNAL(mouseDblClick(zGraph*)), this, SLOT(zGraphMouseDblClick(zGraph*)));
 }
 
 void MainWindow::setZGraphDockToggled(zGraph *item)
@@ -191,24 +190,9 @@ void MainWindow::zGparhEditDialog(QListWidgetItem *item, zGraph *it)
     }  // if
 }
 
-void MainWindow::zGraphMouseDblClick(zGraph *it)
-{
-//    if (!view->zcRects.isEmpty()) return;
-//    if (!view->tmpLines.isEmpty()) return;
-//    QList<QGraphicsItem *> items = view->scene()->items();
-    auto zGraphList = view->getZGraphItemsList();
-    int num = zGraphList.indexOf(it);
-    QListWidgetItem *item = listWidget->item(num);
-    zGparhEditDialog(item, it);
-}
-
 void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 {
-//    if (!view->zcRects.isEmpty()) return;
-//    if (!view->tmpLines.isEmpty()) return;
     int num = listWidget->row(item);
-//    QList<QGraphicsItem *> items = view->scene()->items();
-//    zGraph *it = qgraphicsitem_cast<zGraph *>(items[num]);
     auto zGraphList = view->getZGraphItemsList();
     zGraph *it = zGraphList[num];
     zGparhEditDialog(item, it);
@@ -386,6 +370,6 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 void MainWindow::add_envi_hdr_pixmap() {
   QImage img = im_handler->get_rgb(true,60,53,12);
   QPixmap pxm = QPixmap::fromImage(img);
-  mainPixmap = scene->addPixmap(pxm);  // p->type(); enum { Type = 7 };
+  mainPixmap->setPixmap(pxm);  // p->type(); enum { Type = 7 };
   createDockWidgetForChannels();
 }

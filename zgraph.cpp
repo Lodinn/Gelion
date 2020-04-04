@@ -113,14 +113,6 @@ QVariant zGraph::itemChange(QGraphicsItem::GraphicsItemChange change, const QVar
     return QGraphicsObject::itemChange(change, value);
 }
 
-void zGraph::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_UNUSED(event);
-    emit mouseDblClick(this);
-    QGraphicsObject::mouseDoubleClickEvent(event);
-    QApplication::processEvents();
-}
-
 zPoint::zPoint(const QPointF point) :  zGraph()
 {
     setPos(point);

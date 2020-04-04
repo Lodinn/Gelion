@@ -37,7 +37,6 @@ signals:
      void mouseMove();
      void mouseRelease();
      void itemChange();
-     void mouseDblClick(zGraph *item);
 protected:
      int fRectIndent = 12;
      QPointF fcenterPoint;
@@ -58,7 +57,6 @@ protected:
      void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
      void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
      QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
-     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 private:
 };
 
