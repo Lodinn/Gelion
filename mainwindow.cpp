@@ -8,6 +8,11 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     SetupUi();
+    setWindowTitle(QString("%1").arg(appName));
+    QApplication::setApplicationName(appName);
+//    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
+//    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
+    if (restoreSettingAtStartApp) restoreSettings(dataFileName);
 }
 
 MainWindow::~MainWindow() {
@@ -17,6 +22,44 @@ MainWindow::~MainWindow() {
   delete im_handler;
   delete worker_thread;
   //    delete progress_dialog;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    Q_UNUSED(event);
+    if (saveSettingAtCloseApp) saveSettings(dataFileName);
+}
+
+void MainWindow::saveSettings(QString fname)
+{
+    if (fname.isEmpty()) return;
+    QFileInfo info(fname);
+    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
+    QSettings settings( iniFileName, QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "Windows-1251" );
+    settings.setIniCodec( codec );
+    settings.clear();
+    settings.setValue("version", 1);
+    settings.setValue("scale", view->GlobalScale);
+    settings.setValue("rotation", view->GlobalRotate);
+    settings.setValue("channel", view->GlobalChannelNum);
+    settings.setValue("horizontal", view->horizontalScrollBar()->value());
+    settings.setValue("vertical", view->verticalScrollBar()->value());
+    auto graphList = view->getZGraphItemsList();
+    int num = 0;
+    foreach(zGraph *zg, graphList) {
+        QStringList strlist = zg->getSettings(num);
+        foreach(QString str, strlist) {
+            int index = str.indexOf(zg->setsep);
+            if (index == -1) continue;
+            QString mid_Key = str.mid(0,index);
+            QString mid_Value = str.mid(index+1);
+            settings.setValue(mid_Key, mid_Value);
+        }  // for
+        num++;
+    }  // for
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState(1));
+
 }
 
 void MainWindow::SetupUi() {
@@ -104,7 +147,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 {
     QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
     item->dockw = dockw;
-    dockw->setFloating(true);
+    dockw->setFloating(true);  dockw->setObjectName("zGraph ");
     dockw->resize(420,150);
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
     wPlot->resize(420,150);  wPlot->addGraph();
@@ -199,9 +242,10 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 }
 
 void MainWindow::createActions() {
-  // file
+// file
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   QToolBar *fileToolBar = addToolBar(tr("Файл"));
+  fileToolBar->setObjectName("fileToolBar");
 
   fileMenu->addAction(view->openAct);
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
@@ -209,25 +253,31 @@ void MainWindow::createActions() {
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
   fileToolBar->addAction(view->openAct);
-  // edit
+// edit
   QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
   QToolBar *editToolBar = addToolBar(tr("Редактирование"));
+  editToolBar->setObjectName("editToolBar");
+
   const QIcon printIcon =
       QIcon::fromTheme("Печать", QIcon(":/icons/butterfly.png"));
   QAction *printAct = new QAction(printIcon, tr("&Печать"), this);
   editMenu->addAction(printAct);
   editToolBar->addAction(printAct);
-  // &&& inset items menu
+// &&& inset items menu
   QMenu *itemsMenu = menuBar()->addMenu("Область интереса (ОИ)");
   QToolBar *itemsToolBar = addToolBar("Область интереса (ОИ)");
+  itemsToolBar->setObjectName("itemsToolBar");
+
   itemsMenu->addAction(view->pointAct);   itemsToolBar->addAction(view->pointAct);
   itemsMenu->addAction(view->rectAct);    itemsToolBar->addAction(view->rectAct);
   itemsMenu->addAction(view->ellipseAct); itemsToolBar->addAction(view->ellipseAct);
   itemsMenu->addAction(view->polylineAct);    itemsToolBar->addAction(view->polylineAct);
   itemsMenu->addAction(view->polygonAct); itemsToolBar->addAction(view->polygonAct);
-  // &&& windows
+// &&& windows
   QMenu *winMenu = menuBar()->addMenu("Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
+  winToolBar->setObjectName("winToolBar");
+
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
   winMenu->addAction(view->channelListAct);   winToolBar->addAction(view->channelListAct);
   winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
@@ -235,16 +285,6 @@ void MainWindow::createActions() {
   winMenu->addSeparator();      winToolBar->addSeparator();
 
 }
-
-/*QDockWidget *dock = new QDockWidget(tr("Customers"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    customerList = new QListWidget(dock);
-    customerList->addItems(QStringList()
-            << "John Doe, Harmony Enterprises, 12 Lakeside, Ambleton"
-    dock->setWidget(customerList);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
-    viewMenu->addAction(dock->toggleViewAction());
-*/
 
 void MainWindow::createStatusBar() {
     statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
@@ -276,7 +316,7 @@ void MainWindow::toggleViewAction(bool b)
 
 void MainWindow::createConstDockWidgets()
 {
-    dockZGraphList->setFloating(true);
+    dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,200);
     dockZGraphList->setWidget(listWidget);
 //    dockZGraphList->setWindowFlag(Qt::WindowCloseButtonHint, false);
@@ -285,7 +325,7 @@ void MainWindow::createConstDockWidgets()
 //    connect(dockZGraphList, SIGNAL(visibilityChanged()), this, SLOT(winZGraphList()));
     connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
     connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
-    dockChannelList->setFloating(true);
+    dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
     dockChannelList->setFixedSize(220,700);
     dockChannelList->setWidget(chListWidget);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
@@ -296,7 +336,8 @@ void MainWindow::open() {
   QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
       tr("ENVI HDR Files (*.hdr);;ENVI HDR Files (*.hdr)"));
-  emit read_file(fname);
+  dataFileName = fname;
+  emit read_file(dataFileName);
 }
 
 void MainWindow::show_progress(int max_progress) {
@@ -350,6 +391,7 @@ void MainWindow::createDockWidgetForChannels()
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 {
     int num = chListWidget->row(lwItem);
+    view->GlobalChannelNum = num;
     QImage img;
     if (num == 0) img = im_handler->get_rgb(true,60,53,12);
     else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
@@ -357,19 +399,40 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
 }
 
-/*QListWidgetItem *lwItem = new QListWidgetItem();
-    lwItem->setText(item->getTitle());
-    QFont font = lwItem->font();  font.setBold(true);
-    lwItem->setFont(font);
-    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
-    lwItem->setCheckState(Qt::Checked);
-    lwItem->setIcon(item->aicon);
-//    listWidget->addItem(lwItem);
-    listWidget->insertItem(0, lwItem);*/
+void MainWindow::restoreSettings(QString fname)
+{
+    if (fname.isEmpty()) return;
+    QFileInfo info(fname);
+    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
+    QFileInfo infoINI(iniFileName);
+    if (!infoINI.exists()) return;
+    QSettings settings( iniFileName, QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "Windows-1251" );
+    settings.setIniCodec( codec );
+    int ver = settings.value("version").toInt();
+    if (ver != 1) return;
+    view->GlobalScale = settings.value("scale").toDouble();
+    view->GlobalRotate = settings.value("rotation").toDouble();
+    view->GlobalChannelNum = settings.value("channel").toInt();
+    int horizontal = settings.value("horizontal").toInt();
+    int vertical = settings.value("vertical").toInt();
+    view->scale(1/view->GlobalScale, 1/view->GlobalScale);
+    view->rotate(-view->GlobalRotate);
+    view->horizontalScrollBar()->setValue(horizontal);
+    view->verticalScrollBar()->setValue(vertical);
+    QStringList groups = settings.childGroups();
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray(), ver);
+
+}
 
 void MainWindow::add_envi_hdr_pixmap() {
+  view->clearZGraphItemsList();
   QImage img = im_handler->get_rgb(true,60,53,12);
+  view->GlobalChannelNum = 0;
   QPixmap pxm = QPixmap::fromImage(img);
   mainPixmap->setPixmap(pxm);  // p->type(); enum { Type = 7 };
   createDockWidgetForChannels();
+  setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
+  if (restoreSettingAtStartApp) restoreSettings(dataFileName);
 }

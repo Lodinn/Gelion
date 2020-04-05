@@ -92,7 +92,7 @@ public:
     virtual QPolygonF getTitlePolygon();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
     QSizeF frectSize = QSize(150,50);
-    qreal fdefaultHeigth = 50;
+    qreal fdefaultHeigth = 24;
     virtual QStringList getSettings(int num);
 protected:
     QPointF getCenterPoint();
@@ -160,8 +160,7 @@ public:
     virtual QStringList getSettings(int num);
 protected:
     QPointF getCenterPoint();
-    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
-};
+ };
 
 class zContourRect : public QObject, public QGraphicsRectItem
 {

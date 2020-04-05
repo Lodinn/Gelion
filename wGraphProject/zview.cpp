@@ -111,7 +111,7 @@ void zView::testSlot()
         grabberItem = qgraphicsitem_cast<zGraph *>(it);
         QStringList strlist = grabberItem->getSettings(num);
         foreach(QString str, strlist) {
-            int index = str.indexOf("#");
+            int index = str.indexOf(grabberItem->setsep);
             if (index < 0) continue;
             QString mid_Key = str.mid(0,index);
             QString mid_Value = str.mid(index+1);

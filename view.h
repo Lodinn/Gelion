@@ -32,6 +32,7 @@ public slots:
     void releaseOneGrabberRect();
     void moveOneGrabberRect(int num, QPointF point);
 public:
+    qreal GlobalScale = 1;  qreal GlobalRotate = 0;  int GlobalChannelNum = 0;
     QAction *openAct;
     QAction *pointAct;
     QAction *rectAct;
@@ -49,6 +50,7 @@ public:
     zEllipse *tmpEllipse = nullptr;
     QList<QGraphicsLineItem *> tmpLines;
     QList<zGraph *> getZGraphItemsList();
+    void clearZGraphItemsList();
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -73,7 +75,7 @@ public:
   void multiPointsReplotRect(zGraph *item);
   void multiPointsReplotPoly(zGraph *item);
   void setCursorToItems();
-  qreal GlobalScale = 1;  qreal GlobalRotate = 0;
+
   QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);
   bool contextMenuEnable = true;
  signals:

@@ -302,6 +302,16 @@ QList<zGraph *> gQGraphicsView::getZGraphItemsList()
     return zglist;
 }
 
+void gQGraphicsView::clearZGraphItemsList()
+{
+    auto graphList = getZGraphItemsList();
+    foreach (zGraph *zg, graphList) {
+        zg->dockw->deleteLater();
+        scene()->removeItem(zg);
+        delete zg;
+    }  // foreach
+}
+
 void gQGraphicsView::show_profile_for_Z(zGraph *item)
 {
     switch (item->type()) {

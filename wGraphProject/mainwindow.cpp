@@ -96,8 +96,8 @@ void MainWindow::lwItemDblClicked(QListWidgetItem *item)
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
 //    const QIcon pointIcon = QIcon("G:/&&&proj/BPLA/images/pin_grey.png");
     QPixmap pxm = QPixmap("G:/&&&proj/BPLA/images/pin_grey.png");
-    dlg->ui->label->setPixmap(pxm);
-    dlg->ui->label->resize(pxm.size());
+//    dlg->ui->label->setPixmap(pxm);
+//    dlg->ui->label->resize(pxm.size());
 
 //    int num = lw->row(item);
 //    QList<QGraphicsItem *> zGrItems = view->scene()->items();

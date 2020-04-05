@@ -166,6 +166,7 @@ QStringList zPoint::getSettings(int num)
     strlist.append(QString("Point%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Point%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+    strlist.append(QString("Point%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
     return strlist;
 }
 
@@ -327,6 +328,7 @@ QStringList zPolygon::getSettings(int num)
     }
     strlist.append(QString("Polygon%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polygon%1/y%2%3").arg(num).arg(setsep).arg(ystr));
+    strlist.append(QString("Polygon%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
     return strlist;
 }
 
@@ -341,14 +343,6 @@ QPointF zPolygon::getCenterPoint()
     point.setX(x/fpolygon.length());
     point.setY(y/fpolygon.length());
     return point;
-}
-
-void zPolygon::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
-{
-    QMessageBox msgBox;
-    msgBox.setText("The document has been modified.");
-    msgBox.exec();
-    Q_UNUSED(event);
 }
 
 zContourRect::zContourRect(QPointF point)
@@ -512,6 +506,7 @@ QStringList zRect::getSettings(int num)
     strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
     strlist.append(QString("Rectangle%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
+    strlist.append(QString("Rectangle%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
     return strlist;
 }
 
@@ -648,6 +643,7 @@ QStringList zEllipse::getSettings(int num)
     strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
     strlist.append(QString("Ellipse%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
+    strlist.append(QString("Ellipse%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
     return strlist;
 }
 
@@ -808,6 +804,7 @@ QStringList zPolyline::getSettings(int num)
     }
     strlist.append(QString("Polyline%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polyline%1/y%2%3").arg(num).arg(setsep).arg(ystr));
+    strlist.append(QString("Polyline%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
     return strlist;
 }
 

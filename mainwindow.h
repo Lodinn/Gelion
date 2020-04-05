@@ -42,6 +42,15 @@ class MainWindow : public QMainWindow {
 
  private:
   void SetupUi();
+  QString appName = "Gelion";
+  bool saveSettingAtCloseApp = false;
+  bool restoreSettingAtStartApp = true;
+  QString dataFileName = "";
+  void saveSettings(QString fname);
+  void restoreSettings(QString fname);
+private:
+    // Event handlers
+  void closeEvent(QCloseEvent *event);
 
  private:
   QGraphicsScene *scene;
