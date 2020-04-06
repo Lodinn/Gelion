@@ -51,6 +51,8 @@ public:
     QList<QGraphicsLineItem *> tmpLines;
     QList<zGraph *> getZGraphItemsList();
     void clearZGraphItemsList();
+    void deleteGrabberRects();
+    bool PAN = false;
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -58,9 +60,7 @@ public:
   void mouseReleaseEvent(QMouseEvent *event) override;
   void contextMenuEvent(QContextMenuEvent *event) override;
   void insPoint(QPoint pos);
-  void deleteGrabberRects();
  private:
-  bool PAN;
   int pX0, pY0;
   QList<QGraphicsItem *> ROIs;
   QList<ROI *> ROIs_new;
@@ -74,7 +74,6 @@ public:
   void createPolyline();
   void multiPointsReplotRect(zGraph *item);
   void multiPointsReplotPoly(zGraph *item);
-  void setCursorToItems();
 
   QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);
   bool contextMenuEnable = true;

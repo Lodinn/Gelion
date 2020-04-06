@@ -44,6 +44,8 @@ void MainWindow::saveSettings(QString fname)
     settings.setValue("channel", view->GlobalChannelNum);
     settings.setValue("horizontal", view->horizontalScrollBar()->value());
     settings.setValue("vertical", view->verticalScrollBar()->value());
+    settings.setValue("dockZGraphList", dockZGraphList->isVisible());
+    settings.setValue("dockChannelList", dockChannelList->isVisible());
     auto graphList = view->getZGraphItemsList();
     int num = 0;
     foreach(zGraph *zg, graphList) {
@@ -414,12 +416,21 @@ void MainWindow::restoreSettings(QString fname)
     view->GlobalScale = settings.value("scale").toDouble();
     view->GlobalRotate = settings.value("rotation").toDouble();
     view->GlobalChannelNum = settings.value("channel").toInt();
+    QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
+    itemClickedChannelList(lwItem);
+    chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
     int horizontal = settings.value("horizontal").toInt();
     int vertical = settings.value("vertical").toInt();
     view->scale(1/view->GlobalScale, 1/view->GlobalScale);
     view->rotate(-view->GlobalRotate);
     view->horizontalScrollBar()->setValue(horizontal);
     view->verticalScrollBar()->setValue(vertical);
+    auto graphlist = settings.value("dockZGraphList").toBool();
+    auto channellist = settings.value("dockChannelList").toBool();
+    dockZGraphList->setVisible(graphlist);  dockChannelList->setVisible(channellist);
+    view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
+    view->channelListAct->setChecked(dockChannelList->isVisible());
+    view->PAN = false;
     QStringList groups = settings.childGroups();
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray(), ver);
@@ -427,6 +438,7 @@ void MainWindow::restoreSettings(QString fname)
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
+  view->deleteGrabberRects();
   view->clearZGraphItemsList();
   QImage img = im_handler->get_rgb(true,60,53,12);
   view->GlobalChannelNum = 0;

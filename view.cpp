@@ -393,23 +393,6 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
     item->plot->replot();
 }
 
-void gQGraphicsView::setCursorToItems()
-{
-    QList<QGraphicsItem *> items = scene()->items();
-    foreach(QGraphicsItem *it, items)
-        switch (it->type()) {
-        case zPoint::Type : { it->setCursor(Qt::SizeAllCursor); break; }
-        case zRect::Type : { it->setCursor(Qt::SizeAllCursor); break; }
-        case zEllipse::Type : { it->setCursor(Qt::SizeAllCursor); break; }
-        case zPolyline::Type : { it->setCursor(Qt::SizeAllCursor); break; }
-        case zPolygon::Type : { it->setCursor(Qt::SizeAllCursor); break; }
-        default: { it->setCursor(Qt::ArrowCursor); break; }
-        }  //  switch
-    foreach (zContourRect *rect, zcRects) rect->setCursor(Qt::CrossCursor);
-    if (insertMode != gQGraphicsView::None) setCursor(Qt::CrossCursor);
-    else setCursor(Qt::ArrowCursor);
-}
-
 void gQGraphicsView::moveGrabberRects()
 {
     if (grabberItem == 0) return;
@@ -572,8 +555,8 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
     QGraphicsView::wheelEvent(event);
 }
 
-void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
-  setCursorToItems();
+void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
+{
   QGraphicsView::mousePressEvent(event);
   if (event->modifiers() == Qt::ControlModifier)
       insertMode = gQGraphicsView::Point;
@@ -644,6 +627,7 @@ void gQGraphicsView::mousePressEvent(QMouseEvent *event) {
             setMouseTracking(false);
             emit setZGraphDockToggled(tmpEllipse);
             tmpEllipse = nullptr;
+            break;
         }  // if (tmpLines.isEmpty())
     }  // case gQGraphicsView::Ellipse
     break;
