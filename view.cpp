@@ -306,6 +306,7 @@ void gQGraphicsView::clearZGraphItemsList()
 {
     auto graphList = getZGraphItemsList();
     foreach (zGraph *zg, graphList) {
+        zg->dockw->setObjectName("");
         zg->dockw->deleteLater();
         scene()->removeItem(zg);
         delete zg;
@@ -569,8 +570,9 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
       pY0 = event->y();
       setCursor(Qt::ClosedHandCursor);
       event->accept();
+      return;
     }  // case gQGraphicsView::None
-    break;
+//    break;
   case gQGraphicsView::Point : {            // тип объекта - точка             Point
       if (event->button() != Qt::LeftButton) return;
       insPoint(event->pos());

@@ -163,6 +163,7 @@ QStringList zPoint::getSettings(int num)
 {
     QStringList strlist;
     // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Point%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Point%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Point%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
@@ -314,6 +315,7 @@ QStringList zPolygon::getSettings(int num)
 {
     QStringList strlist;
     // polygon7/title#Полигон 1
+    strlist.append(QString("Polygon%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Polygon%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Polygon%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
@@ -500,10 +502,12 @@ QStringList zRect::getSettings(int num)
 {
     QStringList strlist;
     // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Rectangle%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Rectangle%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
-    strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
+    qreal angle = rotation();
+    strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(angle));
     strlist.append(QString("Rectangle%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
     strlist.append(QString("Rectangle%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
@@ -637,10 +641,12 @@ QStringList zEllipse::getSettings(int num)
 {
     QStringList strlist;
     // rectangle7/title#Прямоугольник 1
+    strlist.append(QString("Ellipse%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Ellipse%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Ellipse%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
-    strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(data(2).toInt()));
+    qreal angle = rotation();
+    strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(angle));
     strlist.append(QString("Ellipse%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
     strlist.append(QString("Ellipse%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
@@ -790,6 +796,7 @@ QStringList zPolyline::getSettings(int num)
 {
     QStringList strlist;
     // polygon7/title#Полигон 1
+    strlist.append(QString("Polyline%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Polyline%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Polyline%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));

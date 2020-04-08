@@ -48,10 +48,13 @@ class MainWindow : public QMainWindow {
   QString dataFileName = "";
   void saveSettings(QString fname);
   void restoreSettings(QString fname);
+  void restoreSettingsVersionOne(QSettings &settings);
+  void restoreSettingsVersionTwo(QSettings &settings);
 private:
     // Event handlers
   void closeEvent(QCloseEvent *event);
-
+  QPointF getPointFromStr(QString str);
+  QVector<double> getVectorFromStr(QString str);
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;

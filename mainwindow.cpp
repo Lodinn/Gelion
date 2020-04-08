@@ -303,6 +303,8 @@ void MainWindow::toggleViewAction(bool b)
         if (it->type() == QGraphicsLineItem::Type) continue;
         zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
         auto lwItem = listWidget->item(num);
+        if (zitem->isVisible()) lwItem->setCheckState(Qt::Checked);
+        else lwItem->setCheckState(Qt::Unchecked);
         QFont font = lwItem->font();
         font.setBold(zitem->dockw->isVisible());
         lwItem->setFont(font);
@@ -310,8 +312,6 @@ void MainWindow::toggleViewAction(bool b)
     }  // for
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->channelListAct->setChecked(dockChannelList->isVisible());
-
-
 }
 
 /*void QMainWindow::splitDockWidget ( QDockWidget * first, QDockWidget * second, Qt::Orientation orientation )*/
@@ -401,6 +401,18 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
 }
 
+QPointF MainWindow::getPointFromStr(QString str) {
+    QStringList pos = str.split(",");
+    return QPointF(pos[0].toDouble(),pos[1].toDouble());
+}
+
+QVector<double> MainWindow::getVectorFromStr(QString str) {
+    QStringList strlist = str.split(",");
+    QVector<double> v;
+    foreach(QString s, strlist) v.append(s.toDouble());
+    return v;
+}
+
 void MainWindow::restoreSettings(QString fname)
 {
     if (fname.isEmpty()) return;
@@ -412,29 +424,174 @@ void MainWindow::restoreSettings(QString fname)
     QTextCodec *codec = QTextCodec::codecForName( "Windows-1251" );
     settings.setIniCodec( codec );
     int ver = settings.value("version").toInt();
-    if (ver != 1) return;
-    view->GlobalScale = settings.value("scale").toDouble();
-    view->GlobalRotate = settings.value("rotation").toDouble();
-    view->GlobalChannelNum = settings.value("channel").toInt();
+    switch (ver) {
+    case 1 : { restoreSettingsVersionOne(settings); break; }
+    case 2 : { restoreSettingsVersionTwo(settings); break ; }
+    default: return;
+    }  // switch
+}
+
+void MainWindow::restoreSettingsVersionOne(QSettings &settings)
+{
+    view->GlobalScale = settings.value("scale", 1.0).toDouble();
+    view->GlobalRotate = settings.value("rotation", 0.0).toDouble();
+    view->GlobalChannelNum = settings.value("channel", 0).toInt();
     QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
     itemClickedChannelList(lwItem);
     chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
-    int horizontal = settings.value("horizontal").toInt();
-    int vertical = settings.value("vertical").toInt();
+    int horizontal = settings.value("horizontal", 0).toInt();
+    int vertical = settings.value("vertical", 0).toInt();
     view->scale(1/view->GlobalScale, 1/view->GlobalScale);
     view->rotate(-view->GlobalRotate);
     view->horizontalScrollBar()->setValue(horizontal);
     view->verticalScrollBar()->setValue(vertical);
-    auto graphlist = settings.value("dockZGraphList").toBool();
-    auto channellist = settings.value("dockChannelList").toBool();
+    auto graphlist = settings.value("dockZGraphList", true).toBool();
+    auto channellist = settings.value("dockChannelList", true).toBool();
     dockZGraphList->setVisible(graphlist);  dockChannelList->setVisible(channellist);
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->channelListAct->setChecked(dockChannelList->isVisible());
     view->PAN = false;
     QStringList groups = settings.childGroups();
+    foreach(QString str, groups) {
+        if (str.indexOf("Point") != -1) {
+            settings.beginGroup(str);
+            QString pos = settings.value("pos").toString();
+            QPointF pXY = getPointFromStr(pos);
+            zPoint *point = new zPoint( pXY );
+            QString title = settings.value("title").toString();
+            point->setTitle(title);
+            point->aicon = QIcon(":/images/pin_grey.png");
+            bool objectvisible = settings.value("objectvisible", true).toBool();
+            point->setVisible(objectvisible);
+// create dynamic DockWidget
+            view->scene()->addItem(point);
+            point->updateBoundingRect();
+            settings.endGroup();
+            emit view->insertZGraphItem(point);
+            view->show_profile_for_Z(point);
+            emit view->setZGraphDockToggled(point);
+            point->dockw->setVisible(settings.value("dockvisible", true).toBool());
+// create dynamic DockWidget
+            continue;
+        }  // Point
+        if (str.indexOf("Rect") != -1) {
+            settings.beginGroup(str);
+            QString pos = settings.value("pos").toString();
+            QPointF pXY = getPointFromStr(pos);
+            zRect *rect = new zRect(pXY,view->GlobalScale,view->GlobalRotate);
+            QString title = settings.value("title").toString();
+            rect->setTitle(title);
+            rect->aicon = QIcon(":/images/vector_square.png");
+            bool objectvisible = settings.value("objectvisible", true).toBool();
+            rect->setVisible(objectvisible);
+            int rotation = settings.value("rotation").toInt();
+            rect->setRotation(rotation);
+            QString sizestr = settings.value("size").toString();
+            QPointF fsize = getPointFromStr(sizestr);
+            rect->frectSize.setWidth(fsize.rx());
+            rect->frectSize.setHeight(fsize.ry());
+// create dynamic DockWidget
+            view->scene()->addItem(rect);
+            rect->updateBoundingRect();
+            settings.endGroup();
+            emit view->insertZGraphItem(rect);
+            view->show_profile_for_Z(rect);
+            emit view->setZGraphDockToggled(rect);
+            rect->dockw->setVisible(settings.value("dockvisible", true).toBool());
+// create dynamic DockWidget
+            continue;
+        }  // Rect
+        if (str.indexOf("Ellipse") != -1) {
+            settings.beginGroup(str);
+            QString pos = settings.value("pos").toString();
+            QPointF pXY = getPointFromStr(pos);
+            zEllipse *ellipse = new zEllipse(pXY,view->GlobalScale,view->GlobalRotate);
+            QString title = settings.value("title").toString();
+            ellipse->setTitle(title);
+            ellipse->aicon = QIcon(":/images/vector_ellipse.png");
+            bool objectvisible = settings.value("objectvisible", true).toBool();
+            ellipse->setVisible(objectvisible);
+            int rotation = settings.value("rotation").toInt();
+            ellipse->setRotation(rotation);
+            QString sizestr = settings.value("size").toString();
+            QPointF fsize = getPointFromStr(sizestr);
+            ellipse->frectSize.setWidth(fsize.rx());
+            ellipse->frectSize.setHeight(fsize.ry());
+// create dynamic DockWidget
+            view->scene()->addItem(ellipse);
+            ellipse->updateBoundingRect();
+            settings.endGroup();
+            emit view->insertZGraphItem(ellipse);
+            view->show_profile_for_Z(ellipse);
+            emit view->setZGraphDockToggled(ellipse);
+            ellipse->dockw->setVisible(settings.value("dockvisible", true).toBool());
+// create dynamic DockWidget
+            continue;
+        }  // Ellipse
+        if (str.indexOf("Polyline") != -1) {
+            settings.beginGroup(str);
+            QString pos = settings.value("pos").toString();
+            QPointF pXY = getPointFromStr(pos);
+            zPolyline *polyline = new zPolyline( view->GlobalScale,view->GlobalRotate );
+            QString title = settings.value("title").toString();
+            polyline->setTitle(title);
+            polyline->setPos(pXY);
+            polyline->aicon = QIcon(":/images/polyline-64.png");
+            bool objectvisible = settings.value("objectvisible", true).toBool();
+            polyline->setVisible(objectvisible);
+            QString xstr = settings.value("x").toString();
+            QString ystr = settings.value("y").toString();
+            auto x = getVectorFromStr(xstr);
+            auto y = getVectorFromStr(ystr);
+            for (int i=0; i<x.length();i++)
+                polyline->fpolygon.append(QPoint(x[i],y[i]));
+// create dynamic DockWidget
+            view->scene()->addItem(polyline);
+            polyline->updateBoundingRect();
+            settings.endGroup();
+            emit view->insertZGraphItem(polyline);
+            view->show_profile_for_Z(polyline);
+            emit view->setZGraphDockToggled(polyline);
+            polyline->dockw->setVisible(settings.value("dockvisible", true).toBool());
+// create dynamic DockWidget
+            continue;
+        }  // Polyline
+        if (str.indexOf("Polygon") != -1) {
+            settings.beginGroup(str);
+            QString pos = settings.value("pos").toString();
+            QPointF pXY = getPointFromStr(pos);
+            zPolygon *polygon = new zPolygon( view->GlobalScale,view->GlobalRotate );
+            QString title = settings.value("title").toString();
+            polygon->setTitle(title);
+            polygon->setPos(pXY);
+            polygon->aicon = QIcon(":/images/vector-polygon.png");
+            bool objectvisible = settings.value("objectvisible", true).toBool();
+            polygon->setVisible(objectvisible);
+            QString xstr = settings.value("x").toString();
+            QString ystr = settings.value("y").toString();
+            auto x = getVectorFromStr(xstr);
+            auto y = getVectorFromStr(ystr);
+            for (int i=0; i<x.length();i++)
+                polygon->fpolygon.append(QPoint(x[i],y[i]));
+// create dynamic DockWidget
+            view->scene()->addItem(polygon);
+            polygon->updateBoundingRect();
+            settings.endGroup();
+            emit view->insertZGraphItem(polygon);
+            view->show_profile_for_Z(polygon);
+            emit view->setZGraphDockToggled(polygon);
+            polygon->dockw->setVisible(settings.value("dockvisible", true).toBool());
+// create dynamic DockWidget
+            continue;
+        }  // Polygon
+    }  // foreach
     restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray(), ver);
+    restoreState(settings.value("windowState").toByteArray(), 1);
+}
 
+void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
+{
+    Q_UNUSED(settings);
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
