@@ -66,16 +66,26 @@ void MainWindow::saveSettings(QString fname)
 
 void MainWindow::SetupUi() {
   setWindowTitle("gelion");
+  QRect desktop = QApplication::desktop()->screenGeometry();
+//  qDebug() << desktop;
+  int sw = desktop.width();  int sh = desktop.height();
+  int left = round(sw*(1-qmainWindowScale)*0.5+200);
+  int top = round(sh*(1-qmainWindowScale)*0.5);
+  int width = round(sw*qmainWindowScale*.75);
+  int height = round(sh*qmainWindowScale);
+//  qDebug() << qmainWindowScale << sw << sh << left << top << width << height;
+  move( left, top );
+  resize( width, height );
   const QIcon icon =
       QIcon::fromTheme("mainwindow", QIcon(":/icons/256_colors.png"));
   setWindowIcon(icon);
-  resize(900, 700);
   scene = new QGraphicsScene(this);
   view = new gQGraphicsView(scene);
   view->imgHand = im_handler;
   setCentralWidget(view);
   QPixmap test(QString(":/images/view.jpg"));
-  mainPixmap = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
+  view->mainPixmap = scene->addPixmap(test);  // p->type(); enum { Type = 7 };
+  view->mainPixmap->setOpacity(0.7);
 
   createActions();
   createStatusBar();
@@ -151,6 +161,8 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     item->dockw = dockw;
     dockw->setFloating(true);  dockw->setObjectName("zGraph ");
     dockw->resize(420,150);
+    QRect desktop = QApplication::desktop()->screenGeometry();
+    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
     wPlot->resize(420,150);  wPlot->addGraph();
 // give the axes some labels:
@@ -189,31 +201,26 @@ void MainWindow::channelList()
 
 void MainWindow::winZGraphProfilesShowAll()
 {
-    QList<QGraphicsItem *> items = view->scene()->items();
-    foreach (QGraphicsItem *it, items) {
-        if (it->type() == QGraphicsPixmapItem::Type) continue;
-        if (it->type() == zContourRect::Type) continue;
-        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
+//    QList<QGraphicsItem *> items = view->scene()->items();
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist)
         zitem->dockw->setVisible(true);
-    }  // for
 }
 
 void MainWindow::winZGraphProfilesHideAll()
 {
-    QList<QGraphicsItem *> items = view->scene()->items();
-    foreach (QGraphicsItem *it, items) {
-        if (it->type() == QGraphicsPixmapItem::Type) continue;
-        if (it->type() == zContourRect::Type) continue;
-        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist)
         zitem->dockw->setVisible(false);
-    }  // for
 }
 
 void MainWindow::listWidgetClicked(QListWidgetItem *item)
 {
     if (!view->zcRects.isEmpty()) return;
+    if (!view->tmpLines.isEmpty()) return;
     int num = listWidget->row(item);
-    QList<QGraphicsItem *> items = view->scene()->items();
+//    QList<QGraphicsItem *> items = view->scene()->items();
+    QList<zGraph *> items = view->getZGraphItemsList();
     if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
     else items[num]->setVisible(false);
 }
@@ -295,20 +302,15 @@ void MainWindow::createStatusBar() {
 void MainWindow::toggleViewAction(bool b)
 {
     Q_UNUSED(b);
-    QList<QGraphicsItem *> items = view->scene()->items();
-    int num = 0;
-    foreach (QGraphicsItem *it, items) {
-        if (it->type() == QGraphicsPixmapItem::Type) continue;
-        if (it->type() == zContourRect::Type) continue;
-        if (it->type() == QGraphicsLineItem::Type) continue;
-        zGraph *zitem = qgraphicsitem_cast<zGraph *>(it);
-        auto lwItem = listWidget->item(num);
+//    QList<QGraphicsItem *> items = view->scene()->items();
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist) {
+        auto lwItem = listWidget->item(zitemlist.indexOf(zitem));
         if (zitem->isVisible()) lwItem->setCheckState(Qt::Checked);
         else lwItem->setCheckState(Qt::Unchecked);
         QFont font = lwItem->font();
         font.setBold(zitem->dockw->isVisible());
         lwItem->setFont(font);
-        num++;
     }  // for
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->channelListAct->setChecked(dockChannelList->isVisible());
@@ -321,15 +323,15 @@ void MainWindow::createConstDockWidgets()
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,200);
     dockZGraphList->setWidget(listWidget);
-//    dockZGraphList->setWindowFlag(Qt::WindowCloseButtonHint, false);
+    dockZGraphList->move(1500,770);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
-//    connect(dockZGraphList, SIGNAL(visibilityChanged()), this, SLOT(winZGraphList()));
     connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
     connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
     dockChannelList->setFixedSize(220,700);
     dockChannelList->setWidget(chListWidget);
+    dockChannelList->move(1500,30);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 }
@@ -380,25 +382,22 @@ void MainWindow::createDockWidgetForChannels()
 {
     chListWidget->clear();
     auto strlist = im_handler->getWaveLengthsList(2);
+    auto wavelengths = im_handler->getWaveLengths();
     foreach(QString str, strlist) {
         QListWidgetItem *lwItem = new QListWidgetItem();
         lwItem->setText(str);
         chListWidget->addItem(lwItem);
+        int lwnum = strlist.indexOf(str) - 1;
+        if (lwnum >= 0) {
+            qreal wlen = wavelengths[lwnum];
+            if (wlen > 650) continue;
+            int wlenfname = round(wlen);
+            lwItem->setIcon(QIcon(QString("../BPLA/images/rainbow/%1.png").arg(wlenfname)));
+        } else
+            lwItem->setIcon(QIcon(QString("../BPLA/images/rainbow/%1.png").arg("RGB")));
     }  // for
-//    chListWidget->setItemSelected(chListWidget->item(0), true);
     chListWidget->setCurrentRow(0);
     connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
-}
-
-void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
-{
-    int num = chListWidget->row(lwItem);
-    view->GlobalChannelNum = num;
-    QImage img;
-    if (num == 0) img = im_handler->get_rgb(true,60,53,12);
-    else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
-    QPixmap pxm = QPixmap::fromImage(img);
-    mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
 }
 
 QPointF MainWindow::getPointFromStr(QString str) {
@@ -594,13 +593,30 @@ void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
     Q_UNUSED(settings);
 }
 
+void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
+{
+    int num = chListWidget->row(lwItem);
+    view->GlobalChannelNum = num;
+    QImage img;
+    if (num == 0) img = im_handler->get_rgb(true,84,53,22);  // 60,53,12);
+    else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
+//    QPixmap pxm = QPixmap::fromImage(img);
+    QPixmap pxm;
+    if (num < 84) pxm = view->changeBrightnessPixmap(img, 4.0);
+    else pxm = view->changeBrightnessPixmap(img, 3.0);
+    view->mainPixmap->setPixmap(pxm); // p->type(); enum { Type = 7 };
+}
+
 void MainWindow::add_envi_hdr_pixmap() {
   view->deleteGrabberRects();
   view->clearZGraphItemsList();
-  QImage img = im_handler->get_rgb(true,60,53,12);
+  QImage img = im_handler->get_rgb(true,84,53,22);  // 60,53,12);
+  img.save(QString("G:/&&&proj/event_filter/newapple.png"));
   view->GlobalChannelNum = 0;
-  QPixmap pxm = QPixmap::fromImage(img);
-  mainPixmap->setPixmap(pxm);  // p->type(); enum { Type = 7 };
+//  QPixmap pxm = QPixmap::fromImage(img);
+  QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
+  view->mainPixmap->setPixmap(pxm);  // p->type(); enum { Type = 7 };
+  view->mainPixmap->setOpacity(1.0);
   createDockWidgetForChannels();
   setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
   if (restoreSettingAtStartApp) restoreSettings(dataFileName);

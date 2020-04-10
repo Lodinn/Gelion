@@ -10,6 +10,8 @@ class ImageHandler : public QObject {
 public:
   ImageHandler(QObject* parent = nullptr);
   ~ImageHandler();
+  QList<QString> getWaveLengthsList(int precision);
+  QVector<double> getWaveLengths();
 public slots:
   void read_envi_hdr(QString fname);
   QVector<QVector<double> > get_band(uint16_t band);
@@ -17,7 +19,6 @@ public slots:
   QVector<QPointF> get_profile(QPoint p);
   int get_bands_count();
   void set_read_file_canceled();
-  QList<QString> getWaveLengthsList(int precision);
 private:
   // index order (from outer to inner): z, y, x
   int read_file_canceled = 0;

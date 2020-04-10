@@ -24,13 +24,13 @@ public slots:
     void setInputModeEllipse();
     void setInputModePolyline();
     void setInputModePolygon();
-    void selectionZChanged();
     void show_profile_for_Z(zGraph *item);
     void moveGrabberRects();
     void releaseGrabberRects();
     void pressOneGrabberRect();
     void releaseOneGrabberRect();
     void moveOneGrabberRect(int num, QPointF point);
+    void selectionZChanged();
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;  int GlobalChannelNum = 0;
     QAction *openAct;
@@ -44,15 +44,18 @@ public:
     QAction *channelListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
-    zGraph *grabberItem = 0;
-    QList<zContourRect *> zcRects;
+    zGraph *grabberItem = nullptr;
     zRect *tmpRect = nullptr;
     zEllipse *tmpEllipse = nullptr;
-    QList<QGraphicsLineItem *> tmpLines;
+    QList<zContourRect *> zcRects;
+    QVector<QGraphicsLineItem *> tmpLines;
     QList<zGraph *> getZGraphItemsList();
     void clearZGraphItemsList();
     void deleteGrabberRects();
+    void deleteTmpLines();
     bool PAN = false;
+    QGraphicsPixmapItem *mainPixmap;
+    QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -66,20 +69,17 @@ public:
   QList<ROI *> ROIs_new;
   void setScaleItems(qreal &newscale);
   void setRotateItems(qreal &newangle);
-  void createRect();
-  void createEllipse();
   void setGrabberCoordTozRect();
   void setGrabberCoordTozEllipse();
   void createPolygon();
   void createPolyline();
   void multiPointsReplotRect(zGraph *item);
   void multiPointsReplotPoly(zGraph *item);
-
   QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);
   bool contextMenuEnable = true;
  signals:
-  void insertZGraphItem(zGraph *item);
-  void setZGraphDockToggled(zGraph *item);
+  void insertZGraphItem(zGraph *item);  // main createDockWidgetForItem
+  void setZGraphDockToggled(zGraph *item);  // main toggleViewAction
 
   void point_picked(QPointF);
   // FIXME: keeping two separate index lists here and in mainwindow. Subclass

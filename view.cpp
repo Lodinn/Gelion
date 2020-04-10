@@ -20,6 +20,7 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     const QIcon ellipseIcon = QIcon::fromTheme("Эллипс", QIcon(":/images/vector_ellipse.png"));
     const QIcon polylineIcon = QIcon::fromTheme("Полилиния", QIcon(":/images/polyline-64.png"));
     const QIcon polygonIcon = QIcon::fromTheme("Полигон", QIcon(":/images/vector-polygon.png"));
+
     pointAct = new QAction(pointIcon, "Добавить ОИ-[Точка]", this);
     rectAct = new QAction(rectIcon, "Добавить ОИ-[Прямоугольник]", this);
     ellipseAct = new QAction(ellipseIcon, "Добавить ОИ-[Эллипс]", this);
@@ -46,12 +47,11 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     connect(ellipseAct, SIGNAL(triggered()), this, SLOT(setInputModeEllipse()));
     connect(polylineAct, SIGNAL(triggered()), this, SLOT(setInputModePolyline()));
     connect(polygonAct, SIGNAL(triggered()), this, SLOT(setInputModePolygon()));
-
-
 }
 
 void gQGraphicsView::setInputModePoint()
 {
+    deleteGrabberRects();
     insertMode = gQGraphicsView::Point;
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -59,6 +59,7 @@ void gQGraphicsView::setInputModePoint()
 
 void gQGraphicsView::setInputModeRect()
 {
+    deleteGrabberRects();
     insertMode = gQGraphicsView::Rect;
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -66,6 +67,7 @@ void gQGraphicsView::setInputModeRect()
 
 void gQGraphicsView::setInputModeEllipse()
 {
+    deleteGrabberRects();
     insertMode = gQGraphicsView::Ellipse;
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -73,6 +75,7 @@ void gQGraphicsView::setInputModeEllipse()
 
 void gQGraphicsView::setInputModePolyline()
 {
+    deleteGrabberRects();
     insertMode = gQGraphicsView::Polyline;
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -80,6 +83,7 @@ void gQGraphicsView::setInputModePolyline()
 
 void gQGraphicsView::setInputModePolygon()
 {
+    deleteGrabberRects();
     insertMode = gQGraphicsView::Polygon;
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -89,12 +93,12 @@ void gQGraphicsView::selectionZChanged()
 {
     deleteGrabberRects();
     grabberItem = qgraphicsitem_cast<zGraph *>(scene()->mouseGrabberItem());
-    if (grabberItem == 0) return;
+    if (grabberItem == nullptr) return;
     grabberItem->dockw->activateWindow();
     switch (grabberItem->type()) {
     case zPoint::Type : {                   // тип объекта - точка             Point
         connect(grabberItem,SIGNAL(mouseMove()),this,SLOT(moveGrabberRects()));
-        break;
+        return;
     }  // case zPoint::Type
     case zRect::Type : {        // тип объекта - прямоугольник Rect 2	с возможностью поворота
         grabberItem->setCursor(QCursor(Qt::SizeAllCursor));
@@ -113,7 +117,7 @@ void gQGraphicsView::selectionZChanged()
         connect(zrect,SIGNAL(mouseMove(int,QPointF)),this,SLOT(moveOneGrabberRect(int,QPointF)));
         connect(zrect,SIGNAL(mouseRelease()),this,SLOT(releaseOneGrabberRect()));
         setGrabberCoordTozRect();
-        break;
+        return;
     }  // case zRect::Type
     case zEllipse::Type : {        // тип объекта - эллипс Ellipse  3	с возможностью поворота
         grabberItem->setCursor(QCursor(Qt::SizeAllCursor));
@@ -132,7 +136,7 @@ void gQGraphicsView::selectionZChanged()
         connect(zrect,SIGNAL(mouseMove(int,QPointF)),this,SLOT(moveOneGrabberRect(int,QPointF)));
         connect(zrect,SIGNAL(mouseRelease()),this,SLOT(releaseOneGrabberRect()));
         setGrabberCoordTozEllipse();
-        break;
+        return;
     }  // case zEllipse::Type
     case zPolyline::Type : {             // тип объекта - полилиния Polyline  4
         grabberItem->setCursor(QCursor(Qt::SizeAllCursor));
@@ -150,7 +154,7 @@ void gQGraphicsView::selectionZChanged()
             connect(zrect,SIGNAL(mouseMove(int,QPointF)),this,SLOT(moveOneGrabberRect(int,QPointF)));
             connect(zrect,SIGNAL(mouseRelease()),this,SLOT(releaseOneGrabberRect()));
         }
-        break;
+        return;
     }  // case zPolyline::Type
     case zPolygon::Type : {             // тип объекта - область(полигон) Polygon  5
         grabberItem->setCursor(QCursor(Qt::SizeAllCursor));
@@ -168,13 +172,14 @@ void gQGraphicsView::selectionZChanged()
             connect(zrect,SIGNAL(mouseMove(int,QPointF)),this,SLOT(moveOneGrabberRect(int,QPointF)));
             connect(zrect,SIGNAL(mouseRelease()),this,SLOT(releaseOneGrabberRect()));
         }
-        break;
+        return;
     }  // case zPolygon::Type
     }  // switch (grabberItem->type())
 }
 
 void gQGraphicsView::setGrabberCoordTozRect()
 {
+    if (grabberItem == nullptr) return;
     zRect *zR = qgraphicsitem_cast<zRect *>(grabberItem);
     QPointF pos = zR->pos();
     qreal w = zR->frectSize.width();
@@ -187,6 +192,7 @@ void gQGraphicsView::setGrabberCoordTozRect()
 
 void gQGraphicsView::setGrabberCoordTozEllipse()
 {
+    if (grabberItem == nullptr) return;
     zEllipse *zE = qgraphicsitem_cast<zEllipse *>(grabberItem);
     QPointF pos = zE->pos();
     qreal w = zE->frectSize.width();
@@ -199,21 +205,21 @@ void gQGraphicsView::setGrabberCoordTozEllipse()
 
 void gQGraphicsView::pressOneGrabberRect()
 {
-    if (grabberItem == 0) return;
+    if (grabberItem == nullptr) return;
     grabberItem->setFlag(QGraphicsItem::ItemIsMovable, false);
     grabberItem->dockw->activateWindow();
 }
 
 void gQGraphicsView::releaseOneGrabberRect()
 {
-    if (grabberItem == 0) return;
+    if (grabberItem == nullptr) return;
     show_profile_for_Z(grabberItem);
     grabberItem->setFlag(QGraphicsItem::ItemIsMovable, true);
 }
 
 void gQGraphicsView::moveOneGrabberRect(int num, QPointF point)
 {
-    if (grabberItem == 0) return;
+    if (grabberItem == nullptr) return;
     switch (grabberItem->type()) {
     case zRect::Type : {    // тип объекта - прямоугольник Rect 2	с возможностью поворота
         zRect *zR = qgraphicsitem_cast<zRect *>(grabberItem);
@@ -443,10 +449,41 @@ void gQGraphicsView::deleteGrabberRects()
 {
     foreach (zContourRect *rect, zcRects) {
         rect->disconnect(); scene()->removeItem(rect);
-        delete rect;        rect = nullptr;
-    } zcRects.clear();
-    if (grabberItem == 0) return;
+        delete rect;
+    }  // foreach
+    zcRects.clear();
+    if (grabberItem == nullptr) return;
     grabberItem->disconnect();
+}
+
+void gQGraphicsView::deleteTmpLines()
+{
+    foreach (QGraphicsLineItem *line, tmpLines) {
+        scene()->removeItem(line);
+        delete line;
+    }  // foreach
+    tmpLines.clear();
+}
+
+QPixmap gQGraphicsView::changeBrightnessPixmap(QImage &img, qreal brightness)
+{
+    QColor color;
+    int h, s, v;
+    qreal t_brightnessValue = brightness;
+    for(int row = 0; row < img.height(); ++row) {
+        unsigned int * data = (unsigned int *) img.scanLine(row);
+        for(int col = 0; col < img.width(); ++col) {
+            unsigned int & pix = data[col];
+            color.setRgb(qRed(pix), qGreen(pix), qBlue(pix));
+            color.getHsv(&h, &s, &v);
+            v *= t_brightnessValue; // значение, на которое надо увеличить яркость
+            v = qMin(v, 255);
+            color.setHsv(h, s, v);
+// сохраняем изменённый пиксель
+            pix = qRgba(color.red(), color.green(), color.blue(), qAlpha(pix));
+        }  // for
+    }  // for
+    return QPixmap::fromImage(img);
 }
 
 void gQGraphicsView::setScaleItems(qreal &newscale)
@@ -580,7 +617,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
       setCursor(Qt::ArrowCursor);
       setMouseTracking(false);
     }  // case gQGraphicsView::Point
-    break;
+    return;
   case gQGraphicsView::Rect : {         // тип объекта - прямоугольник Rect 2	с возможностью поворота
       if (event->button() != Qt::LeftButton) return;
       if (tmpLines.isEmpty()) {
@@ -589,20 +626,23 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         qreal x2 = p.rx();  qreal y2 = p.ry();
         tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
         tmpRect = new zRect(p,GlobalScale,GlobalRotate);
-        tmpRect->setTitle("Прямоугольник 1");  tmpRect->aicon = QIcon(":/images/vector_square.png");
+        tmpRect->setTitle("Прямоугольник 1");
+        tmpRect->aicon = rectAct->icon();
         tmpRect->updateBoundingRect();
         scene()->addItem(tmpRect);
         emit insertZGraphItem(tmpRect);
+        return;
       } else {
         tmpRect->updateBoundingRect();
         tmpRect->dockw->show();
         show_profile_for_Z(tmpRect);
-        createRect();
+        deleteTmpLines();
         insertMode = gQGraphicsView::None;
         setCursor(Qt::ArrowCursor);
         setMouseTracking(false);
         emit setZGraphDockToggled(tmpRect);
         tmpRect = nullptr;
+        return;
       }  // if (tmpLines.isEmpty())
     }  // case gQGraphicsView::Rect
     break;
@@ -618,21 +658,20 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             tmpEllipse->updateBoundingRect();
             scene()->addItem(tmpEllipse);
             emit insertZGraphItem(tmpEllipse);
-            break;
+            return;
         } else {
             tmpEllipse->updateBoundingRect();
             tmpEllipse->dockw->show();
             show_profile_for_Z(tmpEllipse);
-            createEllipse();
+            deleteTmpLines();
             insertMode = gQGraphicsView::None;
             setCursor(Qt::ArrowCursor);
             setMouseTracking(false);
             emit setZGraphDockToggled(tmpEllipse);
             tmpEllipse = nullptr;
-            break;
+            return;
         }  // if (tmpLines.isEmpty())
     }  // case gQGraphicsView::Ellipse
-    break;
   case gQGraphicsView::Polyline : {          // тип объекта - полилиния Polyline  4
       setCursor(Qt::CrossCursor);
       contextMenuEnable = false;
@@ -641,14 +680,14 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
           qreal x1 = p.rx();  qreal y1 = p.ry();
           qreal x2 = p.rx();  qreal y2 = p.ry();
           tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
-          break;
+          return;
       };  // Qt::LeftButton
       if (event->button() == Qt::RightButton) {
           createPolyline();
           insertMode = gQGraphicsView::None;
           setCursor(Qt::ArrowCursor);
           setMouseTracking(false);
-          break;
+          return;
       };  // Qt::RightButton
       return; //TODO: check
   }  // case gQGraphicsView::Polygon
@@ -660,14 +699,14 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
           qreal x1 = p.rx();  qreal y1 = p.ry();
           qreal x2 = p.rx();  qreal y2 = p.ry();
           tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
-          break;
+          return;
       };  // Qt::LeftButton
       if (event->button() == Qt::RightButton) {
           createPolygon();
           insertMode = gQGraphicsView::None;
           setCursor(Qt::ArrowCursor);
           setMouseTracking(false);
-          break;
+          return;
       };  // Qt::RightButton
       return;
   }  // case gQGraphicsView::Polygon
@@ -688,13 +727,7 @@ void gQGraphicsView::createPolygon()
     emit insertZGraphItem(zp);
     zp->dockw->show();
     show_profile_for_Z(zp);
-
-    foreach (QGraphicsLineItem *item, tmpLines) {
-        scene()->removeItem(item);
-        delete item;
-    }  // foreach
-    tmpLines.clear();
-
+    deleteTmpLines();
     emit setZGraphDockToggled(zp);
 }
 
@@ -713,15 +746,8 @@ void gQGraphicsView::createPolyline()
     emit insertZGraphItem(zp);
     zp->dockw->show();
     show_profile_for_Z(zp);
-
-    foreach (QGraphicsLineItem *item, tmpLines) {
-        scene()->removeItem(item);
-        delete item;
-    }  // foreach
-    tmpLines.clear();
-
+    deleteTmpLines();
     emit setZGraphDockToggled(zp);
-
 }
   /*qDebug() << scene()->mouseGrabberItem();
   if (scene()->mouseGrabberItem() != nullptr) {
@@ -763,26 +789,6 @@ void gQGraphicsView::createPolyline()
   }
   //    event->ignore();*/
 
-void gQGraphicsView:: createRect()
-{
-//    tmpRect = nullptr;
-    foreach (QGraphicsLineItem *item, tmpLines) {
-        scene()->removeItem(item);
-        delete item;
-    }  // foreach
-    tmpLines.clear();
-}
-
-void gQGraphicsView::createEllipse()
-{
-//    tmpEllipse = nullptr;
-    foreach (QGraphicsLineItem *item, tmpLines) {
-        scene()->removeItem(item);
-        delete item;
-    }  // foreach
-    tmpLines.clear();
-}
-
 void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
   if (PAN) {
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() -
@@ -794,12 +800,11 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
     return;
   }  // if (PAN)
-  if (event->modifiers() == Qt::ControlModifier) {
-      setMouseTracking(true);
-      setCursor(Qt::CrossCursor);
-   }   else
-      setMouseTracking(false);
-
+//  if (event->modifiers() == Qt::ControlModifier) {
+//      setMouseTracking(true);
+//      setCursor(Qt::CrossCursor);
+//   }   else
+//      setMouseTracking(false);
   switch (insertMode) {
   case gQGraphicsView::Rect : {         // тип объекта - прямоугольник Rect 2	с возможностью поворота
       if (tmpRect == nullptr) return;

@@ -15,6 +15,11 @@ ImageHandler::~ImageHandler() {
 
 }
 
+QVector<double> ImageHandler::getWaveLengths()
+{
+    return wavelengths[num_data_set];
+}
+
 void ImageHandler::read_envi_hdr(QString fname) {
 
   QFile hdr_f(fname);

@@ -39,11 +39,12 @@ class MainWindow : public QMainWindow {
 
  signals:
   void read_file(QString);
-
+ protected:
+  qreal qmainWindowScale = 0.6;
  private:
   void SetupUi();
   QString appName = "Gelion";
-  bool saveSettingAtCloseApp = false;
+  bool saveSettingAtCloseApp = true;
   bool restoreSettingAtStartApp = true;
   QString dataFileName = "";
   void saveSettings(QString fname);
@@ -58,7 +59,6 @@ private:
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;
-  QGraphicsPixmapItem *mainPixmap;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;
