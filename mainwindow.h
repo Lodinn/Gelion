@@ -45,7 +45,7 @@ class MainWindow : public QMainWindow {
   void SetupUi();
   QString appName = "Gelion";
   bool saveSettingAtCloseApp = true;
-  bool restoreSettingAtStartApp = true;
+  bool restoreSettingAtStartUp = true;
   QString dataFileName = "";
   void saveSettings(QString fname);
   void restoreSettings(QString fname);

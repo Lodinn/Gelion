@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QToolBar>
 #include <QtWidgets>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     SetupUi();
@@ -12,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     QApplication::setApplicationName(appName);
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
-    if (restoreSettingAtStartApp) restoreSettings(dataFileName);
+    if (restoreSettingAtStartUp) restoreSettings(dataFileName);
 }
 
 MainWindow::~MainWindow() {
@@ -35,7 +36,7 @@ void MainWindow::saveSettings(QString fname)
     QFileInfo info(fname);
     QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
     QSettings settings( iniFileName, QSettings::IniFormat );
-    QTextCodec *codec = QTextCodec::codecForName( "Windows-1251" );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
     settings.setIniCodec( codec );
     settings.clear();
     settings.setValue("version", 1);
@@ -420,7 +421,7 @@ void MainWindow::restoreSettings(QString fname)
     QFileInfo infoINI(iniFileName);
     if (!infoINI.exists()) return;
     QSettings settings( iniFileName, QSettings::IniFormat );
-    QTextCodec *codec = QTextCodec::codecForName( "Windows-1251" );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
     settings.setIniCodec( codec );
     int ver = settings.value("version").toInt();
     switch (ver) {
@@ -619,5 +620,5 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->mainPixmap->setOpacity(1.0);
   createDockWidgetForChannels();
   setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
-  if (restoreSettingAtStartApp) restoreSettings(dataFileName);
+  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
 }
