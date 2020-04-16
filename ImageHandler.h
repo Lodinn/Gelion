@@ -3,30 +3,22 @@
 
 #include <QObject>
 #include <QVector>
-#include <QImage>
+#include <QList>
+#include <SpectralImage.h>
 
 class ImageHandler : public QObject {
   Q_OBJECT
 public:
   ImageHandler(QObject* parent = nullptr);
   ~ImageHandler();
-  QList<QString> getWaveLengthsList(int precision);
-  QVector<double> getWaveLengths();
 public slots:
   void read_envi_hdr(QString fname);
-  QVector<QVector<double> > get_band(uint16_t band);
-  QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
-  QVector<QPointF> get_profile(QPoint p);
-  int get_bands_count();
   void set_read_file_canceled();
+  SpectralImage* current_image() { return image_list[index_current_dataset]; }
 private:
-  // index order (from outer to inner): z, y, x
-  int read_file_canceled = 0;
-  int num_data_set = 0;
-  QVector<QVector<QVector<double> > > spectral_image[2];  // &&& 2
-  QVector<double> wavelengths[2];  // &&& 2
-  QSize slice_size;
-  uint32_t height, depth, width;
+  bool read_file_canceled = false;
+  int index_current_dataset = -1;
+  QList<SpectralImage*> image_list;
 signals:
   void numbands_obtained(int);
   void reading_progress(int);

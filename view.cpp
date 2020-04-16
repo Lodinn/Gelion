@@ -323,9 +323,9 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
 {
     switch (item->type()) {
     case zPoint::Type : {
-        int d = imgHand->get_bands_count();
+        int d = imgHand->current_image()->get_bands_count();
         QVector<double> x(d), y(d);
-        QVector<QPointF> v = imgHand->get_profile(item->pos().toPoint());
+        QVector<QPointF> v = imgHand->current_image()->get_profile(item->pos().toPoint());
         if (v.isEmpty()) return;
         if (v.length() != d) return;
         for (int i = 0; i < d; ++i) {
@@ -344,7 +344,7 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
 
 void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
 
-    int d = imgHand->get_bands_count();
+    int d = imgHand->current_image()->get_bands_count();
     QVector<double> x(d), y(d);
     for (int i; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
     int count = 0;
@@ -359,7 +359,7 @@ void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
                 qreal a2 = a0 + a1;
                 int px = item->pos().x() + len * qCos(a2);
                 int py = item->pos().y() + len * qSin(a2);
-                QVector<QPointF> v = imgHand->get_profile(QPoint(px, py));
+                QVector<QPointF> v = imgHand->current_image()->get_profile(QPoint(px, py));
                 if (v.isEmpty()) continue;
                 if (v.length() != d) continue;
                 if (count == 0) for (int i = 0; i < d; ++i) x[i] = v[i].rx();
@@ -375,7 +375,7 @@ void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
 
 void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
 {
-    int d = imgHand->get_bands_count();
+    int d = imgHand->current_image()->get_bands_count();
     QVector<double> x(d), y(d);
     for (int i; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
     int count = 0;
@@ -386,7 +386,7 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
             if (item->pointIn(QPointF(i,j))) {
                 int px = item->pos().x() + i;
                 int py = item->pos().y() + j;
-                QVector<QPointF> v = imgHand->get_profile(QPoint(px, py));
+                QVector<QPointF> v = imgHand->current_image()->get_profile(QPoint(px, py));
                 if (v.isEmpty()) { qDebug() << count; continue; }
                 if (v.length() != d) { qDebug() << count; continue; }
                 if (count == 0) for (int i = 0; i < d; ++i) x[i] = v[i].rx();

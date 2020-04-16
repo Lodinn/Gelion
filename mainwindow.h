@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "ImageHandler.h"
+#include "SpectralImage.h"
 #include "qcustomplot.h"
 #include "view.h"
 

@@ -30,7 +30,8 @@ SOURCES += \
     ImageHandler.cpp \
     qcustomplot.cpp \
     zgraph.cpp \
-    zgraphparamdlg.cpp
+    zgraphparamdlg.cpp \
+    SpectralImage.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -38,7 +39,8 @@ HEADERS += \
     ImageHandler.h \
     qcustomplot.h \
     zgraph.h \
-    zgraphparamdlg.h
+    zgraphparamdlg.h \
+    SpectralImage.h
 
 RESOURCES += \
     icons.qrc

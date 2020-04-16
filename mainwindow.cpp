@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 MainWindow::~MainWindow() {
   delete scene;
   delete view;
-  worker_thread->wait(2000);
+  worker_thread->wait(200);
   delete im_handler;
   delete worker_thread;
   //    delete progress_dialog;
@@ -118,10 +118,10 @@ void MainWindow::show_profile(QPointF point, int id) {
   int px, py;
   px = int(point.rx());
   py = int(point.ry());
-  QVector<QPointF> v = im_handler->get_profile(QPoint(px, py));
+  QVector<QPointF> v = im_handler->current_image()->get_profile(QPoint(px, py));
   if (v.length() == 0) return;
 
-  int d = im_handler->get_bands_count();
+  int d = im_handler->current_image()->get_bands_count();
 
   QVector<double> x(d), y(d);
   for (int i = 0; i < d; ++i) {
@@ -382,8 +382,8 @@ void MainWindow::delete_progress_dialog() {
 void MainWindow::createDockWidgetForChannels()
 {
     chListWidget->clear();
-    auto strlist = im_handler->getWaveLengthsList(2);
-    auto wavelengths = im_handler->getWaveLengths();
+    auto strlist = im_handler->current_image()->get_wl_list(2);
+    auto wavelengths = im_handler->current_image()->wls();
     foreach(QString str, strlist) {
         QListWidgetItem *lwItem = new QListWidgetItem();
         lwItem->setText(str);
@@ -599,8 +599,8 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     int num = chListWidget->row(lwItem);
     view->GlobalChannelNum = num;
     QImage img;
-    if (num == 0) img = im_handler->get_rgb(true,84,53,22);  // 60,53,12);
-    else img = im_handler->get_rgb(true,num - 1,num - 1,num - 1);
+    if (num == 0) img = im_handler->current_image()->get_rgb(true,84,53,22);  // 60,53,12);
+    else img = im_handler->current_image()->get_rgb(true,num - 1,num - 1,num - 1);
 //    QPixmap pxm = QPixmap::fromImage(img);
     QPixmap pxm;
     if (num < 84) pxm = view->changeBrightnessPixmap(img, 4.0);
@@ -611,7 +611,7 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 void MainWindow::add_envi_hdr_pixmap() {
   view->deleteGrabberRects();
   view->clearZGraphItemsList();
-  QImage img = im_handler->get_rgb(true,84,53,22);  // 60,53,12);
+  QImage img = im_handler->current_image()->get_rgb(true,84,53,22);  // 60,53,12);
   img.save(QString("G:/&&&proj/event_filter/newapple.png"));
   view->GlobalChannelNum = 0;
 //  QPixmap pxm = QPixmap::fromImage(img);
