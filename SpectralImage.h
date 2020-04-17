@@ -10,6 +10,7 @@ class SpectralImage : public QObject {
   Q_OBJECT
 public:
   explicit SpectralImage(QObject *parent = nullptr);
+    QString get_file_name() { return fname; }
 public slots:
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
@@ -33,6 +34,8 @@ private:
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
+public:
+  QString fname;
 
 //  friend void ImageHandler::read_envi_hdr(QString);
 signals:

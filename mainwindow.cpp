@@ -367,7 +367,8 @@ void MainWindow::show_progress(int max_progress) {
 void MainWindow::stop_reading_file() {
 
   im_handler->set_read_file_canceled();
-  progress_dialog->hide();
+  delete_progress_dialog();
+//  progress_dialog->hide();
   QApplication::processEvents();
 }
 
@@ -612,7 +613,7 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->deleteGrabberRects();
   view->clearZGraphItemsList();
   QImage img = im_handler->current_image()->get_rgb(true,84,53,22);  // 60,53,12);
-  img.save(QString("G:/&&&proj/event_filter/newapple.png"));
+//  img.save(QString("G:/&&&proj/event_filter/newapple.png"));
   view->GlobalChannelNum = 0;
 //  QPixmap pxm = QPixmap::fromImage(img);
   QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QVector>
 #include <QList>
-#include <SpectralImage.h>
+#include <../BPLA/SpectralImage.h>
 
 class ImageHandler : public QObject {
   Q_OBJECT

@@ -25,6 +25,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   emit numbands_obtained(d);
   w = hdr.value("samples").toUInt();
   SpectralImage* image = new SpectralImage();
+  image->fname = fname;
   image->set_image_size(d, h, w);
   uint32_t offset = hdr.value("header offset").toUInt();
   int byteorder = hdr.value("byte order").toInt();
