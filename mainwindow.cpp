@@ -253,18 +253,20 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::createActions() {
 // file
-  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-  QToolBar *fileToolBar = addToolBar(tr("Файл"));
+  fileMenu = menuBar()->addMenu(tr("&Файл"));
+  fileToolBar = addToolBar(tr("Файл"));
   fileToolBar->setObjectName("fileToolBar");
 
   fileMenu->addAction(view->openAct);
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
   fileMenu->addSeparator();
+  addSeparatorRecentFile = fileMenu->addSeparator();
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
   fileToolBar->addAction(view->openAct);
+  fileToolBar->addSeparator();
 // edit
-  QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+  QMenu *editMenu = menuBar()->addMenu(tr("&Редактирование"));
   QToolBar *editToolBar = addToolBar(tr("Редактирование"));
   editToolBar->setObjectName("editToolBar");
 
@@ -342,6 +344,15 @@ void MainWindow::open() {
       this, tr("Открытие файла данных"), "../data",
       tr("ENVI HDR Files (*.hdr);;ENVI HDR Files (*.hdr)"));
   dataFileName = fname;
+  QStringList fnames = im_handler->get_image_file_names();
+  int num = fnames.indexOf(dataFileName);
+  if ( num != -1 ) {
+      num = im_handler->set_current_image(num);
+      if ( num != -1 ) {
+          updateNewDataSet();
+          addRecentFile();
+          return; }  // if (num != -1)
+  }  // if
   emit read_file(dataFileName);
 }
 
@@ -600,7 +611,7 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     int num = chListWidget->row(lwItem);
     view->GlobalChannelNum = num;
     QImage img;
-    if (num == 0) img = im_handler->current_image()->get_rgb(true,84,53,22);  // 60,53,12);
+    if (num == 0) img = im_handler->current_image()->get_rgb(true,84,53,22);
     else img = im_handler->current_image()->get_rgb(true,num - 1,num - 1,num - 1);
 //    QPixmap pxm = QPixmap::fromImage(img);
     QPixmap pxm;
@@ -610,16 +621,53 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
-  view->deleteGrabberRects();
-  view->clearZGraphItemsList();
-  QImage img = im_handler->current_image()->get_rgb(true,84,53,22);  // 60,53,12);
-//  img.save(QString("G:/&&&proj/event_filter/newapple.png"));
-  view->GlobalChannelNum = 0;
-//  QPixmap pxm = QPixmap::fromImage(img);
-  QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
-  view->mainPixmap->setPixmap(pxm);  // p->type(); enum { Type = 7 };
-  view->mainPixmap->setOpacity(1.0);
-  createDockWidgetForChannels();
-  setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
-  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+  updateNewDataSet();
+  addRecentFile();
+}
+
+void MainWindow::updateNewDataSet()
+{
+    view->clearForAllObjects();
+    QImage img = im_handler->current_image()->get_rgb(true,84,53,22);
+    view->GlobalChannelNum = 0;
+    QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
+    view->mainPixmap->setPixmap(pxm);
+    view->mainPixmap->setOpacity(1.0);
+    createDockWidgetForChannels();
+    setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
+    if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+}
+
+void MainWindow::addRecentFile()
+{
+    if (recentFileNames.indexOf(dataFileName) != -1) return;
+    QAction *recentAct = new QAction(this);
+    QString fname = im_handler->current_image()->get_file_name();
+    QFileInfo info(fname);
+    recentAct->setText(info.fileName());
+    recentAct->setData(fname);
+    recentAct->setIcon(QIcon(view->mainPixmap->pixmap()));
+    fileToolBar->addAction(recentAct);
+    connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
+    recentFileNames.append(dataFileName);
+    fileMenu->insertAction(addSeparatorRecentFile, recentAct);
+}
+
+void MainWindow::OpenRecentFile()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        if (dataFileName == action->data().toString()) return;
+        QStringList fnames = im_handler->get_image_file_names();
+        int num = fnames.indexOf(action->data().toString());
+        if (num == -1) {
+            dataFileName = action->data().toString();
+            emit read_file(dataFileName);
+        } else {
+            num = im_handler->set_current_image(num);
+            if (num == -1) return;
+            dataFileName = im_handler->current_image()->get_file_name();
+            updateNewDataSet();
+        }  // if (num == -1)
+    }  // if (action)
 }

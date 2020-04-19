@@ -15,6 +15,14 @@ ImageHandler::~ImageHandler() {
 
 }
 
+int ImageHandler::set_current_image(int num)
+{
+    int result;
+    if ((num < 0) || (num > image_list.length() - 1)) result = -1;
+    else { result = num; index_current_dataset = result; }
+    return result;
+}
+
 void ImageHandler::read_envi_hdr(QString fname) {
   QFile hdr_f(fname);
   if(!hdr_f.exists()) return;
@@ -22,8 +30,8 @@ void ImageHandler::read_envi_hdr(QString fname) {
   uint32_t h, d, w;
   h = hdr.value("lines").toUInt();
   d = hdr.value("bands").toUInt();
-  emit numbands_obtained(d);
   w = hdr.value("samples").toUInt();
+  emit numbands_obtained(d);
   SpectralImage* image = new SpectralImage();
   image->fname = fname;
   image->set_image_size(d, h, w);
@@ -36,7 +44,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
     qDebug() << "Interleave/dtype not implemented yet";
     return;
   }
-  QSize size = QSize(w, h);
+//  QSize size = QSize(w, h);
   if (!hdr_f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
   QTextStream hdrf_in(&hdr_f);
   const QString hdr_content = hdrf_in.readAll();

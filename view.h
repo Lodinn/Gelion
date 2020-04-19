@@ -53,6 +53,7 @@ public:
     void clearZGraphItemsList();
     void deleteGrabberRects();
     void deleteTmpLines();
+    void clearForAllObjects();
     bool PAN = false;
     QGraphicsPixmapItem *mainPixmap;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);

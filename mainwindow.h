@@ -37,6 +37,7 @@ class MainWindow : public QMainWindow {
   void createDockWidgetForChannels();
   void itemClickedChannelList(QListWidgetItem *lwItem);
   void zGparhEditDialog(QListWidgetItem *item, zGraph *it);
+  void OpenRecentFile();
 
  signals:
   void read_file(QString);
@@ -45,13 +46,16 @@ class MainWindow : public QMainWindow {
  private:
   void SetupUi();
   QString appName = "Gelion";
-  bool saveSettingAtCloseApp = true;
-  bool restoreSettingAtStartUp = true;
+  bool saveSettingAtCloseApp = false;
+  bool restoreSettingAtStartUp = false;
   QString dataFileName = "";
+  QStringList recentFileNames;
   void saveSettings(QString fname);
   void restoreSettings(QString fname);
   void restoreSettingsVersionOne(QSettings &settings);
   void restoreSettingsVersionTwo(QSettings &settings);
+  void updateNewDataSet();
+  void addRecentFile();
 private:
     // Event handlers
   void closeEvent(QCloseEvent *event);
@@ -60,6 +64,9 @@ private:
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;
+  QMenu *fileMenu;
+  QToolBar *fileToolBar;
+  QAction *addSeparatorRecentFile;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;

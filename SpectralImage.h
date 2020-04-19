@@ -23,14 +23,14 @@ public slots:
     height = h;
     width = w;
     slice_size = QSize(w, h);
-    image.clear();
+    img.clear();
   }
   void set_wls(QVector<double> wls) { wavelengths = wls; }
   void append_slice(QVector<QVector<double> > slice);
 
 private:
   // index order (from outer to inner): z, y, x
-  QVector<QVector<QVector<double> > > image;
+  QVector<QVector<QVector<double> > > img;
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;

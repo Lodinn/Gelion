@@ -465,6 +465,13 @@ void gQGraphicsView::deleteTmpLines()
     tmpLines.clear();
 }
 
+void gQGraphicsView::clearForAllObjects()
+{
+    deleteTmpLines();
+    deleteGrabberRects();
+    clearZGraphItemsList();
+}
+
 QPixmap gQGraphicsView::changeBrightnessPixmap(QImage &img, qreal brightness)
 {
     QColor color;

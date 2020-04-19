@@ -4,12 +4,12 @@
 #include <QDebug>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
-
+    img.clear();
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
-  if(image.count() < band) return QVector<QVector<double> >();
-  return image.at(band);
+  if(img.count() < band) return QVector<QVector<double> >();
+  return img.at(band);
 }
 
 QImage SpectralImage::get_rgb(bool enhance_contrast, int red, int green, int blue) {
@@ -70,7 +70,7 @@ QVector<QPointF> SpectralImage::get_profile(QPoint p) {
   int x = p.x();    int y = p.y();    QVector<QPointF> v;     QPointF f;
   for(int z = 0; z < depth; z++) {
       f.rx() = wavelengths[z];
-      f.ry() = image.at(z).at(y).at(x);
+      f.ry() = img.at(z).at(y).at(x);
       v.append(f);
   }
   return v;
@@ -88,8 +88,8 @@ QList<QString> SpectralImage::get_wl_list(int precision) {
 
 void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   if(slice.count() != slice_size.height() || slice.count() <= 0 || slice.at(0).count() != slice_size.width()) {
-    qDebug() << "Bad slice size! Current slice count:" << image.count() << "expected:" << slice_size;
+    qDebug() << "Bad slice size! Current slice count:" << img.count() << "expected:" << slice_size;
     return;
   }
-  image.append(slice);
+  img.append(slice);
 }
