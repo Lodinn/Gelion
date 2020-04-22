@@ -11,14 +11,12 @@ class ImageHandler : public QObject {
 public:
   ImageHandler(QObject* parent = nullptr);
   ~ImageHandler();
-    int set_current_image(int num);
-    int get_band_by_wave_lengthl(double wave_length);
-protected:
-    int script_y, script_x; //например, в ImageHandler.h
-    QVector<QVector<QVector<double> > > raster;
-    double getByWL(double wl);
-    QVector<QVector<double> > get_index_raster(QString for_eval);
+  //! returns true on success (current index set to the requested one), false otherwise
+  bool set_current_image(int image_list_index);
+  int get_band_by_wavelength(double wavelength);
 public slots:
+  double getByWL(double wl);
+  QVector<QVector<double> > get_index_raster(QString for_eval);
   void read_envi_hdr(QString fname);
   void set_read_file_canceled();
   SpectralImage* current_image() { return image_list[index_current_dataset]; }
@@ -28,6 +26,7 @@ public slots:
     return strlist;
   }
 private:
+  int script_y, script_x;
   bool read_file_canceled = false;
   int index_current_dataset = -1;
   QList<SpectralImage*> image_list;

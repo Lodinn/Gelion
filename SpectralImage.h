@@ -10,11 +10,12 @@ class SpectralImage : public QObject {
   Q_OBJECT
 public:
   explicit SpectralImage(QObject *parent = nullptr);
-    QString get_file_name() { return fname; }
-    QVector<QVector<QVector<double> > > get_raster() { return img; }
-    QSize get_raster_x_y_size() { return slice_size; }
+  QString get_file_name() { return fname; }
+  QVector<QVector<QVector<double> > > get_raster() { return img; }
+  QSize get_raster_x_y_size() { return slice_size; }
 public slots:
   QVector<QVector<double> > get_band(uint16_t band);
+  QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
   QVector<QPointF> get_profile(QPoint p);
   inline uint32_t get_bands_count() { return depth; }
