@@ -346,7 +346,7 @@ void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
 
     int d = imgHand->current_image()->get_bands_count();
     QVector<double> x(d), y(d);
-    for (int i; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
+    for (int i = 0; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
     int count = 0;
     QRectF rect = item->boundingRect();
     for (int i=rect.left(); i<rect.left()+rect.width()+1; i++)
@@ -377,7 +377,7 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
 {
     int d = imgHand->current_image()->get_bands_count();
     QVector<double> x(d), y(d);
-    for (int i; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
+    for (int i = 0; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
     int count = 0;
     item->updateBoundingRect();
     QRectF rect = item->boundingRect();

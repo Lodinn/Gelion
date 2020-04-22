@@ -6,6 +6,7 @@
 #include <QPolygon>
 #include <QThread>
 #include <QApplication>
+#include <QJSEngine>
 
 ImageHandler::ImageHandler(QObject *parent) {
 
@@ -21,6 +22,43 @@ int ImageHandler::set_current_image(int num)
     if ((num < 0) || (num > image_list.length() - 1)) result = -1;
     else { result = num; index_current_dataset = result; }
     return result;
+}
+
+int ImageHandler::get_band_by_wave_lengthl(double wave_length)
+{
+    int result = - 1;
+    SpectralImage* image = current_image();
+    QVector<double> wls = image->wls();
+    for (int ch = 0; ch < wls.length() - 1; ch++)
+        if ((wave_length >= wls[ch]) && (wave_length < wls[ch+1])) {
+            result = ch;  return result;
+        }  // if
+    return result;
+}
+
+double ImageHandler::getByWL(double wl) {
+  int bn = get_band_by_wave_lengthl(wl); //логика для получения номера канала по длине волны
+  return raster.at(bn).at(script_y).at(script_x);
+}
+
+QVector<QVector<double> > ImageHandler::get_index_raster(QString for_eval)
+{
+    QJSEngine engine;
+    QJSValue jsvalue;
+    engine.globalObject().setProperty( "getByWL", jsvalue );
+// engine->globalObject().setProperty("getByWL", engine->newFunction(getByWL));
+
+    raster = current_image()->get_raster();
+    QSize size = current_image()->get_raster_x_y_size();
+    int w = size.width();  int h = size.height();
+
+    QVector<QVector<double> > output_array =
+        QVector<QVector<double> >( h , QVector<double>(w) );
+    for(script_y = 0; script_y < h; script_y++) {
+      for(script_x = 0; script_x < w; script_x++)
+        output_array[script_y][script_x] = engine.evaluate(for_eval).toNumber();
+      }  // for
+      return output_array;
 }
 
 void ImageHandler::read_envi_hdr(QString fname) {

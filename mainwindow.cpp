@@ -182,7 +182,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
-    listWidget->insertItem(0, lwItem);
+    zGraphListWidget->insertItem(0, lwItem);
 }
 
 void MainWindow::setZGraphDockToggled(zGraph *item)
@@ -219,7 +219,7 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
 {
     if (!view->zcRects.isEmpty()) return;
     if (!view->tmpLines.isEmpty()) return;
-    int num = listWidget->row(item);
+    int num = zGraphListWidget->row(item);
 //    QList<QGraphicsItem *> items = view->scene()->items();
     QList<zGraph *> items = view->getZGraphItemsList();
     if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
@@ -245,7 +245,7 @@ void MainWindow::zGparhEditDialog(QListWidgetItem *item, zGraph *it)
 
 void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 {
-    int num = listWidget->row(item);
+    int num = zGraphListWidget->row(item);
     auto zGraphList = view->getZGraphItemsList();
     zGraph *it = zGraphList[num];
     zGparhEditDialog(item, it);
@@ -308,7 +308,7 @@ void MainWindow::toggleViewAction(bool b)
 //    QList<QGraphicsItem *> items = view->scene()->items();
     QList<zGraph *> zitemlist = view->getZGraphItemsList();
     foreach (zGraph *zitem, zitemlist) {
-        auto lwItem = listWidget->item(zitemlist.indexOf(zitem));
+        auto lwItem = zGraphListWidget->item(zitemlist.indexOf(zitem));
         if (zitem->isVisible()) lwItem->setCheckState(Qt::Checked);
         else lwItem->setCheckState(Qt::Unchecked);
         QFont font = lwItem->font();
@@ -325,12 +325,12 @@ void MainWindow::createConstDockWidgets()
 {
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,200);
-    dockZGraphList->setWidget(listWidget);
+    dockZGraphList->setWidget(zGraphListWidget);
     dockZGraphList->move(1500,770);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
-    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
-    connect(listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
+    connect(zGraphListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
+    connect(zGraphListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
     dockChannelList->setFixedSize(220,700);
     dockChannelList->setWidget(chListWidget);
@@ -628,6 +628,7 @@ void MainWindow::add_envi_hdr_pixmap() {
 void MainWindow::updateNewDataSet()
 {
     view->clearForAllObjects();
+    zGraphListWidget->clear();
     QImage img = im_handler->current_image()->get_rgb(true,84,53,22);
     view->GlobalChannelNum = 0;
     QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);

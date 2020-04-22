@@ -75,8 +75,8 @@ private:
   QCustomPlot *wPlot;
   QVector<QCustomPlot *> plots;
 protected:
-  QDockWidget *dockZGraphList = new QDockWidget("Список Объектов", this);
-  QListWidget *listWidget = new QListWidget(dockZGraphList);
+  QDockWidget *dockZGraphList = new QDockWidget("Области интереса", this);
+  QListWidget *zGraphListWidget = new QListWidget(dockZGraphList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
   void createConstDockWidgets();

@@ -11,6 +11,8 @@ class SpectralImage : public QObject {
 public:
   explicit SpectralImage(QObject *parent = nullptr);
     QString get_file_name() { return fname; }
+    QVector<QVector<QVector<double> > > get_raster() { return img; }
+    QSize get_raster_x_y_size() { return slice_size; }
 public slots:
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);

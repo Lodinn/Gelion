@@ -12,6 +12,12 @@ public:
   ImageHandler(QObject* parent = nullptr);
   ~ImageHandler();
     int set_current_image(int num);
+    int get_band_by_wave_lengthl(double wave_length);
+protected:
+    int script_y, script_x; //например, в ImageHandler.h
+    QVector<QVector<QVector<double> > > raster;
+    double getByWL(double wl);
+    QVector<QVector<double> > get_index_raster(QString for_eval);
 public slots:
   void read_envi_hdr(QString fname);
   void set_read_file_canceled();
