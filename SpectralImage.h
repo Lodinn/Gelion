@@ -16,6 +16,7 @@ public:
 public slots:
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
+  QImage get_index_rgb(bool enhance_contrast = false, int num_index = 0);
   QVector<QPointF> get_profile(QPoint p);
   inline uint32_t get_bands_count() { return depth; }
   QList<QString> get_wl_list(int precision);

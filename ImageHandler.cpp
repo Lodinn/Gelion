@@ -7,14 +7,11 @@
 #include <QThread>
 #include <QApplication>
 #include <QJSEngine>
+#include <QQmlEngine>
 
-ImageHandler::ImageHandler(QObject *parent) {
+ImageHandler::ImageHandler(QObject *parent) { Q_UNUSED(parent) }
 
-}
-
-ImageHandler::~ImageHandler() {
-
-}
+ImageHandler::~ImageHandler() {}
 
 int ImageHandler::set_current_image(int num)
 {
@@ -41,27 +38,38 @@ double ImageHandler::getByWL(double wl) {
   return raster.at(bn).at(script_y).at(script_x);
 }
 
-QVector<QVector<double> > ImageHandler::get_index_raster(QString for_eval)
+void ImageHandler::append_index_raster(QString for_eval)
 {
-    QJSEngine engine;
-    QJSValue jsvalue;
-    engine.globalObject().setProperty( "getByWL", jsvalue );
-// engine->globalObject().setProperty("getByWL", engine->newFunction(getByWL));
-
     raster = current_image()->get_raster();
+    read_file_canceled = false;
+    show_progress_mode = ImageHandler::index_mode;
+    QJSEngine engine;
+    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+    QJSValue js_imagehandler = engine.newQObject(this);
+    QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
+    engine.globalObject().setProperty("getByWL", js_get_by_wl);
     QSize size = current_image()->get_raster_x_y_size();
     int w = size.width();  int h = size.height();
-
-    QVector<QVector<double> > output_array =
-        QVector<QVector<double> >( h , QVector<double>(w) );
+    emit numbands_obtained(h);
+    auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
+    QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
     for(script_y = 0; script_y < h; script_y++) {
-      for(script_x = 0; script_x < w; script_x++)
-        output_array[script_y][script_x] = engine.evaluate(for_eval).toNumber();
+      for(script_x = 0; script_x < w; script_x++) {
+  //        qDebug() << precompiled.call().toNumber() << script_y << script_x;
+        output_array[script_y][script_x] = precompiled.call().toNumber();
       }  // for
-      return output_array;
+      emit reading_progress(script_y);
+      if (read_file_canceled) return;
+      QApplication::processEvents();
+    }  // for
+    qDebug() << "in" << current_image()->get_raster().length();
+    current_image()->append_slice(output_array);
+    qDebug() << "out" << current_image()->get_raster().length();
+    emit index_finished(current_image()->get_raster().length() - 1);
 }
 
 void ImageHandler::read_envi_hdr(QString fname) {
+  show_progress_mode = ImageHandler::hdr_mode;
   QFile hdr_f(fname);
   if(!hdr_f.exists()) return;
   QSettings hdr(fname, QSettings::IniFormat);
@@ -141,6 +149,6 @@ void ImageHandler::read_envi_hdr(QString fname) {
 void ImageHandler::set_read_file_canceled()
 {
     QApplication::processEvents();
-    read_file_canceled = 1;
+    read_file_canceled = true;
 }
 

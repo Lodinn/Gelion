@@ -13,13 +13,15 @@ public:
   ~ImageHandler();
     int set_current_image(int num);
     int get_band_by_wave_lengthl(double wave_length);
+    enum show_progress_mode_set { hdr_mode, index_mode };
+    show_progress_mode_set show_progress_mode;
 protected:
     int script_y, script_x; //например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;
-    double getByWL(double wl);
-    QVector<QVector<double> > get_index_raster(QString for_eval);
+    Q_INVOKABLE double getByWL(double wl);
 public slots:
   void read_envi_hdr(QString fname);
+  void append_index_raster(QString for_eval);
   void set_read_file_canceled();
   SpectralImage* current_image() { return image_list[index_current_dataset]; }
   QStringList get_image_file_names() {
@@ -35,6 +37,7 @@ signals:
   void numbands_obtained(int);
   void reading_progress(int);
   void finished();
+  void index_finished(int);
 };
 
 #endif // IMAGEHANDLER_H

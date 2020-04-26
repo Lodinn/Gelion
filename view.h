@@ -88,7 +88,7 @@ public:
   void roi_position_updated(QPair<int, QPointF> new_position);
 };
 
-class ROI : public QObject, public QGraphicsItem {
+/*class ROI : public QObject, public QGraphicsItem {
   Q_OBJECT
   Q_INTERFACES(QGraphicsItem)
  public:
@@ -114,6 +114,6 @@ class ROI : public QObject, public QGraphicsItem {
  private:
   QPointF pos;
   QString label;
-};
+}; */
 
 #endif  // VIEW_H

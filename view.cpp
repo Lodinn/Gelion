@@ -919,7 +919,7 @@ void gQGraphicsView::insPoint(QPoint pos)
     emit setZGraphDockToggled(zpoint);
 }
 
-ROI::ROI(QPointF position, QString l, shape_t sh)
+/*ROI::ROI(QPointF position, QString l, shape_t sh)
     : shape(sh), pos(position), label(l) {
   setFlag(ItemIsSelectable, true);
   setFlag(ItemIsMovable);
@@ -980,4 +980,4 @@ void ROI::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
 void ROI::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
   update();
   QGraphicsItem::mouseReleaseEvent(event);
-}
+} */

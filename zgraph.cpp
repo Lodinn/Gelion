@@ -783,8 +783,8 @@ void zPolyline::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 //    painter->drawLine(0,0-20,0,0+20);
 //    painter->drawLine(0-20,0,0+20,0);
 
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
+    Q_UNUSED(option)
+    Q_UNUSED(widget)
 }
 
 void zPolyline::addPoint(QPoint point)
