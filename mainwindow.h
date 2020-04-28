@@ -28,6 +28,7 @@ class MainWindow : public QMainWindow {
   void createDockWidgetForItem(zGraph *item);
   void setZGraphDockToggled(zGraph *item);
   void winZGraphList();
+  void indexList();
   void channelList();
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
@@ -35,14 +36,15 @@ class MainWindow : public QMainWindow {
   void winZGraphProfilesHideAll();
   void toggleViewAction(bool b);
   void createDockWidgetForChannels();
+  void createDockWidgetForIndexes();
   void itemClickedChannelList(QListWidgetItem *lwItem);
+  void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(QListWidgetItem *item, zGraph *it);
   void OpenRecentFile();
-
  signals:
   void read_file(QString);
  protected:
-  qreal qmainWindowScale = 0.6;
+  qreal qmainWindowScale = 0.84;
  private:
   void SetupUi();
   QString appName = "Gelion";
@@ -74,12 +76,25 @@ private:
   QProgressDialog *progress_dialog = nullptr;
   QCustomPlot *wPlot;
   QVector<QCustomPlot *> plots;
+  struct RGB_CANNELS {
+      double red = 641.0;
+      double green = 550.0;
+      double blue = 460.0;
+  } rgb_default;
 protected:
   QDockWidget *dockZGraphList = new QDockWidget("Области интереса", this);
   QListWidget *zGraphListWidget = new QListWidget(dockZGraphList);
+  QDockWidget *dockIndexList = new QDockWidget("Изображения", this);
+  QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
+  QAction *showChList_All_Act = new QAction("Отображать все каналы", this);
+  QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
   void createConstDockWidgets();
+public slots:
+  void showContextMenuChannelList(const QPoint &pos);
+  void showChList_All();
+  void showChList_10();
 };
 
 #endif  // MAINWINDOW_H

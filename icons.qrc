@@ -14,5 +14,15 @@
         <file>icons/profs_hide.png</file>
         <file>icons/profs_show.png</file>
         <file>icons/list-channel.jpg</file>
+        <file>icons/MapleLeaf.png</file>
+        <file>icons/palette.png</file>
+        <file>icons/color_BLUE.png</file>
+        <file>icons/color_GREEN.png</file>
+        <file>icons/color_INDIGO.png</file>
+        <file>icons/color_NIR.png</file>
+        <file>icons/color_RED.png</file>
+        <file>icons/color_VIOLET.png</file>
+        <file>icons/color_YELLOW.png</file>
+        <file>icons/color_ORANGE.png</file>
     </qresource>
 </RCC>

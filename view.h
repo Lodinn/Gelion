@@ -41,6 +41,7 @@ public:
     QAction *polygonAct;
     QAction *closeAct;
     QAction *winZGraphListAct;
+    QAction *indexListAct;
     QAction *channelListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
@@ -57,6 +58,7 @@ public:
     bool PAN = false;
     QGraphicsPixmapItem *mainPixmap;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
+    QVector<QPixmap> indexPixmap;
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -72,8 +74,8 @@ public:
   void setRotateItems(qreal &newangle);
   void setGrabberCoordTozRect();
   void setGrabberCoordTozEllipse();
-  void createPolygon();
-  void createPolyline();
+  void createPolygon(QPoint pos);
+  void createPolyline(QPoint pos);
   void multiPointsReplotRect(zGraph *item);
   void multiPointsReplotPoly(zGraph *item);
   QPen fInsPen = QPen(Qt::red, 2, Qt::DashDotLine);

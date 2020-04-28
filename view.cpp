@@ -28,10 +28,16 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     polygonAct = new QAction(polygonIcon, "Добавить ОИ- [Полигон]", this);
     closeAct = new QAction("&Выход", this);
     closeAct->setShortcuts(QKeySequence::Close);
-    const QIcon winZGraphListIcon = QIcon::fromTheme("Список Объектов", QIcon(":/icons/windows2.png"));
-    winZGraphListAct = new QAction(winZGraphListIcon, "Список Объектов", this);
+
+    const QIcon winZGraphListIcon = QIcon::fromTheme("Области интереса", QIcon(":/icons/windows2.png"));
+    winZGraphListAct = new QAction(winZGraphListIcon, "Области интереса", this);
     winZGraphListAct->setShortcut(QKeySequence::Preferences);
     winZGraphListAct->setCheckable(true); winZGraphListAct->setChecked(true);
+
+    const QIcon indexListIcon = QIcon::fromTheme("Изображения", QIcon(":/icons/palette.png"));
+    indexListAct = new QAction(indexListIcon, "Изображения", this);
+    indexListAct->setShortcut(QKeySequence::Preferences);
+    indexListAct->setCheckable(true); indexListAct->setChecked(true);
 
     const QIcon channelListIcon = QIcon::fromTheme("Список Каналов", QIcon(":/icons/list-channel.jpg"));
     channelListAct = new QAction(channelListIcon, "Список Каналов", this);
@@ -641,7 +647,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         return;
       } else {
         tmpRect->updateBoundingRect();
-        tmpRect->dockw->show();
+        tmpRect->dockw->show();  tmpRect->dockw->move(mapToGlobal(event->pos()));
         show_profile_for_Z(tmpRect);
         deleteTmpLines();
         insertMode = gQGraphicsView::None;
@@ -668,7 +674,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             return;
         } else {
             tmpEllipse->updateBoundingRect();
-            tmpEllipse->dockw->show();
+            tmpEllipse->dockw->show();  tmpEllipse->dockw->move(mapToGlobal(event->pos()));
             show_profile_for_Z(tmpEllipse);
             deleteTmpLines();
             insertMode = gQGraphicsView::None;
@@ -690,7 +696,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
           return;
       };  // Qt::LeftButton
       if (event->button() == Qt::RightButton) {
-          createPolyline();
+          createPolyline(event->pos());
           insertMode = gQGraphicsView::None;
           setCursor(Qt::ArrowCursor);
           setMouseTracking(false);
@@ -709,7 +715,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
           return;
       };  // Qt::LeftButton
       if (event->button() == Qt::RightButton) {
-          createPolygon();
+          createPolygon(event->pos());
           insertMode = gQGraphicsView::None;
           setCursor(Qt::ArrowCursor);
           setMouseTracking(false);
@@ -720,7 +726,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
   }  // switch (insertMode)
 }
 
-void gQGraphicsView::createPolygon()
+void gQGraphicsView::createPolygon(QPoint pos)
 {
     zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
     zp->setTitle("Полигон 1");  zp->aicon = QIcon(":/images/vector-polygon.png");
@@ -732,13 +738,13 @@ void gQGraphicsView::createPolygon()
     zp->updateBoundingRect();
     scene()->addItem(zp);
     emit insertZGraphItem(zp);
-    zp->dockw->show();
+    zp->dockw->show();  zp->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zp);
     deleteTmpLines();
     emit setZGraphDockToggled(zp);
 }
 
-void gQGraphicsView::createPolyline()
+void gQGraphicsView::createPolyline(QPoint pos)
 {
     zPolyline *zp = new zPolyline(GlobalScale,GlobalRotate);
     zp->setTitle("Полилиния 1");  zp->aicon = QIcon(":/images/polyline-64.png");
@@ -751,7 +757,7 @@ void gQGraphicsView::createPolyline()
     zp->updateBoundingRect();
     scene()->addItem(zp);
     emit insertZGraphItem(zp);
-    zp->dockw->show();
+    zp->dockw->show();  zp->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zp);
     deleteTmpLines();
     emit setZGraphDockToggled(zp);
@@ -915,6 +921,7 @@ void gQGraphicsView::insPoint(QPoint pos)
     scene()->addItem(zpoint);
     emit insertZGraphItem(zpoint);
     zpoint->dockw->show();
+    zpoint->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zpoint);
     emit setZGraphDockToggled(zpoint);
 }

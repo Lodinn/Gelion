@@ -8,6 +8,9 @@
 #include <QApplication>
 #include <QJSEngine>
 #include <QQmlEngine>
+#include <QStandardPaths>
+#include <QDir>
+#include <QPixmap>
 
 ImageHandler::ImageHandler(QObject *parent) { Q_UNUSED(parent) }
 
@@ -31,6 +34,27 @@ int ImageHandler::get_band_by_wave_lengthl(double wave_length)
             result = ch;  return result;
         }  // if
     return result;
+}
+
+QPixmap ImageHandler::changeBrightnessPixmap(QImage &img, qreal brightness)
+{
+    QColor color;
+    int h, s, v;
+    qreal t_brightnessValue = brightness;
+    for(int row = 0; row < img.height(); ++row) {
+        unsigned int * data = (unsigned int *) img.scanLine(row);
+        for(int col = 0; col < img.width(); ++col) {
+            unsigned int & pix = data[col];
+            color.setRgb(qRed(pix), qGreen(pix), qBlue(pix));
+            color.getHsv(&h, &s, &v);
+            v *= t_brightnessValue; // значение, в которое надо увеличить яркость
+            v = qMin(v, 255);
+            color.setHsv(h, s, v);
+// сохраняем изменённый пиксель
+            pix = qRgba(color.red(), color.green(), color.blue(), qAlpha(pix));
+        }  // for
+    }  // for
+    return QPixmap::fromImage(img);
 }
 
 double ImageHandler::getByWL(double wl) {
@@ -64,8 +88,22 @@ void ImageHandler::append_index_raster(QString for_eval)
     }  // for
     qDebug() << "in" << current_image()->get_raster().length();
     current_image()->append_slice(output_array);
+
+//    save_slice("aaa.bin", output_array);
+
     qDebug() << "out" << current_image()->get_raster().length();
     emit index_finished(current_image()->get_raster().length() - 1);
+}
+
+void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)
+{
+    QString addin_path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QDir dir(addin_path);  if (!dir.exists()) dir.mkpath(addin_path);
+    QFile file(addin_path + "/" + fname);
+    file.open(QIODevice::WriteOnly);
+    QDataStream out(&file);
+    out << slice;
+    file.close();
 }
 
 void ImageHandler::read_envi_hdr(QString fname) {

@@ -37,6 +37,7 @@ private:
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
+
 public:
   QString fname;
 

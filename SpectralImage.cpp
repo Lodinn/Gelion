@@ -83,7 +83,9 @@ QImage SpectralImage::get_index_rgb(bool enhance_contrast, int num_index)
       max_bw = std::max(max_bw, *std::max_element(slice_index[y].begin(), slice_index[y].end()));
       min_bw = std::min(min_bw, *std::min_element(slice_index[y].begin(), slice_index[y].end()));
     }
+
     QImage index_img(slice_size, QImage::Format_RGB32);
+
     for(int y = 0; y < slice_size.height(); y++) {
         QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
         for(int x = 0; x < slice_size.width(); x++) {
@@ -96,6 +98,7 @@ QImage SpectralImage::get_index_rgb(bool enhance_contrast, int num_index)
             }  // if
         }    // for int x
     }  // for int y
+
     return index_img;
 }
 
@@ -118,9 +121,8 @@ QVector<QPointF> SpectralImage::get_profile(QPoint p) {
 
 QList<QString> SpectralImage::get_wl_list(int precision) {
   QList<QString> strlist;
-  strlist.append(QString("RGB [R:%1 nm,G:%2 nm, B:%3 nm]").arg(430).arg(550).arg(570));
   for(int z = 0; z < depth; z++)
-      strlist.append(QString("номер %1 * %2  нм").arg(z + 1, 3).
+      strlist.append(QString("номер %1 * %2 нм").arg(z + 1, 3).
                      arg(wavelengths[z], 7, 'f', precision));
   return strlist;
 }

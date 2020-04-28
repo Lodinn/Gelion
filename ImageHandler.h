@@ -15,6 +15,7 @@ public:
     int get_band_by_wave_lengthl(double wave_length);
     enum show_progress_mode_set { hdr_mode, index_mode };
     show_progress_mode_set show_progress_mode;
+    QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
 protected:
     int script_y, script_x; //например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;
@@ -33,6 +34,7 @@ private:
   bool read_file_canceled = false;
   int index_current_dataset = -1;
   QList<SpectralImage*> image_list;
+  void save_slice(QString fname, QVector<QVector<double> > slice);
 signals:
   void numbands_obtained(int);
   void reading_progress(int);
