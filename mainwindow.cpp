@@ -8,12 +8,12 @@
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-    SetupUi();
-    setWindowTitle(QString("%1").arg(appName));
-    QApplication::setApplicationName(appName);
+  SetupUi();
+  setWindowTitle(QString("%1").arg(appName));
+  QApplication::setApplicationName(appName);
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
-    if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
 }
 
 MainWindow::~MainWindow() {
@@ -26,8 +26,8 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-    Q_UNUSED(event);
-    if (saveSettingAtCloseApp) saveSettings(dataFileName);
+  Q_UNUSED(event);
+  if (saveSettingAtCloseApp) saveSettings(dataFileName);
 }
 
 void MainWindow::saveSettings(QString fname)
@@ -270,7 +270,27 @@ void MainWindow::createActions() {
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
   fileToolBar->addAction(view->openAct);
   fileToolBar->addSeparator();
+//<<<<<<< HEAD
 
+//=======
+// edit
+//  QMenu *editMenu = menuBar()->addMenu(tr("&Редактирование"));
+//  QToolBar *editToolBar = addToolBar(tr("Редактирование"));
+//  editToolBar->setObjectName("editToolBar");
+
+//  const QIcon printIcon =
+//      QIcon::fromTheme("Печать", QIcon(":/icons/butterfly.png"));
+//  QAction *printAct = new QAction(printIcon, tr("&Печать"), this);
+//  editMenu->addAction(printAct);
+//  editToolBar->addAction(printAct);
+//  auto testAction = new QAction("test");
+//  editToolBar->addAction(testAction);
+//  connect(testAction, &QAction::triggered, [&](){
+//    im_handler->get_index_raster("R(500) / R(700)");
+//    QImage img = im_handler->current_image()->get_grayscale(true);
+//    img.save("test.png");
+//  });
+//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 // &&& inset items menu
   QMenu *itemsMenu = menuBar()->addMenu("Область интереса (ОИ)");
   QToolBar *itemsToolBar = addToolBar("Область интереса (ОИ)");
@@ -300,7 +320,6 @@ void MainWindow::createActions() {
   winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
   winMenu->addAction(view->winZGraphListHideAllAct);   winToolBar->addAction(view->winZGraphListHideAllAct);
   winMenu->addSeparator();      winToolBar->addSeparator();
-
 }
 
 void MainWindow::createStatusBar() {
@@ -371,18 +390,17 @@ void MainWindow::open() {
   dataFileName = fname;
   QStringList fnames = im_handler->get_image_file_names();
   int num = fnames.indexOf(dataFileName);
-  if ( num != -1 ) {
-      num = im_handler->set_current_image(num);
-      if ( num != -1 ) {
-          updateNewDataSet();
-          addRecentFile();
-          return; }  // if (num != -1)
-  }  // if
+  if (num != -1) {
+    if (im_handler->set_current_image(num)) {
+      updateNewDataSet();
+      addRecentFile();
+      return;
+    }
+  }
   emit read_file(dataFileName);
 }
 
 void MainWindow::show_progress(int max_progress) {
-
   //    QProgressDialog *progress_dialog = new QProgressDialog("Загрузка файла
   //    ...", "Отмена", 0, max_progress, this);
   if (progress_dialog != nullptr) delete progress_dialog;
@@ -401,7 +419,6 @@ void MainWindow::show_progress(int max_progress) {
 }
 
 void MainWindow::stop_reading_file() {
-
   im_handler->set_read_file_canceled();
   delete_progress_dialog();
 //  progress_dialog->hide();
@@ -409,7 +426,6 @@ void MainWindow::stop_reading_file() {
 }
 
 void MainWindow::delete_progress_dialog() {
-
   if (progress_dialog != nullptr) {
     delete progress_dialog;
     progress_dialog = nullptr;
@@ -670,15 +686,16 @@ void MainWindow::add_envi_hdr_pixmap() {
   addRecentFile();
 }
 
+//<<<<<<< HEAD
 void MainWindow::updateNewDataSet()
 {
     view->indexPixmap.clear();
     view->clearForAllObjects();
     zGraphListWidget->clear();
     indexListWidget->clear();
-    int num_red = im_handler->get_band_by_wave_lengthl(rgb_default.red);
-    int num_green = im_handler->get_band_by_wave_lengthl(rgb_default.green);
-    int num_blue = im_handler->get_band_by_wave_lengthl(rgb_default.blue);
+    int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
+    int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
+    int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
     qDebug() << num_red << num_green << num_blue;
     if (num_red == -1 || num_green == -1 || num_blue == -1) {
         qDebug() << "CRITICAL! WRONG CONSTRUCTING THE RGB IMAGE";
@@ -694,6 +711,19 @@ void MainWindow::updateNewDataSet()
     createDockWidgetForIndexes();
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+//=======
+//void MainWindow::updateNewDataSet() {
+//  view->clearForAllObjects();
+//  zGraphListWidget->clear();
+//  QImage img = im_handler->current_image()->get_rgb(true, 84, 53, 22);
+//  view->GlobalChannelNum = 0;
+//  QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
+//  view->mainPixmap->setPixmap(pxm);
+//  view->mainPixmap->setOpacity(1.0);
+//  createDockWidgetForChannels();
+//  setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
+//  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 }
 
 void MainWindow::addRecentFile()
@@ -722,8 +752,8 @@ void MainWindow::OpenRecentFile()
             dataFileName = action->data().toString();
             emit read_file(dataFileName);
         } else {
-            num = im_handler->set_current_image(num);
-            if (num == -1) return;
+            auto set_current = im_handler->set_current_image(num);
+            if (!set_current) return;
             dataFileName = im_handler->current_image()->get_file_name();
             updateNewDataSet();
         }  // if (num == -1)

@@ -4,12 +4,36 @@
 #include <QDebug>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
-    img.clear();
+  img.clear();
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
   if(img.count() < band) return QVector<QVector<double> >();
   return img.at(band);
+}
+
+QImage SpectralImage::get_grayscale(bool enhance_contrast, uint16_t band) {
+  if(slice_size.width() <= 0 || slice_size.height() <= 0) return QImage();
+  QVector<QVector<double> > slice = get_band(band);
+  if(slice.isEmpty()) {
+    qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE RGB IMAGE";
+    return QImage();
+  }
+  double max = INT_MIN, min = INT_MAX;
+  for(int y = 0; y < slice_size.height(); y++) {
+    max = std::max(max, *std::max_element(slice[y].begin(), slice[y].end()));
+    min = std::min(min, *std::min_element(slice[y].begin(), slice[y].end()));
+  }
+  QImage img(slice_size, QImage::Format_Grayscale8);
+  for(int y = 0; y < slice_size.height(); y++) {
+    uchar *im_scLine = reinterpret_cast<uchar *>(img.scanLine(y));
+    for(int x = 0; x < slice_size.width(); x++) {
+      if(enhance_contrast) {
+        im_scLine[x] = qRound((slice[y][x] - min) / (max - min) * 255.0);
+      } else im_scLine[x] = qRound(slice[y][x] * 255.0);
+    }
+  }
+  return img;
 }
 
 QImage SpectralImage::get_rgb(bool enhance_contrast, int red, int green, int blue) {
