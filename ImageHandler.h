@@ -11,24 +11,18 @@ class ImageHandler : public QObject {
 public:
   ImageHandler(QObject* parent = nullptr);
   ~ImageHandler();
-//<<<<<<< HEAD
+//! returns true on success (current index set to the requested one), false otherwise
     bool set_current_image(int image_list_index);
+    QString get_regular_expression(QString input);
     int get_band_by_wave_length(double wave_length);
     enum show_progress_mode_set { hdr_mode, index_mode };
     show_progress_mode_set show_progress_mode;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
 protected:
-    int script_y, script_x; //например, в ImageHandler.h
+    int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;
     Q_INVOKABLE double getByWL(double wl);
-//=======
-//  //! returns true on success (current index set to the requested one), false otherwise
-
-//  int get_band_by_wavelength(double wavelength);
-//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 public slots:
-//  double getByWL(double wl);
-//  QVector<QVector<double> > get_index_raster(QString for_eval);
   void read_envi_hdr(QString fname);
   void append_index_raster(QString for_eval);
   void set_read_file_canceled();

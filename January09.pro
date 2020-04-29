@@ -24,6 +24,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
+  inputindexdlg.cpp \
         main.cpp \
         mainwindow.cpp \
     view.cpp \
@@ -34,6 +35,7 @@ SOURCES += \
     SpectralImage.cpp
 
 HEADERS += \
+  inputindexdlg.h \
         mainwindow.h \
     view.h \
     ImageHandler.h \
@@ -46,4 +48,5 @@ RESOURCES += \
     icons.qrc
 
 FORMS += \
+    inputindexdlg.ui \
     zgraphparamdlg.ui

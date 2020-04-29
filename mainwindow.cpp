@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "zgraphparamdlg.h"
 #include "ui_zgraphparamdlg.h"
+#include "inputindexdlg.h"
+#include "ui_inputindexdlg.h"
 
 #include <QMenu>
 #include <QToolBar>
@@ -8,7 +10,11 @@
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+
   SetupUi();
+
+  im_handler->moveToThread(worker_thread);
+
   setWindowTitle(QString("%1").arg(appName));
   QApplication::setApplicationName(appName);
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
@@ -92,7 +98,6 @@ void MainWindow::SetupUi() {
   createStatusBar();
   createConstDockWidgets();
 
-  im_handler->moveToThread(worker_thread);
   connect(this, SIGNAL(read_file(QString)), im_handler,
           SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
   connect(im_handler, SIGNAL(numbands_obtained(int)), this,
@@ -100,10 +105,10 @@ void MainWindow::SetupUi() {
   connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
   connect(view, SIGNAL(point_picked(QPointF)), this,
           SLOT(show_profile(QPointF)));
-  connect(view, &gQGraphicsView::roi_position_updated, this,
-          [this](QPair<int, QPointF> new_pos) {
-            show_profile(new_pos.second, new_pos.first);
-          });
+//  connect(view, &gQGraphicsView::roi_position_updated, this,
+//          [this](QPair<int, QPointF> new_pos) {
+//            show_profile(new_pos.second, new_pos.first);
+//          });
   connect(view,SIGNAL(insertZGraphItem(zGraph*)),this,SLOT(createDockWidgetForItem(zGraph*)));
   connect(view,SIGNAL(setZGraphDockToggled(zGraph*)),this,SLOT(setZGraphDockToggled(zGraph*)));
 
@@ -258,7 +263,7 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 }
 
 void MainWindow::createActions() {
-// file
+// &&&file
   fileMenu = menuBar()->addMenu(tr("&Файл"));
   fileToolBar = addToolBar(tr("Файл"));
   fileToolBar->setObjectName("fileToolBar");
@@ -270,30 +275,9 @@ void MainWindow::createActions() {
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
   fileToolBar->addAction(view->openAct);
   fileToolBar->addSeparator();
-//<<<<<<< HEAD
-
-//=======
-// edit
-//  QMenu *editMenu = menuBar()->addMenu(tr("&Редактирование"));
-//  QToolBar *editToolBar = addToolBar(tr("Редактирование"));
-//  editToolBar->setObjectName("editToolBar");
-
-//  const QIcon printIcon =
-//      QIcon::fromTheme("Печать", QIcon(":/icons/butterfly.png"));
-//  QAction *printAct = new QAction(printIcon, tr("&Печать"), this);
-//  editMenu->addAction(printAct);
-//  editToolBar->addAction(printAct);
-//  auto testAction = new QAction("test");
-//  editToolBar->addAction(testAction);
-//  connect(testAction, &QAction::triggered, [&](){
-//    im_handler->get_index_raster("R(500) / R(700)");
-//    QImage img = im_handler->current_image()->get_grayscale(true);
-//    img.save("test.png");
-//  });
-//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
-// &&& inset items menu
-  QMenu *itemsMenu = menuBar()->addMenu("Область интереса (ОИ)");
-  QToolBar *itemsToolBar = addToolBar("Область интереса (ОИ)");
+// &&& inset ROI menu
+  QMenu *itemsMenu = menuBar()->addMenu("&Области интереса");
+  QToolBar *itemsToolBar = addToolBar("Области интереса");
   itemsToolBar->setObjectName("itemsToolBar");
   itemsMenu->addAction(view->pointAct);   itemsToolBar->addAction(view->pointAct);
   itemsMenu->addAction(view->rectAct);    itemsToolBar->addAction(view->rectAct);
@@ -309,11 +293,11 @@ void MainWindow::createActions() {
     QAction *indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
     indexMenu->addAction(indexAct);
     indexToolBar->addAction(indexAct);
+    connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 // &&& windows
-  QMenu *winMenu = menuBar()->addMenu("Окна");
+  QMenu *winMenu = menuBar()->addMenu("&Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
   winToolBar->setObjectName("winToolBar");
-
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
   winMenu->addAction(view->indexListAct);   winToolBar->addAction(view->indexListAct);
   winMenu->addAction(view->channelListAct);   winToolBar->addAction(view->channelListAct);
@@ -378,9 +362,19 @@ void MainWindow::createConstDockWidgets()
     dockChannelList->move(rec.width() - 300,650);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
-// контекстное меню для отображения части каналов с шагом 50
-    connect(showChList_All_Act, SIGNAL(triggered()),this, SLOT(showChList_All()));
-    connect(showChList_10_Act, SIGNAL(triggered()),this, SLOT(showChList_10()));
+// контекстное меню для отображения части каналов с шагом 2-10
+    QAction *action = new QAction("Отображать все каналы", this);
+    action->setData(1);  show_channel_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+    action = new QAction("Отображать каналы с шагом 2", this);
+    action->setData(2);  show_channel_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+    action = new QAction("Отображать каналы с шагом 5", this);
+    action->setData(5);  show_channel_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+    action = new QAction("Отображать каналы с шагом 10", this);
+    action->setData(10);  show_channel_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 }
 
 void MainWindow::open() {
@@ -764,22 +758,44 @@ void MainWindow::showContextMenuChannelList(const QPoint &pos)
 {
     QPoint globalPos = chListWidget->mapToGlobal(pos);
     QMenu menu(this);
-    menu.addAction(showChList_All_Act);
-    menu.addSeparator();
-    menu.addAction(showChList_10_Act);
+    for (int i = 0; i < show_channel_list_acts.count(); i++) {
+        menu.addAction(show_channel_list_acts[i]);
+        if (i == 0 ) menu.addSeparator();
+    }  // for
     menu.exec(globalPos);
 }
 
-void MainWindow::showChList_All()
+void MainWindow::show_channel_list()
 {
-    for (int row = 0; row < chListWidget->count(); row++)
-        chListWidget->item(row)->setHidden(false);
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        view->GlobalChannelStep = action->data().toInt();
+        for (int row = 0; row < chListWidget->count(); row++) {
+            if (row % action->data().toInt() == 0)
+                chListWidget->item(row)->setHidden(false);
+            else chListWidget->item(row)->setHidden(true);
+        }  // for
+    }  // if
 }
 
-void MainWindow::showChList_10()
+void MainWindow::inputIndexDlgShow()
 {
-    for (int row = 0; row < chListWidget->count(); row++) {
-        if (row % 10 == 0) chListWidget->item(row)->setHidden(false);
-        else chListWidget->item(row)->setHidden(true);
-    }  // for
+    inputIndexDlg *dlg = new inputIndexDlg(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    QVector<double> wls = im_handler->current_image()->wls();
+    dlg->setSpectralRange(wls);
+    if (dlg->exec() == QDialog::Accepted) {
+        QString input = dlg->get_formula();
+        if (input.isEmpty()) {
+            qDebug() << "wrong index !!!";
+            return;
+        }  // if
+        QString for_eval = im_handler->get_regular_expression(input);
+        qDebug() << for_eval;
+        if (for_eval.isEmpty()) {
+            qDebug() << "wrong index !!!";
+            return;
+        }  // if
+        emit index_calculate(for_eval);
+    }  // if
 }

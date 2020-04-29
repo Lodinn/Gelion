@@ -6,14 +6,12 @@
 #include <QPolygon>
 #include <QThread>
 #include <QApplication>
+#include <QRegularExpression>
 #include <QJSEngine>
 #include <QQmlEngine>
-//<<<<<<< HEAD
 #include <QStandardPaths>
 #include <QDir>
 #include <QPixmap>
-//=======
-//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 
 ImageHandler::ImageHandler(QObject *parent) { Q_UNUSED(parent) }
 
@@ -24,6 +22,16 @@ bool ImageHandler::set_current_image(int image_list_index) {
       (image_list_index > image_list.length() - 1)) return false;
   index_current_dataset = image_list_index;
   return true;
+}
+
+QString ImageHandler::get_regular_expression(QString input)
+{
+    QString sanitized = input.replace('[', '(').replace(']', ')').
+            replace('r', 'R').replace('v', 'R');
+    sanitized.replace(QRegularExpression("[^explognR^* /+\\-().\\d<>& ]"), "");
+    QString for_eval = sanitized.replace(QRegularExpression("R(\\d+)"), "getByWL(\\1)")
+            .replace("^", "**").replace("ln", "log");
+    return for_eval;
 }
 
 int ImageHandler::get_band_by_wave_length(double wavelength) {
@@ -65,7 +73,6 @@ double ImageHandler::getByWL(double wl) {
   return current_image()->get_raster().at(bn).at(script_y).at(script_x);
 }
 
-//<<<<<<< HEAD
 void ImageHandler::append_index_raster(QString for_eval)
 {
     raster = current_image()->get_raster();
@@ -108,32 +115,6 @@ void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)
     QDataStream out(&file);
     out << slice;
     file.close();
-//=======
-//QVector<QVector<double> > ImageHandler::get_index_raster(QString for_eval)  {
-//  QJSEngine engine;
-//  QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-//  QJSValue js_imagehandler = engine.newQObject(this);
-//  QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
-//  engine.globalObject().setProperty("R", js_get_by_wl);
-//// engine->globalObject().setProperty("getByWL", engine->newFunction(getByWL));
-
-//  QSize size = current_image()->get_raster_x_y_size();
-//  int w = size.width();  int h = size.height();
-//  auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
-//  SpectralImage* si_test = new SpectralImage;
-//  si_test->set_image_size(1, h, w);
-//  QVector<QVector<double> > output_array =
-//      QVector<QVector<double> >(h , QVector<double>(w));
-//  for(script_y = 0; script_y < h; script_y++) {
-//    for(script_x = 0; script_x < w; script_x++) {
-//      output_array[script_y][script_x] = precompiled.call().toNumber();
-//    }
-//  }
-//  si_test->append_slice(output_array);
-//  image_list.append(si_test);
-//  set_current_image(image_list.count() - 1);
-//  return output_array;
-//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 }
 
 void ImageHandler::read_envi_hdr(QString fname) {
@@ -158,7 +139,6 @@ void ImageHandler::read_envi_hdr(QString fname) {
     qDebug() << "Interleave/dtype not implemented yet";
     return;
   }
-//  QSize size = QSize(w, h);
   if (!hdr_f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
   QTextStream hdrf_in(&hdr_f);
   const QString hdr_content = hdrf_in.readAll();

@@ -43,6 +43,7 @@ class MainWindow : public QMainWindow {
   void OpenRecentFile();
  signals:
   void read_file(QString);
+  void index_calculate(QString);
  protected:
   qreal qmainWindowScale = 0.84;
  private:
@@ -91,10 +92,11 @@ protected:
   QAction *showChList_All_Act = new QAction("Отображать все каналы", this);
   QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
   void createConstDockWidgets();
+  QVector<QAction *> show_channel_list_acts;
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
-  void showChList_All();
-  void showChList_10();
+  void show_channel_list();
+  void inputIndexDlgShow();
 };
 
 #endif  // MAINWINDOW_H
