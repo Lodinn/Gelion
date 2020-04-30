@@ -59,7 +59,7 @@ public:
     bool PAN = false;
     QGraphicsPixmapItem *mainPixmap;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
-    QVector<QPixmap> indexPixmap;
+    QString index_title_str;
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;

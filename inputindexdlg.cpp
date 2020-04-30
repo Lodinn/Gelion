@@ -1,6 +1,8 @@
 #include "inputindexdlg.h"
 #include "ui_inputindexdlg.h"
 
+#include <QMenu>
+
 inputIndexDlg::inputIndexDlg(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::inputIndexDlg)
@@ -13,6 +15,13 @@ inputIndexDlg::inputIndexDlg(QWidget *parent) :
     ui->buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    QAction *action = new QAction("Normalized difference water index", this);
+    action->setData("(R800-R650)/(R800+R650)");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+    action = new QAction("Green Difference Vegetation Index (GDVI)", this);
+    action->setData("R800-R650");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
 }
 
 inputIndexDlg::~inputIndexDlg()
@@ -30,7 +39,32 @@ void inputIndexDlg::setSpectralRange(QVector<double> &wls)
                 .arg(count).arg(width, 0, 'f', 1).arg(begin, 0, 'f', 0).arg(end, 0, 'f', 0));
 }
 
+QString inputIndexDlg::get_index_title()
+{
+    return ui->lineEditInputTitle->text();
+}
+
 QString inputIndexDlg::get_formula()
 {
     return ui->lineEditInputFormula->text();
+}
+
+void inputIndexDlg::predefined_index_menu()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        ui->lineEditInputTitle->setText(action->text());
+        ui->lineEditInputFormula->setText(action->data().toString());
+    }  // if
+}
+
+void inputIndexDlg::on_pushButtonIndexes_clicked()
+{
+    QPoint pos = ui->pushButtonIndexes->geometry().topRight();
+    QPoint globalPos = mapToGlobal(pos);
+    QMenu menu(this);
+    foreach(QAction *act, predefined_index_list_acts)
+        menu.addAction(act);
+    menu.exec(globalPos);
+
 }

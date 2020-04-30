@@ -4,7 +4,7 @@
 #include <QDebug>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
-  img.clear();
+    img.clear();
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){

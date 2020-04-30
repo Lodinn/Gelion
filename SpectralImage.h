@@ -34,16 +34,20 @@ public slots:
 
 private:
   // index order (from outer to inner): z, y, x
-  QVector<QVector<QVector<double> > > img;
+  QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
 
 public:
   QString fname;
-
+//  QVector<QPixmap> indexPixmap;  // нулевой QPixmap содержит дефолтную RGB
+  QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
+  QStringList indexPixmapNames;
 //  friend void ImageHandler::read_envi_hdr(QString);
+
 signals:
+
 };
 
 #endif // SPECTRALIMAGE_H

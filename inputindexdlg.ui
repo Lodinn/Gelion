@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>382</width>
-    <height>227</height>
+    <height>287</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>180</y>
+     <y>240</y>
      <width>161</width>
      <height>32</height>
     </rect>
@@ -33,7 +33,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>10</y>
+     <y>60</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -46,7 +46,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>40</y>
+     <y>80</y>
      <width>361</width>
      <height>20</height>
     </rect>
@@ -59,7 +59,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>70</y>
+     <y>130</y>
      <width>361</width>
      <height>101</height>
     </rect>
@@ -128,9 +128,48 @@
      </font>
     </property>
     <property name="text">
-     <string>(r800-r680)/(r800+r680), цифры - длина волны в нм</string>
+     <string>(r800-r680)/(r800+r680) , цифры - длина волны в нм</string>
     </property>
    </widget>
+  </widget>
+  <widget class="QLabel" name="labelInputTitle">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>181</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Введите наименование индекса:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lineEditInputTitle">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>30</y>
+     <width>261</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>NDVI</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButtonIndexes">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>30</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Индексы...</string>
+   </property>
   </widget>
  </widget>
  <resources/>

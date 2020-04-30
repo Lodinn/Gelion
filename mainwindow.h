@@ -41,6 +41,7 @@ class MainWindow : public QMainWindow {
   void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(QListWidgetItem *item, zGraph *it);
   void OpenRecentFile();
+  void add_index_pixmap(int);
  signals:
   void read_file(QString);
   void index_calculate(QString);

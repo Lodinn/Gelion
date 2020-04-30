@@ -103,12 +103,12 @@ void MainWindow::SetupUi() {
   connect(im_handler, SIGNAL(numbands_obtained(int)), this,
           SLOT(show_progress(int)), Qt::DirectConnection);
   connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
+  connect(im_handler, SIGNAL(finished()), this, SLOT(delete_progress_dialog()),
+          Qt::DirectConnection);
+
   connect(view, SIGNAL(point_picked(QPointF)), this,
           SLOT(show_profile(QPointF)));
-//  connect(view, &gQGraphicsView::roi_position_updated, this,
-//          [this](QPair<int, QPointF> new_pos) {
-//            show_profile(new_pos.second, new_pos.first);
-//          });
+
   connect(view,SIGNAL(insertZGraphItem(zGraph*)),this,SLOT(createDockWidgetForItem(zGraph*)));
   connect(view,SIGNAL(setZGraphDockToggled(zGraph*)),this,SLOT(setZGraphDockToggled(zGraph*)));
 
@@ -118,6 +118,12 @@ void MainWindow::SetupUi() {
   connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));
   connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
   connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
+
+  connect(this, SIGNAL(index_calculate(QString)), im_handler,
+          SLOT(append_index_raster(QString)), Qt::DirectConnection);
+  connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(add_index_pixmap(int)));
+  connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(delete_progress_dialog()),
+          Qt::DirectConnection);
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -213,7 +219,6 @@ void MainWindow::channelList()
 
 void MainWindow::winZGraphProfilesShowAll()
 {
-//    QList<QGraphicsItem *> items = view->scene()->items();
     QList<zGraph *> zitemlist = view->getZGraphItemsList();
     foreach (zGraph *zitem, zitemlist)
         zitem->dockw->setVisible(true);
@@ -231,7 +236,6 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
     if (!view->zcRects.isEmpty()) return;
     if (!view->tmpLines.isEmpty()) return;
     int num = zGraphListWidget->row(item);
-//    QList<QGraphicsItem *> items = view->scene()->items();
     QList<zGraph *> items = view->getZGraphItemsList();
     if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
     else items[num]->setVisible(false);
@@ -398,16 +402,20 @@ void MainWindow::show_progress(int max_progress) {
   //    QProgressDialog *progress_dialog = new QProgressDialog("Загрузка файла
   //    ...", "Отмена", 0, max_progress, this);
   if (progress_dialog != nullptr) delete progress_dialog;
+  QString pdInfoStr = "", pdTitleStr = "";
+  if (im_handler->show_progress_mode == ImageHandler::hdr_mode) {
+      pdTitleStr = "Открыть файл";  pdInfoStr = "Загрузка файла ..."; }
+  if (im_handler->show_progress_mode == ImageHandler::index_mode) {
+      pdTitleStr = "Расчет индекса";   pdInfoStr = "Расчет индекса ..."; }
   progress_dialog =
-      new QProgressDialog("Загрузка файла ...", "Отмена", 0, 100, this);
+          new QProgressDialog(pdInfoStr, "Отмена", 0, 100, this);
+  progress_dialog->setWindowTitle(pdTitleStr);
   progress_dialog->resize(350, 100);
   progress_dialog->setMaximum(max_progress);
   progress_dialog->show();
   QApplication::processEvents();
   connect(im_handler, SIGNAL(reading_progress(int)), progress_dialog,
           SLOT(setValue(int)));
-  connect(im_handler, SIGNAL(finished()), this, SLOT(delete_progress_dialog()),
-          Qt::DirectConnection);
   connect(progress_dialog, SIGNAL(canceled()), this, SLOT(stop_reading_file()),
           Qt::DirectConnection);
 }
@@ -452,14 +460,32 @@ void MainWindow::createDockWidgetForChannels()
 
 void MainWindow::createDockWidgetForIndexes()
 {
+    int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
+    int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
+    int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
+    qDebug() << num_red << num_green << num_blue;
+    if (num_red == -1 || num_green == -1 || num_blue == -1) {
+        qDebug() << "CRITICAL! WRONG CONSTRUCTING THE RGB IMAGE";
+        return;
+    }  // if
+    QImage img = im_handler->current_image()->get_rgb(true,num_red,num_green,num_blue);
+// 84 - 641nm 53 - 550nm 22 - 460nm
+    view->GlobalChannelNum = 0;
+    QPixmap pxm = view->changeBrightnessPixmap(img, 3.0);
+    view->mainPixmap->setPixmap(pxm);
+    view->mainPixmap->setOpacity(1.0);
+//----------------------------------------------------------------
     indexListWidget->clear();
     QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
-    lwItem->setText(QString("R: %1 нм G: %2 нм B: %3 нм").arg(rgb_default.red).arg(rgb_default.green).arg(rgb_default.blue));
+    QString rgb_str = QString("R: %1 нм G: %2 нм B: %3 нм").arg(rgb_default.red).arg(rgb_default.green).arg(rgb_default.blue);
+    lwItem->setText(rgb_str);
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
-    view->indexPixmap.append(view->mainPixmap->pixmap());
+//    im_handler->current_image()->indexPixmap.append(pxm);
+    im_handler->current_image()->indexImages.append(img);
+    im_handler->current_image()->indexPixmapNames.append(rgb_str);
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
 }
 
@@ -672,7 +698,12 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 {
     chListWidget->currentItem()->setSelected(false);
     int num = indexListWidget->row(lwItem);
-    view->mainPixmap->setPixmap(view->indexPixmap[num]);
+//    view->mainPixmap->setPixmap(im_handler->current_image()->indexPixmap.at(num));
+    QImage img = im_handler->current_image()->indexImages.at(num);
+    if (num == 0)
+        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, 3.0));
+    else
+        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, .7));
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
@@ -680,44 +711,20 @@ void MainWindow::add_envi_hdr_pixmap() {
   addRecentFile();
 }
 
-//<<<<<<< HEAD
 void MainWindow::updateNewDataSet()
 {
-    view->indexPixmap.clear();
+//    im_handler->current_image()->indexPixmap.clear();
+    im_handler->current_image()->indexImages.clear();
+    im_handler->current_image()->indexPixmapNames.clear();
     view->clearForAllObjects();
     zGraphListWidget->clear();
     indexListWidget->clear();
-    int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
-    int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
-    int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
-    qDebug() << num_red << num_green << num_blue;
-    if (num_red == -1 || num_green == -1 || num_blue == -1) {
-        qDebug() << "CRITICAL! WRONG CONSTRUCTING THE RGB IMAGE";
-        return;
-    }  // if
-    QImage img = im_handler->current_image()->get_rgb(true,num_red,num_green,num_blue);
-// 84 - 641nm 53 - 550nm 22 - 460nm
-    view->GlobalChannelNum = 0;
-    QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
-    view->mainPixmap->setPixmap(pxm);
-    view->mainPixmap->setOpacity(1.0);
+
     createDockWidgetForChannels();
     createDockWidgetForIndexes();
+
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     if (restoreSettingAtStartUp) restoreSettings(dataFileName);
-//=======
-//void MainWindow::updateNewDataSet() {
-//  view->clearForAllObjects();
-//  zGraphListWidget->clear();
-//  QImage img = im_handler->current_image()->get_rgb(true, 84, 53, 22);
-//  view->GlobalChannelNum = 0;
-//  QPixmap pxm = view->changeBrightnessPixmap(img, 4.0);
-//  view->mainPixmap->setPixmap(pxm);
-//  view->mainPixmap->setOpacity(1.0);
-//  createDockWidgetForChannels();
-//  setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
-//  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
-//>>>>>>> 254b9fb1a4eac64379a65b662741b34498aae867
 }
 
 void MainWindow::addRecentFile()
@@ -785,6 +792,7 @@ void MainWindow::inputIndexDlgShow()
     QVector<double> wls = im_handler->current_image()->wls();
     dlg->setSpectralRange(wls);
     if (dlg->exec() == QDialog::Accepted) {
+        view->index_title_str = dlg->get_index_title();
         QString input = dlg->get_formula();
         if (input.isEmpty()) {
             qDebug() << "wrong index !!!";
@@ -798,4 +806,23 @@ void MainWindow::inputIndexDlgShow()
         }  // if
         emit index_calculate(for_eval);
     }  // if
+}
+
+void MainWindow::add_index_pixmap(int num)
+{
+    SpectralImage* spectral_img = im_handler->current_image();
+    QImage img = spectral_img->get_index_rgb(true,num);
+    QPixmap pxm = view->changeBrightnessPixmap(img, .7);
+    view->mainPixmap->setPixmap(pxm);
+    view->mainPixmap->setOpacity(1.0);
+//----------------------------------------------------------
+    QListWidgetItem *lwItem = new QListWidgetItem();
+    indexListWidget->addItem(lwItem);
+    lwItem->setIcon(QIcon(":/icons/palette.png"));
+    lwItem->setText(view->index_title_str);
+    indexListWidget->setCurrentRow(indexListWidget->count() - 1);
+    chListWidget->currentItem()->setSelected(false);  // конкурент
+//    im_handler->current_image()->indexPixmap.append(pxm);
+    im_handler->current_image()->indexImages.append(img);
+    im_handler->current_image()->indexPixmapNames.append(view->index_title_str);
 }
