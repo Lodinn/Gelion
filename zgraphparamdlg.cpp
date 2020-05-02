@@ -8,7 +8,7 @@ zgraphParamDlg::zgraphParamDlg(QWidget *parent) :
     ui->setupUi(this);
 
     setWindowIcon(QIcon(":/icons/256_colors.png"));
-    setWindowTitle("Область интереса - Параметры");
+    setWindowTitle("Параметры области интереса");
 
     ui->buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);

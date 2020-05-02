@@ -31,6 +31,7 @@ public slots:
     void releaseOneGrabberRect();
     void moveOneGrabberRect(int num, QPointF point);
     void selectionZChanged();
+    void deleteZGraphItem(zGraph *item);
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;
     int GlobalChannelNum = 0;  int GlobalChannelStep = 0;
@@ -59,7 +60,7 @@ public:
     bool PAN = false;
     QGraphicsPixmapItem *mainPixmap;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
-    QString index_title_str;
+    QString index_title_str, index_formula_str;
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
@@ -85,6 +86,7 @@ public:
   void insertZGraphItem(zGraph *item);  // main createDockWidgetForItem
   void setZGraphDockToggled(zGraph *item);  // main toggleViewAction
   void point_picked(QPointF);
+  void removeFromzGraphListWidget(zGraph *item);
   // FIXME: keeping two separate index lists here and in mainwindow. Subclass
   // instead and connect to plot directly?
 //  void roi_position_updated(QPair<int, QPointF> new_position);

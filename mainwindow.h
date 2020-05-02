@@ -32,6 +32,7 @@ class MainWindow : public QMainWindow {
   void channelList();
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
+  void listWidgetDeleteItem(zGraph *item);
   void winZGraphProfilesShowAll();
   void winZGraphProfilesHideAll();
   void toggleViewAction(bool b);
@@ -46,7 +47,7 @@ class MainWindow : public QMainWindow {
   void read_file(QString);
   void index_calculate(QString);
  protected:
-  qreal qmainWindowScale = 0.84;
+  qreal qmainWindowScale = .5;  // 0.84;
  private:
   void SetupUi();
   QString appName = "Gelion";
@@ -94,9 +95,12 @@ protected:
   QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
   void createConstDockWidgets();
   QVector<QAction *> show_channel_list_acts;
+  QVector<QAction *> show_zgraph_list_acts;
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
+  void showContextMenuZGraphList(const QPoint &pos);
   void show_channel_list();
+  void show_zgraph_list();
   void inputIndexDlgShow();
 };
 

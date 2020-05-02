@@ -24,5 +24,9 @@
         <file>icons/color_VIOLET.png</file>
         <file>icons/color_YELLOW.png</file>
         <file>icons/color_ORANGE.png</file>
+        <file>icons/all_channels.png</file>
+        <file>icons/step2_channels.png</file>
+        <file>icons/step5_channels.png</file>
+        <file>icons/step10_channels.png</file>
     </qresource>
 </RCC>

@@ -183,6 +183,19 @@ void gQGraphicsView::selectionZChanged()
     }  // switch (grabberItem->type())
 }
 
+void gQGraphicsView::deleteZGraphItem(zGraph *item)
+{
+    qDebug() << "gQGraphicsView::deleteZGraphItem(zGraph *)" << item;
+    if (item->isSelected()) {
+        deleteGrabberRects();  deleteTmpLines();
+    }  // if
+    item->dockw->deleteLater();
+    delete item->listwidget;
+    item->disconnect(); scene()->removeItem(item);
+    emit removeFromzGraphListWidget(item);
+    delete item;
+}
+
 void gQGraphicsView::setGrabberCoordTozRect()
 {
     if (grabberItem == nullptr) return;
@@ -643,6 +656,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         tmpRect->aicon = rectAct->icon();
         tmpRect->updateBoundingRect();
         scene()->addItem(tmpRect);
+        connect(tmpRect, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
         emit insertZGraphItem(tmpRect);
         return;
       } else {
@@ -670,6 +684,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             tmpEllipse->setTitle("Эллипс 1");  tmpEllipse->aicon = QIcon(":/images/vector_ellipse.png");
             tmpEllipse->updateBoundingRect();
             scene()->addItem(tmpEllipse);
+            connect(tmpEllipse, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
             emit insertZGraphItem(tmpEllipse);
             return;
         } else {
@@ -729,6 +744,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
 void gQGraphicsView::createPolygon(QPoint pos)
 {
     zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
+    connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
     zp->setTitle("Полигон 1");  zp->aicon = QIcon(":/images/vector-polygon.png");
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
@@ -747,6 +763,7 @@ void gQGraphicsView::createPolygon(QPoint pos)
 void gQGraphicsView::createPolyline(QPoint pos)
 {
     zPolyline *zp = new zPolyline(GlobalScale,GlobalRotate);
+    connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
     zp->setTitle("Полилиния 1");  zp->aicon = QIcon(":/images/polyline-64.png");
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
@@ -916,6 +933,7 @@ void gQGraphicsView::insPoint(QPoint pos)
 {
     QPointF point = mapToScene(pos);
     zPoint *zpoint = new zPoint(point);
+    connect(zpoint, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
     zpoint->setTitle("Точка 1");  zpoint->aicon = QIcon(":/images/pin_grey.png");
     zpoint->updateBoundingRect();
     scene()->addItem(zpoint);

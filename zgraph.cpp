@@ -32,68 +32,29 @@ void zGraph::setFont(QString family, int pointSize, int weight, bool italic)
     ffont = QFont(family, pointSize, weight, italic);
 }
 
-/*QRectF zPolyline::getTitleRectangle() const
+void zGraph::setParamsToDialog(zgraphParamDlg *dlg)
 {
-    QString title = getTitle();
-    title = QString(" %1 ").arg(title);
-    QFontMetricsF fm(ffont);
-    int tw = fm.width(title);
-    int th = fm.height();
-    return QRectF(fcenterPoint-QPointF(tw/2,th/2),QSizeF(tw,th));
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->lineEditTitle->setText(this->getTitle());  // наименование
+    dlg->ui->labelTypeTitle->setText(this->typeString);  // тип объекта
+    dlg->ui->checkBoxWdock->setChecked(this->dockw->isVisible());  // видимость графика профиля
+    dlg->ui->checkBoxZGraphVisible->setChecked(this->isVisible());  // видимость объекта
 }
-*/
-/*QPolygonF zGraph::getTitlePolygon()
+
+void zGraph::getParamsFromDialog(zgraphParamDlg *dlg)
 {
-    QMatrix matrix;
-    QPolygon polygon;
-    QRect rect;
-    QPointF point = fcenterPoint;
-    QLineF line(QPointF(0,0),point);
-    matrix.rotate(data(2).toDouble()-rotation());
-    line = matrix.map(line);
-    matrix.reset();
-
-    rect.setTopLeft(ftitleRect.topLeft().toPoint());
-    rect.setSize(ftitleRect.size().toSize());
-    polygon = matrix.mapToPolygon(rect);
-
-    qreal m = data(1).toDouble();
-    qreal dx = line.p2().rx() - point.rx();
-    qreal dy = line.p2().ry() - point.ry();
-
-    matrix.scale(data(1).toDouble(),data(1).toDouble());
-
-    matrix.rotate(data(2).toDouble()-rotation());
-    matrix.translate(dx*m, dy*m);
-
-    return matrix.map(polygon);
-}*/
-/*painter->save();
-    painter->scale(data(1).toDouble(),data(1).toDouble());  // ===
-    painter->rotate(data(2).toDouble()-rotation());
-    fcenterPoint = getCenterPoint() / data(1).toDouble();
-    QLineF line(QPointF(0,0),fcenterPoint);
-    qreal centerAngle = qAtan2(line.dy(),line.dx());
-    qreal R = qDegreesToRadians(-data(2).toDouble());
-    R += centerAngle;
-    fcenterPoint.setX(line.length()*qCos(R));
-    fcenterPoint.setY(line.length()*qSin(R));
-    ftitleRect = getTitleRectangle();
-    if (isSelected()) painter->setBrush(titleRectBrushSelection);
-    else painter->setBrush(titleRectBrush);
-    painter->drawRoundRect(ftitleRect,12,25);
-    painter->setPen(titleTextPen);
-    painter->drawText(ftitleRect,QString(" %1 ").arg(title));
-    painter->restore(); */
-/*QPolygon plyNeedle;
-    plyNeedle << QPoint(ptOrigin.x() - intNeedleHalfWidth, ptOrigin.y())
-              << QPoint(ptOrigin.x(), ptOrigin.y() + intNeedleHalfWidth)
-              << QPoint(ptOrigin.x() + intRadius - intNeedleHalfWidth, ptOrigin.y())
-              << QPoint(ptOrigin.x(), ptOrigin.y() - intNeedleHalfWidth);
-    plyNeedle = QTransform().translate(-ptOrigin.x(), -ptOrigin.y())
-                            .rotate(45)
-                            .translate(ptOrigin.x(), ptOrigin.y())
-                            .map(plyNeedle);*/
+    QString str = dlg->ui->lineEditTitle->text();
+    this->setTitle(str);
+    this->setVisible(dlg->ui->checkBoxZGraphVisible->isChecked());
+    this->dockw->setWindowTitle(str);
+    this->dockw->setVisible(dlg->ui->checkBoxWdock->isChecked());
+    if (this->isVisible()) listwidget->setCheckState(Qt::Checked);
+    else listwidget->setCheckState(Qt::Unchecked);
+    QFont font = listwidget->font();  font.setBold(this->dockw->isVisible());
+    listwidget->setFont(font);
+    listwidget->setText(this->getTitle());
+    this->updateBoundingRect();
+}
 
 void zGraph::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -113,12 +74,29 @@ QVariant zGraph::itemChange(QGraphicsItem::GraphicsItemChange change, const QVar
     return QGraphicsObject::itemChange(change, value);
 }
 
+void zGraph::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+//    qDebug() << "zGraph::mouseDoubleClickEvent";
+    zgraphParamDlg *dlg = new zgraphParamDlg();
+    dlg->move(event->screenPos());
+    setParamsToDialog(dlg);
+    if (dlg->exec() == QDialog::Accepted) {
+        if (dlg->ui->checkBoxZGraphDelete->isChecked()) {
+            emit itemDelete(this);
+            return;
+        }  // if
+        getParamsFromDialog(dlg);
+    }  // if
+//    QGraphicsObject::mouseDoubleClickEvent(event);
+}
+
 zPoint::zPoint(const QPointF point) :  zGraph()
 {
     setPos(point);
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
     setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+    typeString = "Точка";
 }
 
 QRectF zPoint::getTitleRectangle() const
@@ -150,7 +128,7 @@ void zPoint::updateBoundingRect()
 
 bool zPoint::pointIn(QPointF point)
 {
-    Q_UNUSED(point);
+    Q_UNUSED(point)
     return true;
 }
 
@@ -194,8 +172,8 @@ void zPoint::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     painter->drawRoundRect(ftitleRect,12,25);
     painter->setPen(titleTextPen);
     painter->drawText(ftitleRect,QString(" %1 ").arg(title));
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
+    Q_UNUSED(option)
+    Q_UNUSED(widget)
 }
 
 zPolygon::zPolygon(qreal scale, qreal rotate) :  zGraph()
@@ -203,6 +181,7 @@ zPolygon::zPolygon(qreal scale, qreal rotate) :  zGraph()
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
     setData(1,scale);  setData(2,rotate);
+    typeString = "Полигон";
 }
 
 QRectF zPolygon::getTitleRectangle() const
@@ -388,6 +367,7 @@ zRect::zRect(const QPointF point, qreal scale, qreal rotate)
     frectSize = QSizeF(0,fdefaultHeigth);
     setPos(point);
     setData(1,scale);  setData(2,rotate);
+    typeString = "Прямоугольник";
 }
 
 QRectF zRect::getTitleRectangle() const
@@ -528,6 +508,7 @@ zEllipse::zEllipse(const QPointF point, qreal scale, qreal rotate)
     frectSize = QSizeF(0,fdefaultHeigth);
     setPos(point);
     setData(1,scale);  setData(2,rotate);
+    typeString = "Эллипс";
 }
 
 QRectF zEllipse::getTitleRectangle() const
@@ -665,6 +646,7 @@ zPolyline::zPolyline(qreal scale, qreal rotate)
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemIsSelectable);
     setData(1,scale);  setData(2,rotate);
+    typeString = "Полилиния";
 }
 
 QRectF zPolyline::getTitleRectangle() const

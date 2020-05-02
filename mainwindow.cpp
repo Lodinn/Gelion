@@ -74,13 +74,11 @@ void MainWindow::saveSettings(QString fname)
 void MainWindow::SetupUi() {
   setWindowTitle("gelion");
   QRect desktop = QApplication::desktop()->screenGeometry();
-//  qDebug() << desktop;
   int sw = desktop.width();  int sh = desktop.height();
   int left = round(sw*(1-qmainWindowScale)*0.5+200);
   int top = round(sh*(1-qmainWindowScale)*0.5);
   int width = round(sw*qmainWindowScale*.75);
   int height = round(sh*qmainWindowScale);
-//  qDebug() << qmainWindowScale << sw << sh << left << top << width << height;
   move( left, top );
   resize( width, height );
   const QIcon icon =
@@ -188,6 +186,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
     dockw->hide();  dockw->setAllowedAreas(0);  // NoToolBarArea - !!! не прикрепляется к главному окну
     QListWidgetItem *lwItem = new QListWidgetItem();
+    item->listwidget = lwItem;
     lwItem->setText(item->getTitle());
     QFont font = lwItem->font();  font.setBold(true);
     lwItem->setFont(font);
@@ -244,25 +243,33 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
 void MainWindow::zGparhEditDialog(QListWidgetItem *item, zGraph *it)
 {
     zgraphParamDlg *dlg = new zgraphParamDlg(this);
-    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
-    dlg->ui->lineEditTitle->setText(it->getTitle());
-    dlg->ui->checkBoxWdock->setChecked(it->dockw->isVisible());
+    QPoint pos = dockZGraphList->geometry().bottomLeft()-QPoint(dlg->width(),0)+QPoint(dockZGraphList->width(),0);
+    dlg->move(pos);
+    it->setParamsToDialog(dlg);
+//    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+//    dlg->ui->lineEditTitle->setText(it->getTitle());  // наименование
+//    dlg->ui->labelTypeTitle->setText(it->typeString);  // тип объекта
+//    dlg->ui->checkBoxWdock->setChecked(it->dockw->isVisible());  // видимость графика профиля
+//    dlg->ui->checkBoxZGraphVisible->setChecked(it->isVisible());  // видимость объекта
     if (dlg->exec() == QDialog::Accepted) {
-        QString str = dlg->ui->lineEditTitle->text();
-        it->setTitle(str);  it->dockw->setWindowTitle(str);
-        it->updateBoundingRect();
-        it->dockw->setVisible(dlg->ui->checkBoxWdock->isChecked());
-        item->setText(str);
-        QFont font = item->font();  font.setBold(dlg->ui->checkBoxWdock->isChecked());
-        item->setFont(font);
+        if (dlg->ui->checkBoxZGraphDelete->isChecked()) {
+            view->deleteZGraphItem(it); return; }
+        it->getParamsFromDialog(dlg);
     }  // if
 }
 
 void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 {
-    int num = zGraphListWidget->row(item);
+//    int num = zGraphListWidget->row(item);
+//    auto zGraphList = view->getZGraphItemsList();
+//    zGraph *it = zGraphList[num];
+    zGraph *it = nullptr;
     auto zGraphList = view->getZGraphItemsList();
-    zGraph *it = zGraphList[num];
+    foreach(zGraph *z, zGraphList)
+        if (z->listwidget == item) {
+            it = z;  break;
+        }  // foreach
+    if (it == nullptr) return;
     zGparhEditDialog(item, it);
 }
 
@@ -332,12 +339,13 @@ void MainWindow::toggleViewAction(bool b)
     view->channelListAct->setChecked(dockChannelList->isVisible());
 }
 
-/*void QMainWindow::splitDockWidget ( QDockWidget * first, QDockWidget * second, Qt::Orientation orientation )*/
-
 void MainWindow::createConstDockWidgets()
 {
     QRect rec = QApplication::desktop()->screenGeometry();
 // Области интереса
+    dockZGraphList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(dockZGraphList, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showContextMenuZGraphList(QPoint)));
     dockZGraphList->setWindowIcon(QIcon(":/icons/windows2.png"));
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,250);
@@ -347,7 +355,22 @@ void MainWindow::createConstDockWidgets()
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     connect(zGraphListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
     connect(zGraphListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(listWidgetDoubleClicked(QListWidgetItem*)));
-// Изображения
+    connect(view, SIGNAL(removeFromzGraphListWidget(zGraph *)), this, SLOT(listWidgetDeleteItem(zGraph *)));
+// контекстное меню для отображения областей интереса и профилей
+    QAction *action = new QAction(QIcon(":/icons/profs_show.png"), "Отобразить все области интереса", this);
+    action->setData(1);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все области интереса", this);
+    action->setData(2);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
+    action = new QAction(QIcon(":/icons/profs_show.png"), "Отобразить все профили", this);
+    action->setData(3);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все профили", this);
+    action->setData(4);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    // Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
     dockIndexList->setFixedSize(220,250);
@@ -367,18 +390,27 @@ void MainWindow::createConstDockWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // контекстное меню для отображения части каналов с шагом 2-10
-    QAction *action = new QAction("Отображать все каналы", this);
+    action = new QAction(QIcon(":/icons/all_channels.png"), "Отображать все каналы", this);
     action->setData(1);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
-    action = new QAction("Отображать каналы с шагом 2", this);
+    action = new QAction(QIcon(":/icons/step2_channels.png"), "Отображать каналы с шагом 2", this);
     action->setData(2);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
-    action = new QAction("Отображать каналы с шагом 5", this);
+    action = new QAction(QIcon(":/icons/step5_channels.png"), "Отображать каналы с шагом 5", this);
     action->setData(5);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
-    action = new QAction("Отображать каналы с шагом 10", this);
+    action = new QAction(QIcon(":/icons/step10_channels.png"), "Отображать каналы с шагом 10", this);
     action->setData(10);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+}
+
+void MainWindow::listWidgetDeleteItem(zGraph *item)
+{
+    qDebug() << "MainWindow::listWidgetDeleteItem(zGraph *item)" << item  << item->listwidget;
+//    zGraphListWidget->removeItemWidget(item->listwidget);
+//    zGraphListWidget->takeItem()
+//    delete item->listwidget;
+    zGraphListWidget->update();
 }
 
 void MainWindow::open() {
@@ -463,7 +495,6 @@ void MainWindow::createDockWidgetForIndexes()
     int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
     int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
     int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
-    qDebug() << num_red << num_green << num_blue;
     if (num_red == -1 || num_green == -1 || num_blue == -1) {
         qDebug() << "CRITICAL! WRONG CONSTRUCTING THE RGB IMAGE";
         return;
@@ -772,6 +803,15 @@ void MainWindow::showContextMenuChannelList(const QPoint &pos)
     menu.exec(globalPos);
 }
 
+void MainWindow::showContextMenuZGraphList(const QPoint &pos)
+{
+    QPoint globalPos = zGraphListWidget->mapToGlobal(pos);
+    QMenu menu(this);
+    for (int i = 0; i < show_zgraph_list_acts.count(); i++)
+        menu.addAction(show_zgraph_list_acts[i]);
+    menu.exec(globalPos);
+}
+
 void MainWindow::show_channel_list()
 {
     QAction *action = qobject_cast<QAction *>(sender());
@@ -785,6 +825,48 @@ void MainWindow::show_channel_list()
     }  // if
 }
 
+void MainWindow::show_zgraph_list()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        int num = action->data().toInt();
+        auto zGraphList = view->getZGraphItemsList();
+
+        switch (num) {
+        case 1 : {    // Отобразить все области интереса
+            foreach(zGraph *item, zGraphList) {
+                item->setVisible(true);
+                item->listwidget->setCheckState(Qt::Checked);
+            }  // foreach
+            return;
+        }  // case 1
+        case 2 : {    // Скрыть все области интереса
+            foreach(zGraph *item, zGraphList) {
+                item->setVisible(false);
+                item->listwidget->setCheckState(Qt::Unchecked);
+            }  // foreach
+            return;
+        }  // case 2
+        case 3 : {    // Отобразить все профили
+            foreach(zGraph *item, zGraphList) {
+                item->dockw->setVisible(true);
+                QFont font = item->listwidget->font();  font.setBold(item->dockw->isVisible());
+                item->listwidget->setFont(font);
+            }  // foreach
+            return;
+        }  // case 3
+        case 4 : {    // Скрыть все профили
+            foreach(zGraph *item, zGraphList) {
+                item->dockw->setVisible(false);
+                QFont font = item->listwidget->font();  font.setBold(item->dockw->isVisible());
+                item->listwidget->setFont(font);
+            }  // foreach
+            return;
+        }  // case 4
+        }  // switch
+    }  // if
+}
+
 void MainWindow::inputIndexDlgShow()
 {
     inputIndexDlg *dlg = new inputIndexDlg(this);
@@ -793,6 +875,7 @@ void MainWindow::inputIndexDlgShow()
     dlg->setSpectralRange(wls);
     if (dlg->exec() == QDialog::Accepted) {
         view->index_title_str = dlg->get_index_title();
+        view->index_formula_str = dlg->get_formula();
         QString input = dlg->get_formula();
         if (input.isEmpty()) {
             qDebug() << "wrong index !!!";
@@ -820,6 +903,7 @@ void MainWindow::add_index_pixmap(int num)
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
     lwItem->setText(view->index_title_str);
+    lwItem->setToolTip(view->index_formula_str);
     indexListWidget->setCurrentRow(indexListWidget->count() - 1);
     chListWidget->currentItem()->setSelected(false);  // конкурент
 //    im_handler->current_image()->indexPixmap.append(pxm);

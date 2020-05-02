@@ -2,6 +2,8 @@
 #define ZGRAPH_H
 
 #include "qcustomplot.h"
+#include "zgraphparamdlg.h"
+#include "ui_zgraphparamdlg.h"
 
 #include <QDockWidget>
 #include <QFont>
@@ -27,16 +29,21 @@ public:
     virtual QRectF getTitleRectangle() const = 0;
     virtual void updateBoundingRect() = 0;
     QDockWidget *dockw = nullptr;
+    QListWidgetItem *listwidget = nullptr;
     QCustomPlot *plot = nullptr;
     virtual bool pointIn(QPointF point) = 0;
     virtual QPolygonF getTitlePolygon() = 0;
     virtual QStringList getSettings(int num) = 0;
     char setsep = '#';
     QIcon aicon;
+    QString typeString = "";
+    void setParamsToDialog(zgraphParamDlg *dlg);
+    void getParamsFromDialog(zgraphParamDlg *dlg);
 signals:
      void mouseMove();
      void mouseRelease();
      void itemChange();
+     void itemDelete(zGraph *);
 protected:
      int fRectIndent = 12;
      QPointF fcenterPoint;
@@ -57,6 +64,7 @@ protected:
      void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
      void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
      QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 private:
 };
 

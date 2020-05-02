@@ -6,19 +6,37 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>339</width>
-    <height>169</height>
+    <width>262</width>
+    <height>218</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>262</width>
+    <height>218</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>262</width>
+    <height>218</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Параметры области интереса</string>
   </property>
   <widget class="QLineEdit" name="lineEditTitle">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>30</y>
-     <width>151</width>
+     <width>241</width>
      <height>20</height>
     </rect>
    </property>
@@ -30,7 +48,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>130</y>
+     <y>180</y>
      <width>156</width>
      <height>23</height>
     </rect>
@@ -44,12 +62,93 @@
     <rect>
      <x>10</x>
      <y>90</y>
-     <width>151</width>
+     <width>211</width>
      <height>17</height>
     </rect>
    </property>
    <property name="text">
-    <string>Показать окно профиля</string>
+    <string>Отображать график профиля</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelTitle">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>181</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Наименование области интереса</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBoxZGraphVisible">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>110</y>
+     <width>201</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Отображать область интереса</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBoxZGraphDelete">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>140</y>
+     <width>191</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+     <underline>true</underline>
+    </font>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::RightToLeft</enum>
+   </property>
+   <property name="text">
+    <string>Удалить область интереса</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelType">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Тип области интереса:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelTypeTitle">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>60</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Прямоугольник</string>
    </property>
   </widget>
  </widget>
