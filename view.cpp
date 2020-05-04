@@ -944,65 +944,69 @@ void gQGraphicsView::insPoint(QPoint pos)
     emit setZGraphDockToggled(zpoint);
 }
 
-/*ROI::ROI(QPointF position, QString l, shape_t sh)
-    : shape(sh), pos(position), label(l) {
-  setFlag(ItemIsSelectable, true);
-  setFlag(ItemIsMovable);
-}
+QColor gQGraphicsView::waveLengthToRGB(double Wavelength)
+{
+    static double Gamma = 0.80;
+    static double IntensityMax = 255;
 
-QRectF ROI::boundingRect() const {
-  QSizeF point_size = QSizeF(6, 6);
-  switch (shape) {
-    case Point:
-      return QRectF(
-          pos - QPointF(point_size.width() / 2, point_size.height() / 2),
-          point_size);
-    // FIXME: not implemented
-    case Line:
-    case Circle:
-    case Rectangle:
-    case Polygon:
-      return QRectF(pos, point_size);
-  }
-}
+    double factor;
+    double Red,Green,Blue;
 
-void ROI::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-                QWidget *widget) {
-  QRectF rect = boundingRect();
-  auto offset = rect.size() / 2.0;
-  painter->translate(pos);
-  QPen pen(Qt::red, 6);
-  painter->setFont(QFont("Arial", 12));
-  painter->drawText(20, 20, label);
-  painter->setPen(pen);
-  switch (shape) {
-    case Point:
-    case Circle:
-      painter->drawEllipse(
-          QRectF(QPointF(0, 0) - QPointF(offset.width(), offset.height()),
-                 rect.size()));
-      break;
-    case Line:
-    case Rectangle:
-    case Polygon:
-      painter->drawRect(rect);
-      break;
-  }
-  Q_UNUSED(option)
-  Q_UNUSED(widget)
-}
+    if((Wavelength >= 380) && (Wavelength<440)){
+        Red = -(Wavelength - 440) / (440 - 380);
+        Green = 0.0;
+        Blue = 1.0;
+    }else if((Wavelength >= 440) && (Wavelength<490)){
+        Red = 0.0;
+        Green = (Wavelength - 440) / (490 - 440);
+        Blue = 1.0;
+    }else if((Wavelength >= 490) && (Wavelength<510)){
+        Red = 0.0;
+        Green = 1.0;
+        Blue = -(Wavelength - 510) / (510 - 490);
+    }else if((Wavelength >= 510) && (Wavelength<580)){
+        Red = (Wavelength - 510) / (580 - 510);
+        Green = 1.0;
+        Blue = 0.0;
+    }else if((Wavelength >= 580) && (Wavelength<645)){
+        Red = 1.0;
+        Green = -(Wavelength - 645) / (645 - 580);
+        Blue = 0.0;
+    }else if((Wavelength >= 645) && (Wavelength<781)){
+        Red = 1.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }else{
+        Red = 0.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }
 
-void ROI::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-  update();
-  QGraphicsItem::mousePressEvent(event);
-}
+// Let the intensity fall off near the vision limits
 
-void ROI::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
-  update();
-  QGraphicsItem::mouseMoveEvent(event);
-}
+    if((Wavelength >= 380) && (Wavelength<420)){
+        factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+    }else if((Wavelength >= 420) && (Wavelength<701)){
+        factor = 1.0;
+    }else if((Wavelength >= 701) && (Wavelength<781)){
+        factor = 0.3 + 0.7*(780 - Wavelength)  / (780 - 700);
+    }else{
+        factor = 0.0;
+    }
 
-void ROI::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-  update();
-  QGraphicsItem::mouseReleaseEvent(event);
-} */
+    int r = 0, g = 0, b = 0;
+
+// Don't want 0^x = 1 for x <> 0
+    const double zero = 0.00000001;
+    if (Red < zero) r = 0;
+    else r = qRound(IntensityMax * qPow(Red * factor, Gamma));
+    r = qMin(255, r);
+    if (Green < zero) g = 0;
+    else g = qRound(IntensityMax * qPow(Green * factor, Gamma));
+    g = qMin(255, g);
+    if (Blue < zero) b = 0;
+    else b = qRound(IntensityMax * qPow(Blue * factor, Gamma));
+    b = qMin(255, b);
+
+    return QColor(r,g,b,255);
+}

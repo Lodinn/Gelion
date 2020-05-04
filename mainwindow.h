@@ -40,14 +40,14 @@ class MainWindow : public QMainWindow {
   void createDockWidgetForIndexes();
   void itemClickedChannelList(QListWidgetItem *lwItem);
   void itemClickedIndexList(QListWidgetItem *lwItem);
-  void zGparhEditDialog(QListWidgetItem *item, zGraph *it);
+  void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
   void add_index_pixmap(int);
  signals:
   void read_file(QString);
   void index_calculate(QString);
  protected:
-  qreal qmainWindowScale = .5;  // 0.84;
+  qreal qmainWindowScale = .84; // .5;  // 0.84;
  private:
   void SetupUi();
   QString appName = "Gelion";

@@ -113,6 +113,8 @@ void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)
     QFile file(addin_path + "/" + fname);
     file.open(QIODevice::WriteOnly);
     QDataStream out(&file);
+    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    out.setByteOrder(QDataStream::LittleEndian);
     out << slice;
     file.close();
 }

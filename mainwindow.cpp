@@ -32,7 +32,7 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-  Q_UNUSED(event);
+  Q_UNUSED(event)
   if (saveSettingAtCloseApp) saveSettings(dataFileName);
 }
 
@@ -240,29 +240,21 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
     else items[num]->setVisible(false);
 }
 
-void MainWindow::zGparhEditDialog(QListWidgetItem *item, zGraph *it)
+void MainWindow::zGparhEditDialog(zGraph *item)
 {
     zgraphParamDlg *dlg = new zgraphParamDlg(this);
     QPoint pos = dockZGraphList->geometry().bottomLeft()-QPoint(dlg->width(),0)+QPoint(dockZGraphList->width(),0);
     dlg->move(pos);
-    it->setParamsToDialog(dlg);
-//    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
-//    dlg->ui->lineEditTitle->setText(it->getTitle());  // наименование
-//    dlg->ui->labelTypeTitle->setText(it->typeString);  // тип объекта
-//    dlg->ui->checkBoxWdock->setChecked(it->dockw->isVisible());  // видимость графика профиля
-//    dlg->ui->checkBoxZGraphVisible->setChecked(it->isVisible());  // видимость объекта
+    item->setParamsToDialog(dlg);
     if (dlg->exec() == QDialog::Accepted) {
         if (dlg->ui->checkBoxZGraphDelete->isChecked()) {
-            view->deleteZGraphItem(it); return; }
-        it->getParamsFromDialog(dlg);
+            view->deleteZGraphItem(item); return; }
+        item->getParamsFromDialog(dlg);
     }  // if
 }
 
 void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 {
-//    int num = zGraphListWidget->row(item);
-//    auto zGraphList = view->getZGraphItemsList();
-//    zGraph *it = zGraphList[num];
     zGraph *it = nullptr;
     auto zGraphList = view->getZGraphItemsList();
     foreach(zGraph *z, zGraphList)
@@ -270,7 +262,7 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
             it = z;  break;
         }  // foreach
     if (it == nullptr) return;
-    zGparhEditDialog(item, it);
+    zGparhEditDialog(it);
 }
 
 void MainWindow::createActions() {
@@ -441,6 +433,8 @@ void MainWindow::show_progress(int max_progress) {
       pdTitleStr = "Расчет индекса";   pdInfoStr = "Расчет индекса ..."; }
   progress_dialog =
           new QProgressDialog(pdInfoStr, "Отмена", 0, 100, this);
+  progress_dialog->setFixedSize(350,100);
+  progress_dialog->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
   progress_dialog->setWindowTitle(pdTitleStr);
   progress_dialog->resize(350, 100);
   progress_dialog->setMaximum(max_progress);
@@ -477,14 +471,23 @@ void MainWindow::createDockWidgetForChannels()
         chListWidget->addItem(lwItem);
         int lwnum = strlist.indexOf(str);
         qreal wlen = wavelengths[lwnum];
-        if (wlen <= 435.0) lwItem->setIcon(QIcon(":/icons/color_VIOLET.png"));
-        if (wlen > 435.0 && wlen <= 500.0) lwItem->setIcon(QIcon(":/icons/color_INDIGO.png"));
-        if (wlen > 500.0 && wlen <= 520.0) lwItem->setIcon(QIcon(":/icons/color_BLUE.png"));
-        if (wlen > 520.0 && wlen <= 565.0) lwItem->setIcon(QIcon(":/icons/color_GREEN.png"));
-        if (wlen > 565.0 && wlen <= 590.0) lwItem->setIcon(QIcon(":/icons/color_YELLOW.png"));
-        if (wlen > 590.0 && wlen <= 625.0) lwItem->setIcon(QIcon(":/icons/color_ORANGE.png"));
-        if (wlen > 625.0 && wlen <= 740.0) lwItem->setIcon(QIcon(":/icons/color_RED.png"));
-        if (wlen > 740.0) lwItem->setIcon(QIcon(":/icons/color_NIR.png"));
+        if (wlen < 781) {  // видимый диапазон
+            QPixmap pixmap(16,16);
+            QColor color = view->waveLengthToRGB(wlen);
+            pixmap.fill(color);
+            QIcon icon(pixmap);
+            lwItem->setIcon(icon);
+        } else
+            lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
+
+//        if (wlen <= 435.0) lwItem->setIcon(QIcon(":/icons/color_VIOLET.png"));
+//        if (wlen > 435.0 && wlen <= 500.0) lwItem->setIcon(QIcon(":/icons/color_INDIGO.png"));
+//        if (wlen > 500.0 && wlen <= 520.0) lwItem->setIcon(QIcon(":/icons/color_BLUE.png"));
+//        if (wlen > 520.0 && wlen <= 565.0) lwItem->setIcon(QIcon(":/icons/color_GREEN.png"));
+//        if (wlen > 565.0 && wlen <= 590.0) lwItem->setIcon(QIcon(":/icons/color_YELLOW.png"));
+//        if (wlen > 590.0 && wlen <= 625.0) lwItem->setIcon(QIcon(":/icons/color_ORANGE.png"));
+//        if (wlen > 625.0 && wlen <= 740.0) lwItem->setIcon(QIcon(":/icons/color_RED.png"));
+//        if (wlen > 740.0) lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
      }  // for
     chListWidget->setCurrentRow(0);
     connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
@@ -720,7 +723,7 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     view->GlobalChannelNum = num;
     QImage img = im_handler->current_image()->get_rgb(true,num,num,num);
     QPixmap pxm;
-    if (num < 84) pxm = view->changeBrightnessPixmap(img, 4.0);
+    if (num < 84) pxm = view->changeBrightnessPixmap(img, 3.5);
     else pxm = view->changeBrightnessPixmap(img, 3.0);
     view->mainPixmap->setPixmap(pxm);
 }
@@ -732,7 +735,7 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 //    view->mainPixmap->setPixmap(im_handler->current_image()->indexPixmap.at(num));
     QImage img = im_handler->current_image()->indexImages.at(num);
     if (num == 0)
-        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, 3.0));
+        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, 3.5));
     else
         view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, .7));
 }

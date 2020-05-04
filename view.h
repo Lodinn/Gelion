@@ -61,6 +61,7 @@ public:
     QGraphicsPixmapItem *mainPixmap;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
     QString index_title_str, index_formula_str;
+    QColor waveLengthToRGB(double Wavelength);  // 380 - 781
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
