@@ -38,13 +38,27 @@ private:
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
+  QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
+  QVector<QPair<QString, QString> > indexNameFormulaList;  // списко индексов "наименование,формула"
 
+  double default_brightness = 3.5;
+  int current_slice = -1;
 public:
   QString fname;
-//  QVector<QPixmap> indexPixmap;  // нулевой QPixmap содержит дефолтную RGB
-  QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
-  QStringList indexPixmapNames;
-//  friend void ImageHandler::read_envi_hdr(QString);
+  void append_additional_image(QImage image, QString index_name, QString index_formula);
+  QImage get_additional_image(int num);
+  void save_additional_slices(QString binfilename);
+  void save_images(QString pngfilename);
+  void save_names(QString images_name);
+  void save_brightness(QString  images_brightness);
+  void set_current_slice(int num) {
+      if (num < 0 || num >  depth + indexImages.count() - 1) return;
+      current_slice = num; }
+  int get_current_slice() { return current_slice; }
+  double get_current_brightness();
+  void set_current_brightness(double value);
+  QPair<QString, QString> get_current_formula();
+  QVector<double > indexBrightness;
 
 signals:
 

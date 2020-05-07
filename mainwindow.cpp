@@ -3,6 +3,8 @@
 #include "ui_zgraphparamdlg.h"
 #include "inputindexdlg.h"
 #include "ui_inputindexdlg.h"
+#include "settingsdialog.h"
+#include "ui_settingsdialog.h"
 
 #include <QMenu>
 #include <QToolBar>
@@ -28,46 +30,52 @@ MainWindow::~MainWindow() {
   worker_thread->wait(200);
   delete im_handler;
   delete worker_thread;
-  //    delete progress_dialog;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event)
-  if (saveSettingAtCloseApp) saveSettings(dataFileName);
+  if (saveSettingAtCloseApp) saveSettings();
 }
 
-void MainWindow::saveSettings(QString fname)
+void MainWindow::saveSettings()
 {
-    if (fname.isEmpty()) return;
-    QFileInfo info(fname);
-    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
-    QSettings settings( iniFileName, QSettings::IniFormat );
-    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
-    settings.setIniCodec( codec );
-    settings.clear();
-    settings.setValue("version", 1);
-    settings.setValue("scale", view->GlobalScale);
-    settings.setValue("rotation", view->GlobalRotate);
-    settings.setValue("channel", view->GlobalChannelNum);
-    settings.setValue("horizontal", view->horizontalScrollBar()->value());
-    settings.setValue("vertical", view->verticalScrollBar()->value());
-    settings.setValue("dockZGraphList", dockZGraphList->isVisible());
-    settings.setValue("dockChannelList", dockChannelList->isVisible());
-    auto graphList = view->getZGraphItemsList();
-    int num = 0;
-    foreach(zGraph *zg, graphList) {
-        QStringList strlist = zg->getSettings(num);
-        foreach(QString str, strlist) {
-            int index = str.indexOf(zg->setsep);
-            if (index == -1) continue;
-            QString mid_Key = str.mid(0,index);
-            QString mid_Value = str.mid(index+1);
-            settings.setValue(mid_Key, mid_Value);
-        }  // for
-        num++;
-    }  // for
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState(1));
+    if (dataFileName.isEmpty()) return;
+    im_handler->current_image()->save_additional_slices(save_slices);
+    im_handler->current_image()->save_images(additional_images);
+    im_handler->current_image()->save_names(additional_images_names);
+    im_handler->current_image()->save_brightness(additional_images_brightness);
+    return;
+
+
+//    QFileInfo info(fname);
+//    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
+//    QSettings settings( iniFileName, QSettings::IniFormat );
+//    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+//    settings.setIniCodec( codec );
+//    settings.clear();
+//    settings.setValue("version", 1);
+//    settings.setValue("scale", view->GlobalScale);
+//    settings.setValue("rotation", view->GlobalRotate);
+//    settings.setValue("channel", view->GlobalChannelNum);
+//    settings.setValue("horizontal", view->horizontalScrollBar()->value());
+//    settings.setValue("vertical", view->verticalScrollBar()->value());
+//    settings.setValue("dockZGraphList", dockZGraphList->isVisible());
+//    settings.setValue("dockChannelList", dockChannelList->isVisible());
+//    auto graphList = view->getZGraphItemsList();
+//    int num = 0;
+//    foreach(zGraph *zg, graphList) {
+//        QStringList strlist = zg->getSettings(num);
+//        foreach(QString str, strlist) {
+//            int index = str.indexOf(zg->setsep);
+//            if (index == -1) continue;
+//            QString mid_Key = str.mid(0,index);
+//            QString mid_Value = str.mid(index+1);
+//            settings.setValue(mid_Key, mid_Value);
+//        }  // for
+//        num++;
+//    }  // for
+//    settings.setValue("geometry", saveGeometry());
+//    settings.setValue("windowState", saveState(1));
 
 }
 
@@ -232,12 +240,22 @@ void MainWindow::winZGraphProfilesHideAll()
 
 void MainWindow::listWidgetClicked(QListWidgetItem *item)
 {
-    if (!view->zcRects.isEmpty()) return;
-    if (!view->tmpLines.isEmpty()) return;
-    int num = zGraphListWidget->row(item);
-    QList<zGraph *> items = view->getZGraphItemsList();
-    if (item->checkState() == Qt::Checked) items[num]->setVisible(true);
-    else items[num]->setVisible(false);
+    QList<zGraph *> zitems = view->getZGraphItemsList();
+    zGraph *zgrap_item = nullptr;
+    foreach(zGraph *it, zitems)
+        if (it->listwidget == item) {
+            zgrap_item = it;
+        break;
+        }  // if
+    if (zgrap_item == nullptr) return;
+    if (zgrap_item->isSelected()) {
+        view->deleteGrabberRects();
+        view->deleteTmpLines();
+    }
+    if (item->checkState() == Qt::Checked) {
+        zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true); }
+    else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
+    zgrap_item->dockw->setVisible(false); }
 }
 
 void MainWindow::zGparhEditDialog(zGraph *item)
@@ -268,15 +286,18 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 void MainWindow::createActions() {
 // &&&file
   fileMenu = menuBar()->addMenu(tr("&Файл"));
-  fileToolBar = addToolBar(tr("Файл"));
-  fileToolBar->setObjectName("fileToolBar");
   fileMenu->addAction(view->openAct);
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
+  view->localFolderAct->setEnabled(false);
+  fileMenu->addAction(view->localFolderAct);
+  connect(view->localFolderAct, &QAction::triggered, this, &MainWindow::folder);
   fileMenu->addSeparator();
-  addSeparatorRecentFile = fileMenu->addSeparator();
+  addSeparatorRecentFile = fileMenu->addSeparator();  // для дальнейшей вставки списка файлов
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
+  fileToolBar = addToolBar(tr("Файл"));  fileToolBar->setObjectName("fileToolBar");
   fileToolBar->addAction(view->openAct);
+  fileToolBar->addAction(view->localFolderAct);
   fileToolBar->addSeparator();
 // &&& inset ROI menu
   QMenu *itemsMenu = menuBar()->addMenu("&Области интереса");
@@ -307,6 +328,21 @@ void MainWindow::createActions() {
   winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
   winMenu->addAction(view->winZGraphListHideAllAct);   winToolBar->addAction(view->winZGraphListHideAllAct);
   winMenu->addSeparator();      winToolBar->addSeparator();
+// &&& settings
+  QMenu *settingsMenu = menuBar()->addMenu("&Настройки");
+  QToolBar *settingsToolBar = addToolBar(settingsMenu->title());
+  settingsToolBar->setObjectName("settingsToolBar");
+  slider = new QSlider(Qt::Horizontal);
+  slider->setToolTip("Яркость");
+  slider->setMaximum(100);  slider->setFixedSize(150,12);
+  settingsToolBar->addWidget(slider);  slider->setEnabled(false);
+  connect(slider, SIGNAL(valueChanged(int)), this, SLOT(change_brightness(int)));
+  settingsToolBar->addSeparator();
+
+  QAction *mainSettingsAct = new QAction(QIcon(":/icons/settings-64.png"), "&Настройки программы", this);
+  settingsMenu->addAction(mainSettingsAct);
+  settingsToolBar->addAction(mainSettingsAct);
+  connect(mainSettingsAct, SIGNAL(triggered()), this, SLOT(settingsDlgShow()));
 }
 
 void MainWindow::createStatusBar() {
@@ -342,7 +378,7 @@ void MainWindow::createConstDockWidgets()
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,250);
     dockZGraphList->setWidget(zGraphListWidget);
-    dockZGraphList->move(rec.width() - 300,50);
+    dockZGraphList->move(rec.width() - 250,50);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     connect(zGraphListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
@@ -362,13 +398,14 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все профили", this);
     action->setData(4);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    // Изображения
+// Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
     dockIndexList->setFixedSize(220,250);
     dockIndexList->setWidget(indexListWidget);
-    dockIndexList->move(rec.width() - 300,350);
+    dockIndexList->move(rec.width() - 250,350);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
+    connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // Список Каналов
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -378,8 +415,9 @@ void MainWindow::createConstDockWidgets()
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
     dockChannelList->setFixedSize(220,350);
     dockChannelList->setWidget(chListWidget);
-    dockChannelList->move(rec.width() - 300,650);
+    dockChannelList->move(rec.width() - 250,650);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
+    connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // контекстное меню для отображения части каналов с шагом 2-10
     action = new QAction(QIcon(":/icons/all_channels.png"), "Отображать все каналы", this);
@@ -420,6 +458,17 @@ void MainWindow::open() {
     }
   }
   emit read_file(dataFileName);
+}
+
+void MainWindow::folder()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo fi(dataFileName);
+    writableLocation += "/" + fi.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    QProcess::startDetached(QString("explorer /root,\"%1\"")
+                            .arg(QDir::toNativeSeparators(writableLocation)));
 }
 
 void MainWindow::show_progress(int max_progress) {
@@ -479,22 +528,13 @@ void MainWindow::createDockWidgetForChannels()
             lwItem->setIcon(icon);
         } else
             lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
-
-//        if (wlen <= 435.0) lwItem->setIcon(QIcon(":/icons/color_VIOLET.png"));
-//        if (wlen > 435.0 && wlen <= 500.0) lwItem->setIcon(QIcon(":/icons/color_INDIGO.png"));
-//        if (wlen > 500.0 && wlen <= 520.0) lwItem->setIcon(QIcon(":/icons/color_BLUE.png"));
-//        if (wlen > 520.0 && wlen <= 565.0) lwItem->setIcon(QIcon(":/icons/color_GREEN.png"));
-//        if (wlen > 565.0 && wlen <= 590.0) lwItem->setIcon(QIcon(":/icons/color_YELLOW.png"));
-//        if (wlen > 590.0 && wlen <= 625.0) lwItem->setIcon(QIcon(":/icons/color_ORANGE.png"));
-//        if (wlen > 625.0 && wlen <= 740.0) lwItem->setIcon(QIcon(":/icons/color_RED.png"));
-//        if (wlen > 740.0) lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
      }  // for
     chListWidget->setCurrentRow(0);
-    connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
 }
 
-void MainWindow::createDockWidgetForIndexes()
+void MainWindow::create_default_RGB_image()
 {
+// 84 - 641nm 53 - 550nm 22 - 460nm
     int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
     int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
     int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
@@ -503,24 +543,36 @@ void MainWindow::createDockWidgetForIndexes()
         return;
     }  // if
     QImage img = im_handler->current_image()->get_rgb(true,num_red,num_green,num_blue);
-// 84 - 641nm 53 - 550nm 22 - 460nm
-    view->GlobalChannelNum = 0;
-    QPixmap pxm = view->changeBrightnessPixmap(img, 3.0);
-    view->mainPixmap->setPixmap(pxm);
-    view->mainPixmap->setOpacity(1.0);
-//----------------------------------------------------------------
-    indexListWidget->clear();
+    QString rgb_str = QString("R: %1 нм G: %2 нм B: %3 нм").arg(rgb_default.red)
+            .arg(rgb_default.green).arg(rgb_default.blue);
+    im_handler->current_image()->append_additional_image(img,rgb_str,rgb_str);
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    view->GlobalChannelNum = depth;
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+}
+
+void MainWindow::createDockWidgetForIndexes()
+{
+    indexListWidget->clear();  slider->setEnabled(true);
+    create_default_RGB_image();
     QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
-    QString rgb_str = QString("R: %1 нм G: %2 нм B: %3 нм").arg(rgb_default.red).arg(rgb_default.green).arg(rgb_default.blue);
-    lwItem->setText(rgb_str);
+    QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
+    lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
-//    im_handler->current_image()->indexPixmap.append(pxm);
-    im_handler->current_image()->indexImages.append(img);
-    im_handler->current_image()->indexPixmapNames.append(rgb_str);
-    connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
+//----------------------------------------------------------------
+    set_abstract_index_pixmap();
+}
+
+void MainWindow::set_abstract_index_pixmap()
+{
+    double brightness = im_handler->current_image()->get_current_brightness();
+    im_handler->set_brightness_to_slider(slider, brightness);
+    QImage img = im_handler->get_REAL_current_image();
+    QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm);
 }
 
 QPointF MainWindow::getPointFromStr(QString str) {
@@ -721,35 +773,30 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     indexListWidget->currentItem()->setSelected(false);
     int num = chListWidget->row(lwItem);
     view->GlobalChannelNum = num;
-    QImage img = im_handler->current_image()->get_rgb(true,num,num,num);
-    QPixmap pxm;
-    if (num < 84) pxm = view->changeBrightnessPixmap(img, 3.5);
-    else pxm = view->changeBrightnessPixmap(img, 3.0);
-    view->mainPixmap->setPixmap(pxm);
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+//----------------------------------------------------------------
+    set_abstract_index_pixmap();
 }
 
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 {
-    chListWidget->currentItem()->setSelected(false);
+    chListWidget->currentItem()->setSelected(false);  // конкурент
     int num = indexListWidget->row(lwItem);
-//    view->mainPixmap->setPixmap(im_handler->current_image()->indexPixmap.at(num));
-    QImage img = im_handler->current_image()->indexImages.at(num);
-    if (num == 0)
-        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, 3.5));
-    else
-        view->mainPixmap->setPixmap(view->changeBrightnessPixmap(img, .7));
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    view->GlobalChannelNum = num + depth;
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+//----------------------------------------------------------------
+    set_abstract_index_pixmap();
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
+  view->mainPixmap->setOpacity(1.0);
   updateNewDataSet();
   addRecentFile();
 }
 
 void MainWindow::updateNewDataSet()
 {
-//    im_handler->current_image()->indexPixmap.clear();
-    im_handler->current_image()->indexImages.clear();
-    im_handler->current_image()->indexPixmapNames.clear();
     view->clearForAllObjects();
     zGraphListWidget->clear();
     indexListWidget->clear();
@@ -759,6 +806,9 @@ void MainWindow::updateNewDataSet()
 
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+
+    view->localFolderAct->setEnabled(true);
+    slider->setEnabled(true);
 }
 
 void MainWindow::addRecentFile()
@@ -885,7 +935,6 @@ void MainWindow::inputIndexDlgShow()
             return;
         }  // if
         QString for_eval = im_handler->get_regular_expression(input);
-        qDebug() << for_eval;
         if (for_eval.isEmpty()) {
             qDebug() << "wrong index !!!";
             return;
@@ -894,22 +943,39 @@ void MainWindow::inputIndexDlgShow()
     }  // if
 }
 
+void MainWindow::settingsDlgShow()
+{
+    settingsDialog *dlg = new settingsDialog(this);
+    if (dlg->exec() == QDialog::Accepted) {}
+}
+
+void MainWindow::change_brightness(int value)
+{
+    QPixmap pxm;
+    QImage img = im_handler->get_REAL_current_image();
+    double brightness = im_handler->get_new_brightness(slider, value);
+    pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm) ;
+}
+
 void MainWindow::add_index_pixmap(int num)
 {
-    SpectralImage* spectral_img = im_handler->current_image();
-    QImage img = spectral_img->get_index_rgb(true,num);
-    QPixmap pxm = view->changeBrightnessPixmap(img, .7);
-    view->mainPixmap->setPixmap(pxm);
-    view->mainPixmap->setOpacity(1.0);
-//----------------------------------------------------------
+// num - номер максимального slice, этот номер на 1 меньше чем нужный current_slice
+    view->GlobalChannelNum = num + 1;
+// ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
+//  depth в indexImages находится RGB, и оно отсутствуем в img SpectralImage
+    QImage img = im_handler->current_image()->get_index_rgb(true,num);
+    im_handler->current_image()->append_additional_image(img,
+                                 view->index_title_str,view->index_formula_str);
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
     QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
-    lwItem->setText(view->index_title_str);
-    lwItem->setToolTip(view->index_formula_str);
+    QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
+    lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
     indexListWidget->setCurrentRow(indexListWidget->count() - 1);
     chListWidget->currentItem()->setSelected(false);  // конкурент
-//    im_handler->current_image()->indexPixmap.append(pxm);
-    im_handler->current_image()->indexImages.append(img);
-    im_handler->current_image()->indexPixmapNames.append(view->index_title_str);
+//    (r640-r680)/(640+r680)
+//----------------------------------------------------------
+    set_abstract_index_pixmap();
 }

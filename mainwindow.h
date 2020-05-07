@@ -19,11 +19,11 @@ class MainWindow : public QMainWindow {
   ~MainWindow();
  private slots:
   void open();
+  void folder();
  public slots:
   void show_progress(int max_progress);
   void stop_reading_file();
   void delete_progress_dialog();
-  void add_envi_hdr_pixmap();
   void show_profile(QPointF point, int id = -1);
   void createDockWidgetForItem(zGraph *item);
   void setZGraphDockToggled(zGraph *item);
@@ -42,20 +42,26 @@ class MainWindow : public QMainWindow {
   void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
+  void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
  signals:
   void read_file(QString);
   void index_calculate(QString);
  protected:
-  qreal qmainWindowScale = .84; // .5;  // 0.84;
+  qreal qmainWindowScale =  .55;  // 0.84;
+  void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
   void SetupUi();
   QString appName = "Gelion";
-  bool saveSettingAtCloseApp = false;
+  bool saveSettingAtCloseApp = true;
   bool restoreSettingAtStartUp = false;
   QString dataFileName = "";
+  QString save_slices = "_additional_slices_.bin";
+  QString additional_images = "_additional_images_.png";
+  QString additional_images_names = "_additional_names_.bin";
+  QString additional_images_brightness = "_additional_brightness_.bin";
   QStringList recentFileNames;
-  void saveSettings(QString fname);
+  void saveSettings();
   void restoreSettings(QString fname);
   void restoreSettingsVersionOne(QSettings &settings);
   void restoreSettingsVersionTwo(QSettings &settings);
@@ -91,17 +97,21 @@ protected:
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
-  QAction *showChList_All_Act = new QAction("Отображать все каналы", this);
-  QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
+//  QAction *showChList_All_Act = new QAction("Отображать все каналы", this);
+//  QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
   void createConstDockWidgets();
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
+  QSlider *slider;
+  void set_abstract_index_pixmap();
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
   void show_channel_list();
   void show_zgraph_list();
   void inputIndexDlgShow();
+  void settingsDlgShow();
+  void change_brightness(int value);
 };
 
 #endif  // MAINWINDOW_H

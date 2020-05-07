@@ -29,5 +29,7 @@
         <file>icons/step5_channels.png</file>
         <file>icons/step10_channels.png</file>
         <file>icons/color_NIR_32.png</file>
+        <file>icons/folder.png</file>
+        <file>icons/settings-64.png</file>
     </qresource>
 </RCC>

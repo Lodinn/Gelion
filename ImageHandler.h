@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVector>
 #include <QList>
+#include <QSlider>
 #include <../BPLA/SpectralImage.h>
 
 class ImageHandler : public QObject {
@@ -18,6 +19,12 @@ public:
     enum show_progress_mode_set { hdr_mode, index_mode };
     show_progress_mode_set show_progress_mode;
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
+    double zero_brightness = 3.5;
+    double scale_brightness = zero_brightness / 33.0;
+    double zero_brightness_pos = 0.3;
+    void set_brightness_to_slider(QSlider *slider, double brightness);
+    QImage get_REAL_current_image();
+    double get_new_brightness(QSlider *slider, int value);
 protected:
     int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;

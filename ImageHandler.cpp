@@ -68,6 +68,34 @@ QPixmap ImageHandler::changeBrightnessPixmap(QImage &img, qreal brightness)
     return QPixmap::fromImage(img);
 }
 
+void ImageHandler::set_brightness_to_slider(QSlider *slider, double brightness)
+{
+    double range = slider->maximum() - slider->minimum();
+    double delta = brightness - zero_brightness;
+    double value = delta / scale_brightness;
+    value += range * zero_brightness_pos;
+    int a = qRound(value);
+    slider->setValue(a);
+}
+
+QImage ImageHandler::get_REAL_current_image()
+{
+    int num = current_image()->get_current_slice();
+    uint32_t depth = current_image()->get_bands_count();
+    if (num < depth)
+        return current_image()->get_rgb(true,num,num,num);
+    return current_image()->get_additional_image(num - depth);
+}
+
+double ImageHandler::get_new_brightness(QSlider *slider, int value)
+{
+    double range = slider->maximum() - slider->minimum();
+    double delta = value - range * zero_brightness_pos;
+    double result = zero_brightness + delta * scale_brightness;
+    current_image()->set_current_brightness(result);
+    return result;
+}
+
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
   return current_image()->get_raster().at(bn).at(script_y).at(script_x);
@@ -90,19 +118,14 @@ void ImageHandler::append_index_raster(QString for_eval)
     QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
     for(script_y = 0; script_y < h; script_y++) {
       for(script_x = 0; script_x < w; script_x++) {
-  //        qDebug() << precompiled.call().toNumber() << script_y << script_x;
         output_array[script_y][script_x] = precompiled.call().toNumber();
       }  // for
       emit reading_progress(script_y);
       if (read_file_canceled) return;
       QApplication::processEvents();
     }  // for
-    qDebug() << "in" << current_image()->get_raster().length();
     current_image()->append_slice(output_array);
 
-//    save_slice("aaa.bin", output_array);
-
-    qDebug() << "out" << current_image()->get_raster().length();
     emit index_finished(current_image()->get_raster().length() - 1);
 }
 

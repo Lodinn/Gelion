@@ -27,6 +27,7 @@ SOURCES += \
   inputindexdlg.cpp \
         main.cpp \
         mainwindow.cpp \
+  settingsdialog.cpp \
     view.cpp \
     ImageHandler.cpp \
     qcustomplot.cpp \
@@ -37,6 +38,7 @@ SOURCES += \
 HEADERS += \
   inputindexdlg.h \
         mainwindow.h \
+  settingsdialog.h \
     view.h \
     ImageHandler.h \
     qcustomplot.h \
@@ -49,4 +51,5 @@ RESOURCES += \
 
 FORMS += \
     inputindexdlg.ui \
+    settingsdialog.ui \
     zgraphparamdlg.ui
