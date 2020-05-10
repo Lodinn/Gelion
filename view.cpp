@@ -185,7 +185,6 @@ void gQGraphicsView::selectionZChanged()
 
 void gQGraphicsView::deleteZGraphItem(zGraph *item)
 {
-    qDebug() << "gQGraphicsView::deleteZGraphItem(zGraph *)" << item;
     if (item->isSelected()) {
         deleteGrabberRects();  deleteTmpLines();
     }  // if
@@ -352,6 +351,8 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
         }  // for
         item->plot->graph(0)->setData(x, y);
         item->plot->replot();
+        item->profile.clear();
+        for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
         return;
     }  // case zPoint::Type
     case zRect::Type : { multiPointsReplotRect(item);   return; }  // case zRect::Type
@@ -390,6 +391,8 @@ void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
     else return;
     item->plot->graph(0)->setData(x, y);
     item->plot->replot();
+    item->profile.clear();
+    for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
 }
 
 void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
@@ -417,6 +420,8 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
     else return;
     item->plot->graph(0)->setData(x, y);
     item->plot->replot();
+    item->profile.clear();
+    for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
 }
 
 void gQGraphicsView::moveGrabberRects()
@@ -779,45 +784,6 @@ void gQGraphicsView::createPolyline(QPoint pos)
     deleteTmpLines();
     emit setZGraphDockToggled(zp);
 }
-  /*qDebug() << scene()->mouseGrabberItem();
-  if (scene()->mouseGrabberItem() != nullptr) {
-    qDebug() << "Grabbed something";
-    QGraphicsView::mousePressEvent(event);
-    return;
-  }
-
-  if (event->modifiers() == Qt::ControlModifier)
-    if (event->button() == Qt::LeftButton) {
-      QPointF point = mapToScene(event->pos());
-      ROI *new_roi =
-          new ROI(point, QString("Point %1").arg(ROIs.count() + 1), ROI::Point);
-      scene()->addItem(new_roi);
-      ROIs_new.append(new_roi);
-      //      scene()->addRect(point.x(), point.y(), 36, 18);
-      //      QPainterPath pp;
-      //      pp.moveTo(point);
-      //      pp.addEllipse(point, 6, 6);
-      //      pp.addText(point.x(), point.y(), QFont("Arial", 12),
-      //                 QString("Point %1").arg(ROIs.count() + 1));
-      //      qDebug() << pp.boundingRect();
-      //      QGraphicsPathItem *path =
-      //          scene()->addPath(pp, QPen(Qt::yellow), QBrush(Qt::yellow));
-      //      path->setFlag(QGraphicsItem::ItemIsMovable);
-      //      path->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-      //      ROIs.append(static_cast<QGraphicsItem *>(path));
-      emit point_picked(point);
-      return;
-    }
-
-  if (event->button() == Qt::LeftButton) {
-    _pan = true;
-    _panX0 = event->x();
-    _panY0 = event->y();
-    setCursor(Qt::ClosedHandCursor);
-    event->accept();
-    return;
-  }
-  //    event->ignore();*/
 
 void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
   if (PAN) {

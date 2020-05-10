@@ -31,5 +31,8 @@
         <file>icons/color_NIR_32.png</file>
         <file>icons/folder.png</file>
         <file>icons/settings-64.png</file>
+        <file>icons/csv.png</file>
+        <file>icons/csv2.png</file>
+        <file>icons/settings-150.png</file>
     </qresource>
 </RCC>

@@ -38,38 +38,45 @@ class MainWindow : public QMainWindow {
   void toggleViewAction(bool b);
   void createDockWidgetForChannels();
   void createDockWidgetForIndexes();
+  void restoreIndexListWidget();
   void itemClickedChannelList(QListWidgetItem *lwItem);
   void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
   void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
+private:
+  void updateNewDataSet(bool index_update);  // ----------------
+  QStringList recentFileNames;
+  void saveSettings();
+  void restoreIndexes();
+  void restoreSettings();
+  void restoreSettingsVersionOne(QSettings &settings);
+  void restoreSettingsVersionTwo(QSettings &settings);
+
+  void addRecentFile();
  signals:
   void read_file(QString);
   void index_calculate(QString);
  protected:
-  qreal qmainWindowScale =  .55;  // 0.84;
+  qreal qmainWindowScale =  .84;  // 0.84;
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
   void SetupUi();
-  QString appName = "Gelion";
-  bool saveSettingAtCloseApp = true;
-  bool restoreSettingAtStartUp = false;
   QString dataFileName = "";
-  QString save_slices = "_additional_slices_.bin";
-  QString additional_images = "_additional_images_.png";
-  QString additional_images_names = "_additional_names_.bin";
-  QString additional_images_brightness = "_additional_brightness_.bin";
-  QStringList recentFileNames;
-  void saveSettings();
-  void restoreSettings(QString fname);
-  void restoreSettingsVersionOne(QSettings &settings);
-  void restoreSettingsVersionTwo(QSettings &settings);
-  void updateNewDataSet();
-  void addRecentFile();
+  QString appName = "Gelion";
+  bool saveSettingAtCloseApp = true;  // ---------
+  bool restoreSettingAtStartUp = true; // ---
+  QString save_slices = "_slices_.bin";
+  QString save_images = "_images_.png";
+  QString save_formulas = "_formulas_.bin";
+  QString save_brightness = "_brightness_.bin";
+  QStringList save_file_names = QStringList() << save_slices << save_images
+                                              << save_formulas << save_brightness;
 private:
-    // Event handlers
+// Event handlers
   void closeEvent(QCloseEvent *event);
+  void set_action_enabled(bool enable);
   QPointF getPointFromStr(QString str);
   QVector<double> getVectorFromStr(QString str);
  private:
@@ -78,6 +85,7 @@ private:
   QMenu *fileMenu;
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;
+  QAction *indexAct;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;
@@ -97,13 +105,12 @@ protected:
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
-//  QAction *showChList_All_Act = new QAction("Отображать все каналы", this);
-//  QAction *showChList_10_Act = new QAction("Отображать каналы с шагом 10", this);
   void createConstDockWidgets();
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
   QSlider *slider;
   void set_abstract_index_pixmap();
+  void show_channel_list_update();
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);

@@ -10,16 +10,15 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
-/* пока надо отладить синхронизацию изображенией,
- * проблемы могут быть в методах:
+/*
+ * dataFileName set after finished reading or after save settings
+ *
+ *
 
 void MainWindow::createDockWidgetForIndexes()
 void MainWindow::add_index_pixmap(int num)
-
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
-
-не забыть сохранить вывод каналов шаг 2  5   10
 
 */
 

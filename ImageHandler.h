@@ -25,6 +25,7 @@ public:
     void set_brightness_to_slider(QSlider *slider, double brightness);
     QImage get_REAL_current_image();
     double get_new_brightness(QSlider *slider, int value);
+    void save_settings_all_images(QStringList &save_file_names);
 protected:
     int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;

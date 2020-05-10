@@ -39,6 +39,7 @@ public:
     QString typeString = "";
     void setParamsToDialog(zgraphParamDlg *dlg);
     void getParamsFromDialog(zgraphParamDlg *dlg);
+    QVector<QPointF > profile;
 signals:
      void mouseMove();
      void mouseRelease();

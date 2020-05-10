@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   QApplication::setApplicationName(appName);
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
-  if (restoreSettingAtStartUp) restoreSettings(dataFileName);
+
 }
 
 MainWindow::~MainWindow() {
@@ -34,53 +34,73 @@ MainWindow::~MainWindow() {
 
 void MainWindow::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event)
-  if (saveSettingAtCloseApp) saveSettings();
+  if (saveSettingAtCloseApp) {
+      saveSettings();
+      im_handler->save_settings_all_images(save_file_names);
+  }  // if
+}
+
+void MainWindow::set_action_enabled(bool enable)
+{
+//    view->localFolderAct->setEnabled(enable);
+    view->pointAct->setEnabled(enable);
+    view->rectAct->setEnabled(enable);
+    view->ellipseAct->setEnabled(enable);
+    view->polylineAct->setEnabled(enable);
+    view->polygonAct->setEnabled(enable);
+    indexAct->setEnabled(enable);
 }
 
 void MainWindow::saveSettings()
 {
+//    if (dataFileName.isEmpty()) return;
+//    im_handler->current_image()->save_additional_slices(save_slices);
+//    im_handler->current_image()->save_images(save_images);
+//    im_handler->current_image()->save_formulas(save_formulas);
+//    im_handler->current_image()->save_brightness(save_brightness);
     if (dataFileName.isEmpty()) return;
-    im_handler->current_image()->save_additional_slices(save_slices);
-    im_handler->current_image()->save_images(additional_images);
-    im_handler->current_image()->save_names(additional_images_names);
-    im_handler->current_image()->save_brightness(additional_images_brightness);
-    return;
-
-
-//    QFileInfo info(fname);
-//    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
-//    QSettings settings( iniFileName, QSettings::IniFormat );
-//    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
-//    settings.setIniCodec( codec );
-//    settings.clear();
-//    settings.setValue("version", 1);
-//    settings.setValue("scale", view->GlobalScale);
-//    settings.setValue("rotation", view->GlobalRotate);
-//    settings.setValue("channel", view->GlobalChannelNum);
-//    settings.setValue("horizontal", view->horizontalScrollBar()->value());
-//    settings.setValue("vertical", view->verticalScrollBar()->value());
-//    settings.setValue("dockZGraphList", dockZGraphList->isVisible());
-//    settings.setValue("dockChannelList", dockChannelList->isVisible());
-//    auto graphList = view->getZGraphItemsList();
-//    int num = 0;
-//    foreach(zGraph *zg, graphList) {
-//        QStringList strlist = zg->getSettings(num);
-//        foreach(QString str, strlist) {
-//            int index = str.indexOf(zg->setsep);
-//            if (index == -1) continue;
-//            QString mid_Key = str.mid(0,index);
-//            QString mid_Value = str.mid(index+1);
-//            settings.setValue(mid_Key, mid_Value);
-//        }  // for
-//        num++;
-//    }  // for
-//    settings.setValue("geometry", saveGeometry());
-//    settings.setValue("windowState", saveState(1));
-
+    QFileInfo info(dataFileName);
+    QString iniFileName = info.completeBaseName() + ".ini";
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    iniFileName = writableLocation + "/" + iniFileName;
+    QSettings settings( iniFileName, QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+    settings.clear();
+    settings.setValue("version", 1);
+    settings.setValue("scale", view->GlobalScale);
+    settings.setValue("rotation", view->GlobalRotate);
+    settings.setValue("channelNum", view->GlobalChannelNum);
+    settings.setValue("channelStep", view->GlobalChannelStep);
+    settings.setValue("horizontal", view->horizontalScrollBar()->value());
+    settings.setValue("vertical", view->verticalScrollBar()->value());
+    settings.setValue("dockZGraphList", dockZGraphList->isVisible());
+    settings.setValue("dockChannelList", dockChannelList->isVisible());
+    settings.setValue("dockIndexList", dockIndexList->isVisible());
+    settings.setValue("indexCount", indexListWidget->count());  // количество расчетных изображений
+    auto graphList = view->getZGraphItemsList();
+    int num = 0;
+    foreach(zGraph *zg, graphList) {
+        QStringList strlist = zg->getSettings(num);
+        foreach(QString str, strlist) {
+            int index = str.indexOf(zg->setsep);
+            if (index == -1) continue;
+            QString mid_Key = str.mid(0,index);
+            QString mid_Value = str.mid(index+1);
+            settings.setValue(mid_Key, mid_Value);
+        }  // for
+        num++;
+    }  // for
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState(1));
+// C:\Users\a9161\AppData\Local\Gelion\REFLECTANCE_xxx_022
 }
 
 void MainWindow::SetupUi() {
-  setWindowTitle("gelion");
+  setWindowTitle("Gelion");
   QRect desktop = QApplication::desktop()->screenGeometry();
   int sw = desktop.width();  int sh = desktop.height();
   int left = round(sw*(1-qmainWindowScale)*0.5+200);
@@ -284,11 +304,11 @@ void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
 }
 
 void MainWindow::createActions() {
+
 // &&&file
   fileMenu = menuBar()->addMenu(tr("&Файл"));
   fileMenu->addAction(view->openAct);
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
-  view->localFolderAct->setEnabled(false);
   fileMenu->addAction(view->localFolderAct);
   connect(view->localFolderAct, &QAction::triggered, this, &MainWindow::folder);
   fileMenu->addSeparator();
@@ -314,7 +334,7 @@ void MainWindow::createActions() {
     indexToolBar->setObjectName("indexToolBar");
     const QIcon indexIcon =
         QIcon::fromTheme("Добавить индексное изображение", QIcon(":/icons/MapleLeaf.png"));
-    QAction *indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
+    indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
     indexMenu->addAction(indexAct);
     indexToolBar->addAction(indexAct);
     connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
@@ -339,10 +359,13 @@ void MainWindow::createActions() {
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(change_brightness(int)));
   settingsToolBar->addSeparator();
 
-  QAction *mainSettingsAct = new QAction(QIcon(":/icons/settings-64.png"), "&Настройки программы", this);
+  QAction *mainSettingsAct = new QAction(QIcon(":/icons/settings-150.png"), "&Настройки программы", this);
   settingsMenu->addAction(mainSettingsAct);
   settingsToolBar->addAction(mainSettingsAct);
   connect(mainSettingsAct, SIGNAL(triggered()), this, SLOT(settingsDlgShow()));
+
+  set_action_enabled(false);
+
 }
 
 void MainWindow::createStatusBar() {
@@ -398,6 +421,10 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все профили", this);
     action->setData(4);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
+    action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в *.csv файл ...", this);
+    action->setData(5);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 // Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
@@ -434,30 +461,63 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 }
 
-void MainWindow::listWidgetDeleteItem(zGraph *item)
-{
-    qDebug() << "MainWindow::listWidgetDeleteItem(zGraph *item)" << item  << item->listwidget;
-//    zGraphListWidget->removeItemWidget(item->listwidget);
-//    zGraphListWidget->takeItem()
-//    delete item->listwidget;
-    zGraphListWidget->update();
-}
-
+// connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
 void MainWindow::open() {
   QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
       tr("ENVI HDR Files (*.hdr);;ENVI HDR Files (*.hdr)"));
-  dataFileName = fname;
+  if (fname.isEmpty()) return;
   QStringList fnames = im_handler->get_image_file_names();
-  int num = fnames.indexOf(dataFileName);
+  int num = fnames.indexOf(fname);
   if (num != -1) {
     if (im_handler->set_current_image(num)) {
-      updateNewDataSet();
+      updateNewDataSet(false);
       addRecentFile();
       return;
-    }
-  }
-  emit read_file(dataFileName);
+    }  // if
+  }  // if
+  view->openAct->setEnabled(false);
+  QApplication::processEvents();
+  emit read_file(fname);
+// connect(this, SIGNAL(read_file(QString)),im_handler,SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
+}
+
+void MainWindow::add_envi_hdr_pixmap() {
+  view->mainPixmap->setOpacity(1.0);
+  view->resetMatrix();  view->resetTransform();
+// dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
+  if (!dataFileName.isEmpty()) saveSettings();  // ****************************
+  dataFileName = im_handler->current_image()->get_file_name();
+  view->openAct->setEnabled(true);
+  updateNewDataSet(true);
+  addRecentFile();
+  view->openAct->setEnabled(true);
+  set_action_enabled(true);
+  QApplication::processEvents();
+}
+
+void MainWindow::updateNewDataSet(bool index_update)
+{
+    view->clearForAllObjects();
+    zGraphListWidget->clear();
+    indexListWidget->clear();
+    chListWidget->clear();
+    setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
+    createDockWidgetForChannels();
+    if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
+    createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
+    if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
+//    view->localFolderAct->setEnabled(true);
+    slider->setEnabled(true);
+    view->openAct->setEnabled(true);
+}
+
+void MainWindow::listWidgetDeleteItem(zGraph *item)
+{
+//    zGraphListWidget->removeItemWidget(item->listwidget);
+//    zGraphListWidget->takeItem()
+    delete item->listwidget;
+    zGraphListWidget->update();
 }
 
 void MainWindow::folder()
@@ -477,7 +537,10 @@ void MainWindow::show_progress(int max_progress) {
   if (progress_dialog != nullptr) delete progress_dialog;
   QString pdInfoStr = "", pdTitleStr = "";
   if (im_handler->show_progress_mode == ImageHandler::hdr_mode) {
-      pdTitleStr = "Открыть файл";  pdInfoStr = "Загрузка файла ..."; }
+      pdTitleStr = "Открыть файл";  pdInfoStr = "Загрузка файла ...";
+      view->openAct->setEnabled(true);
+      QApplication::processEvents();
+  }  // if
   if (im_handler->show_progress_mode == ImageHandler::index_mode) {
       pdTitleStr = "Расчет индекса";   pdInfoStr = "Расчет индекса ..."; }
   progress_dialog =
@@ -498,7 +561,7 @@ void MainWindow::show_progress(int max_progress) {
 void MainWindow::stop_reading_file() {
   im_handler->set_read_file_canceled();
   delete_progress_dialog();
-//  progress_dialog->hide();
+  view->openAct->setEnabled(true);
   QApplication::processEvents();
 }
 
@@ -551,19 +614,37 @@ void MainWindow::create_default_RGB_image()
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
 }
 
+void MainWindow::restoreIndexListWidget() {
+    int count = im_handler->current_image()->get_image_count();
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    for (int i = 0; i < count; i++) {
+        im_handler->current_image()->set_current_slice(depth + i);
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        indexListWidget->addItem(lwItem);
+        lwItem->setIcon(QIcon(":/icons/palette.png"));
+        QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
+        lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
+    }  // for
+    view->GlobalChannelNum = depth;
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+}
+
 void MainWindow::createDockWidgetForIndexes()
 {
     indexListWidget->clear();  slider->setEnabled(true);
-    create_default_RGB_image();
-    QListWidgetItem *lwItem = new QListWidgetItem();
-    indexListWidget->addItem(lwItem);
-    lwItem->setIcon(QIcon(":/icons/palette.png"));
-    QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
-    lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
+    if (restoreSettingAtStartUp) restoreIndexListWidget();
+    if (indexListWidget->count() == 0) {
+        create_default_RGB_image();
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        indexListWidget->addItem(lwItem);
+        lwItem->setIcon(QIcon(":/icons/palette.png"));
+        QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
+        lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
+    }  // if
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
-//----------------------------------------------------------------
     set_abstract_index_pixmap();
+
 }
 
 void MainWindow::set_abstract_index_pixmap()
@@ -587,11 +668,23 @@ QVector<double> MainWindow::getVectorFromStr(QString str) {
     return v;
 }
 
-void MainWindow::restoreSettings(QString fname)
+void MainWindow::restoreIndexes()
 {
-    if (fname.isEmpty()) return;
-    QFileInfo info(fname);
-    QString iniFileName = info.path() + '/' + info.completeBaseName() + ".ini";
+    bool SETTINGS_SET_EXISTS = im_handler->current_image()->load_formulas(save_formulas);
+// при отсутствии ОДНОГО файла из набора игнорируем ВЕСЬ набор
+    if (!SETTINGS_SET_EXISTS) return;
+    im_handler->current_image()->load_additional_slices(save_slices);
+    im_handler->current_image()->load_images(save_images);
+    im_handler->current_image()->load_brightness(save_brightness);
+}
+
+void MainWindow::restoreSettings()
+{
+    if (dataFileName.isEmpty()) return;
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(dataFileName);
+    QString iniFileName = writableLocation + '/' + info.completeBaseName()
+            + "/" + info.completeBaseName() + ".ini";
     QFileInfo infoINI(iniFileName);
     if (!infoINI.exists()) return;
     QSettings settings( iniFileName, QSettings::IniFormat );
@@ -609,21 +702,36 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 {
     view->GlobalScale = settings.value("scale", 1.0).toDouble();
     view->GlobalRotate = settings.value("rotation", 0.0).toDouble();
-    view->GlobalChannelNum = settings.value("channel", 0).toInt();
-    QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
-    itemClickedChannelList(lwItem);
-    chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
+    view->GlobalChannelNum = settings.value("channelNum", 0).toInt();
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    if (view->GlobalChannelNum < depth) {
+        QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
+        itemClickedChannelList(lwItem);
+        chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
+    }  else {
+        QListWidgetItem *lwItem = indexListWidget->item(view->GlobalChannelNum - depth);
+        itemClickedIndexList(lwItem);
+        indexListWidget->setCurrentItem(lwItem);  indexListWidget->scrollToItem(lwItem);
+    }  // if
+    view->GlobalChannelStep = settings.value("channelStep", 1).toInt();
+    show_channel_list_update();
+
     int horizontal = settings.value("horizontal", 0).toInt();
     int vertical = settings.value("vertical", 0).toInt();
+    view->resetMatrix();  view->resetTransform();
     view->scale(1/view->GlobalScale, 1/view->GlobalScale);
     view->rotate(-view->GlobalRotate);
     view->horizontalScrollBar()->setValue(horizontal);
     view->verticalScrollBar()->setValue(vertical);
     auto graphlist = settings.value("dockZGraphList", true).toBool();
     auto channellist = settings.value("dockChannelList", true).toBool();
-    dockZGraphList->setVisible(graphlist);  dockChannelList->setVisible(channellist);
+    auto indexlist = settings.value("dockIndexList", true).toBool();
+    dockZGraphList->setVisible(graphlist);
+    dockChannelList->setVisible(channellist);
+    dockIndexList->setVisible(indexlist);
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->channelListAct->setChecked(dockChannelList->isVisible());
+    view->indexListAct->setChecked(dockIndexList->isVisible());
     view->PAN = false;
     QStringList groups = settings.childGroups();
     foreach(QString str, groups) {
@@ -645,6 +753,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             view->show_profile_for_Z(point);
             emit view->setZGraphDockToggled(point);
             point->dockw->setVisible(settings.value("dockvisible", true).toBool());
+
 // create dynamic DockWidget
             continue;
         }  // Point
@@ -770,7 +879,7 @@ void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
 
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 {
-    indexListWidget->currentItem()->setSelected(false);
+    indexListWidget->currentItem()->setSelected(false);  // конкурент
     int num = chListWidget->row(lwItem);
     view->GlobalChannelNum = num;
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
@@ -787,28 +896,6 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
 //----------------------------------------------------------------
     set_abstract_index_pixmap();
-}
-
-void MainWindow::add_envi_hdr_pixmap() {
-  view->mainPixmap->setOpacity(1.0);
-  updateNewDataSet();
-  addRecentFile();
-}
-
-void MainWindow::updateNewDataSet()
-{
-    view->clearForAllObjects();
-    zGraphListWidget->clear();
-    indexListWidget->clear();
-
-    createDockWidgetForChannels();
-    createDockWidgetForIndexes();
-
-    setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
-    if (restoreSettingAtStartUp) restoreSettings(dataFileName);
-
-    view->localFolderAct->setEnabled(true);
-    slider->setEnabled(true);
 }
 
 void MainWindow::addRecentFile()
@@ -837,10 +924,12 @@ void MainWindow::OpenRecentFile()
             dataFileName = action->data().toString();
             emit read_file(dataFileName);
         } else {
+// сохранияем конфигурацию перед переключениеь на другой набор данных
+            saveSettings();
             auto set_current = im_handler->set_current_image(num);
             if (!set_current) return;
             dataFileName = im_handler->current_image()->get_file_name();
-            updateNewDataSet();
+            updateNewDataSet(false);
         }  // if (num == -1)
     }  // if (action)
 }
@@ -865,16 +954,20 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     menu.exec(globalPos);
 }
 
+void MainWindow::show_channel_list_update() {
+    for (int row = 0; row < chListWidget->count(); row++) {
+        if (row % view->GlobalChannelStep == 0)
+            chListWidget->item(row)->setHidden(false);
+        else chListWidget->item(row)->setHidden(true);
+    }  // for
+}
+
 void MainWindow::show_channel_list()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         view->GlobalChannelStep = action->data().toInt();
-        for (int row = 0; row < chListWidget->count(); row++) {
-            if (row % action->data().toInt() == 0)
-                chListWidget->item(row)->setHidden(false);
-            else chListWidget->item(row)->setHidden(true);
-        }  // for
+        show_channel_list_update();
     }  // if
 }
 
@@ -884,7 +977,6 @@ void MainWindow::show_zgraph_list()
     if (action) {
         int num = action->data().toInt();
         auto zGraphList = view->getZGraphItemsList();
-
         switch (num) {
         case 1 : {    // Отобразить все области интереса
             foreach(zGraph *item, zGraphList) {
@@ -916,6 +1008,32 @@ void MainWindow::show_zgraph_list()
             }  // foreach
             return;
         }  // case 4
+        case 5 : {    // Сохранить все профили в *.csv файл ...
+            if (zGraphList.count() == 0) return;
+            QString csv_file_name = QFileDialog::getSaveFileName(
+                this, tr("Сохранить профили в *.csv файл"), QCoreApplication::applicationDirPath(),
+                tr("CSV Files (*.csv);;CSV Files (*.scv)"));
+            if (csv_file_name.isEmpty()) return;
+            QStringList csv_list;
+            QString str = "длина волны, нм;";
+            foreach(zGraph *item, zGraphList) str.append(item->getTitle() + ";");
+            csv_list.append(str);
+            int count = zGraphList[0]->profile.count();
+            for (int i=0; i<count; i++) {
+                QString str = QString("%1;").arg(zGraphList[0]->profile[i].rx());
+                foreach(zGraph *item, zGraphList)
+                    str.append(QString("%1;").arg(item->profile[i].ry()));
+                str.replace('.', ',');
+                csv_list.append(str);
+            }  // for i
+            QFile file(csv_file_name);
+            file.open( QIODevice::Append | QIODevice::Text );
+            QTextStream stream(&file);
+            foreach(QString str, csv_list) stream << str << endl;
+            stream.flush();
+            file.close();
+            return;
+        }  // case 5
         }  // switch
     }  // if
 }

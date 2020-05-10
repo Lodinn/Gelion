@@ -96,6 +96,17 @@ double ImageHandler::get_new_brightness(QSlider *slider, int value)
     return result;
 }
 
+void ImageHandler::save_settings_all_images(QStringList &save_file_names)
+{
+    for (int i = 0; i < image_list.count(); i++) {
+        set_current_image(i);
+        current_image()->save_additional_slices(save_file_names.at(0));
+        current_image()->save_images(save_file_names.at(1));
+        current_image()->save_formulas(save_file_names.at(2));
+        current_image()->save_brightness(save_file_names.at(3));
+    } // for
+}
+
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
   return current_image()->get_raster().at(bn).at(script_y).at(script_x);
@@ -215,6 +226,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   image_list.append(image);
   index_current_dataset = image_list.count() - 1;
   emit finished();
+// connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
   datfile.close();
 }
 
