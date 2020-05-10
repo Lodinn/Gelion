@@ -516,7 +516,7 @@ void MainWindow::listWidgetDeleteItem(zGraph *item)
 {
 //    zGraphListWidget->removeItemWidget(item->listwidget);
 //    zGraphListWidget->takeItem()
-    delete item->listwidget;
+//    delete item->listwidget;
     zGraphListWidget->update();
 }
 
@@ -923,6 +923,7 @@ void MainWindow::OpenRecentFile()
         if (num == -1) {
             dataFileName = action->data().toString();
             emit read_file(dataFileName);
+// connect(this, SIGNAL(read_file(QString)),im_handler,SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
         } else {
 // сохранияем конфигурацию перед переключениеь на другой набор данных
             saveSettings();
@@ -1023,7 +1024,7 @@ void MainWindow::show_zgraph_list()
                 QString str = QString("%1;").arg(zGraphList[0]->profile[i].rx());
                 foreach(zGraph *item, zGraphList)
                     str.append(QString("%1;").arg(item->profile[i].ry()));
-                str.replace('.', ',');
+                str = str.replace('.', ',');
                 csv_list.append(str);
             }  // for i
             QFile file(csv_file_name);
