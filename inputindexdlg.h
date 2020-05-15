@@ -17,12 +17,12 @@ public:
     void setSpectralRange(QVector<double> &wls);
     QString get_index_title();
     QString get_formula();
+    Ui::inputIndexDlg *ui;
 private slots:
     void predefined_index_menu();
     void on_pushButtonIndexes_clicked();
 
 private:
-    Ui::inputIndexDlg *ui;
     QVector<QAction *> predefined_index_list_acts;
 };
 

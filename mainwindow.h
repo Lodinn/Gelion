@@ -52,6 +52,7 @@ private:
   void restoreIndexes();
   void restoreSettings();
   void restoreSettingsVersionOne(QSettings &settings);
+  void restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
   void restoreSettingsVersionTwo(QSettings &settings);
 
   void addRecentFile();
@@ -78,6 +79,7 @@ private:
   void closeEvent(QCloseEvent *event);
   void set_action_enabled(bool enable);
   QPointF getPointFromStr(QString str);
+  QPoint getPoint__fromStr(QString str);
   QVector<double> getVectorFromStr(QString str);
  private:
   QGraphicsScene *scene;

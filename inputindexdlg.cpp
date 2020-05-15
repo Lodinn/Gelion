@@ -9,6 +9,8 @@ inputIndexDlg::inputIndexDlg(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->buttonBox->buttons().at(1)->setText("Отмена");
+
     setWindowIcon(QIcon(":/icons/256_colors.png"));
     setWindowTitle("Добавить индексное изображение");
 

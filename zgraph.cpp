@@ -56,6 +56,22 @@ void zGraph::getParamsFromDialog(zgraphParamDlg *dlg)
     this->updateBoundingRect();
 }
 
+QPointF zGraph::getRectPoint2(QPointF p1, qreal w, qreal rot)
+{
+    QPointF point;
+    double xpos = p1.rx() + w * qCos(qDegreesToRadians(rot));
+    double ypos = p1.ry() + w * qSin(qDegreesToRadians(rot));
+    point.setX(xpos + pos().rx());  point.setY(ypos + pos().ry());
+    return point;
+}
+
+double zGraph::getRotationFromCoords(QPointF p1, QPointF p2)
+{
+    qreal dx  = p2.x() - p1.x();
+    qreal dy  = p2.y() - p1.y();
+    return qRadiansToDegrees( qAtan2(dy, dx) );
+}
+
 void zGraph::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     emit mouseMove();
@@ -87,7 +103,7 @@ void zGraph::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
         }  // if
         getParamsFromDialog(dlg);
     }  // if
-//    QGraphicsObject::mouseDoubleClickEvent(event);
+    //    QGraphicsObject::mouseDoubleClickEvent(event);
 }
 
 zPoint::zPoint(const QPointF point) :  zGraph()
@@ -146,6 +162,9 @@ QStringList zPoint::getSettings(int num)
     strlist.append(QString("Point%1/pos%2%3,%4").arg(num).arg(setsep)
                    .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
     strlist.append(QString("Point%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
+    QPoint dwpos = dockw->geometry().topLeft();
+    strlist.append(QString("Point%1/dockwpos%2%3,%4").arg(num).arg(setsep)
+                   .arg(dwpos.x()).arg(dwpos.y()));
     return strlist;
 }
 
@@ -310,6 +329,9 @@ QStringList zPolygon::getSettings(int num)
     strlist.append(QString("Polygon%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polygon%1/y%2%3").arg(num).arg(setsep).arg(ystr));
     strlist.append(QString("Polygon%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
+    QPoint dwpos = dockw->geometry().topLeft();
+    strlist.append(QString("Polygon%1/dockwpos%2%3,%4").arg(num).arg(setsep)
+                   .arg(dwpos.x()).arg(dwpos.y()));
     return strlist;
 }
 
@@ -484,13 +506,18 @@ QStringList zRect::getSettings(int num)
     // rectangle7/title#Прямоугольник 1
     strlist.append(QString("Rectangle%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    QPointF point = getRectPoint2(pos(), frectSize.width(), rotation());
     strlist.append(QString("Rectangle%1/pos%2%3,%4").arg(num).arg(setsep)
-                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2)
+                   /*.arg(point.rx(),0,'f',2).arg(point.ry(),0,'f',2)*/);
     qreal angle = rotation();
-    strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(angle));
+    strlist.append(QString("Rectangle%1/rotation%2%3").arg(num).arg(setsep).arg(angle,0,'f',2));
     strlist.append(QString("Rectangle%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
     strlist.append(QString("Rectangle%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
+    QPoint dwpos = dockw->geometry().topLeft();
+    strlist.append(QString("Rectangle%1/dockwpos%2%3,%4").arg(num).arg(setsep)
+                   .arg(dwpos.x()).arg(dwpos.y()));
     return strlist;
 }
 
@@ -624,13 +651,18 @@ QStringList zEllipse::getSettings(int num)
     // rectangle7/title#Прямоугольник 1
     strlist.append(QString("Ellipse%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Ellipse%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
+    QPointF point = getRectPoint2(pos(), frectSize.width(), rotation());
     strlist.append(QString("Ellipse%1/pos%2%3,%4").arg(num).arg(setsep)
-                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2));
+                   .arg(pos().rx(),0,'f',2).arg(pos().ry(),0,'f',2)
+                   /*.arg(point.rx(),0,'f',2).arg(point.ry(),0,'f',2)*/);
     qreal angle = rotation();
-    strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(angle));
+    strlist.append(QString("Ellipse%1/rotation%2%3").arg(num).arg(setsep).arg(angle,0,'f',2));
     strlist.append(QString("Ellipse%1/size%2%3,%4").arg(num).arg(setsep)
                    .arg(frectSize.width(),0,'f',2).arg(frectSize.height(),0,'f',2));
     strlist.append(QString("Ellipse%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
+    QPoint dwpos = dockw->geometry().topLeft();
+    strlist.append(QString("Ellipse%1/dockwpos%2%3,%4").arg(num).arg(setsep)
+                   .arg(dwpos.x()).arg(dwpos.y()));
     return strlist;
 }
 
@@ -794,6 +826,9 @@ QStringList zPolyline::getSettings(int num)
     strlist.append(QString("Polyline%1/x%2%3").arg(num).arg(setsep).arg(xstr));
     strlist.append(QString("Polyline%1/y%2%3").arg(num).arg(setsep).arg(ystr));
     strlist.append(QString("Polyline%1/dockvisible%2%3").arg(num).arg(setsep).arg(dockw->isVisible()));
+    QPoint dwpos = dockw->geometry().topLeft();
+    strlist.append(QString("Polyline%1/dockwpos%2%3,%4").arg(num).arg(setsep)
+                   .arg(dwpos.x()).arg(dwpos.y()));
     return strlist;
 }
 

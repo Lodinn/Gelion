@@ -809,9 +809,10 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
       QLineF newLine(tmpLines[0]->line().p1(), point);
       tmpLines[0]->setLine(newLine);
       QPointF p1 = newLine.p1();
-      qreal dx  = point.x() - p1.x();
-      qreal dy  = point.y() - p1.y();
-      qreal angle = qAtan2(dy,dx) * 180 / 3.1415;
+// &&&      qreal dx  = point.x() - p1.x();
+//      qreal dy  = point.y() - p1.y();
+//      qreal angle = qAtan2(dy,dx) * 180 / 3.1415;
+      qreal angle = tmpRect->getRotationFromCoords(p1, point);
       tmpRect->setRotation(angle);
       qreal w = newLine.length();
       tmpRect->frectSize.setWidth(w);
@@ -825,9 +826,10 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
       QLineF newLine(tmpLines[0]->line().p1(), point);
       tmpLines[0]->setLine(newLine);
       QPointF p1 = newLine.p1();
-      qreal dx  = point.x() - p1.x();
-      qreal dy  = point.y() - p1.y();
-      qreal angle = qAtan2(dy,dx) * 180 / 3.1415;
+//      qreal dx  = point.x() - p1.x();
+//      qreal dy  = point.y() - p1.y();
+//      qreal angle = qAtan2(dy,dx) * 180 / 3.1415;
+      qreal angle = tmpEllipse->getRotationFromCoords(p1, point);
       tmpEllipse->setRotation(angle);
       qreal w = newLine.length();
       tmpEllipse->frectSize.setWidth(w);

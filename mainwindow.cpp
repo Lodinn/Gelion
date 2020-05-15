@@ -53,11 +53,6 @@ void MainWindow::set_action_enabled(bool enable)
 
 void MainWindow::saveSettings()
 {
-//    if (dataFileName.isEmpty()) return;
-//    im_handler->current_image()->save_additional_slices(save_slices);
-//    im_handler->current_image()->save_images(save_images);
-//    im_handler->current_image()->save_formulas(save_formulas);
-//    im_handler->current_image()->save_brightness(save_brightness);
     if (dataFileName.isEmpty()) return;
     QFileInfo info(dataFileName);
     QString iniFileName = info.completeBaseName() + ".ini";
@@ -171,6 +166,7 @@ void MainWindow::show_profile(QPointF point, int id) {
     QDockWidget *dock = new QDockWidget(tr("Plot profile"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
                           Qt::BottomDockWidgetArea);
+    dock->setAllowedAreas(Qt::NoDockWidgetArea);
     dock->setFixedHeight(200);
     addDockWidget(Qt::BottomDockWidgetArea, dock);
     wPlot = new QCustomPlot();
@@ -281,6 +277,8 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
 void MainWindow::zGparhEditDialog(zGraph *item)
 {
     zgraphParamDlg *dlg = new zgraphParamDlg(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
     QPoint pos = dockZGraphList->geometry().bottomLeft()-QPoint(dlg->width(),0)+QPoint(dockZGraphList->width(),0);
     dlg->move(pos);
     item->setParamsToDialog(dlg);
@@ -661,6 +659,11 @@ QPointF MainWindow::getPointFromStr(QString str) {
     return QPointF(pos[0].toDouble(),pos[1].toDouble());
 }
 
+QPoint MainWindow::getPoint__fromStr(QString str) {
+    QStringList pos = str.split(",");
+    return QPoint(pos[0].toInt(),pos[1].toInt());
+}
+
 QVector<double> MainWindow::getVectorFromStr(QString str) {
     QStringList strlist = str.split(",");
     QVector<double> v;
@@ -748,12 +751,13 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 // create dynamic DockWidget
             view->scene()->addItem(point);
             point->updateBoundingRect();
-            settings.endGroup();
             emit view->insertZGraphItem(point);
             view->show_profile_for_Z(point);
             emit view->setZGraphDockToggled(point);
             point->dockw->setVisible(settings.value("dockvisible", true).toBool());
-
+            QString dockwpos = settings.value("dockwpos").toString();
+            point->dockwpos = getPoint__fromStr(dockwpos);
+            settings.endGroup();
 // create dynamic DockWidget
             continue;
         }  // Point
@@ -761,13 +765,16 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             settings.beginGroup(str);
             QString pos = settings.value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
+//            QVector<double> v = getVectorFromStr(pos);
+//            QPointF pXY(v.at(0), v.at(1));
             zRect *rect = new zRect(pXY,view->GlobalScale,view->GlobalRotate);
             QString title = settings.value("title").toString();
             rect->setTitle(title);
             rect->aicon = QIcon(":/images/vector_square.png");
             bool objectvisible = settings.value("objectvisible", true).toBool();
             rect->setVisible(objectvisible);
-            int rotation = settings.value("rotation").toInt();
+            double rotation = settings.value("rotation").toDouble();
+//            qreal rotation = rect->getRotationFromCoords( QPointF(v.at(0),v.at(1)), QPointF(v.at(2),v.at(3)) );
             rect->setRotation(rotation);
             QString sizestr = settings.value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
@@ -776,11 +783,13 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 // create dynamic DockWidget
             view->scene()->addItem(rect);
             rect->updateBoundingRect();
-            settings.endGroup();
             emit view->insertZGraphItem(rect);
             view->show_profile_for_Z(rect);
             emit view->setZGraphDockToggled(rect);
             rect->dockw->setVisible(settings.value("dockvisible", true).toBool());
+            QString dockwpos = settings.value("dockwpos").toString();
+            rect->dockwpos = getPoint__fromStr(dockwpos);
+            settings.endGroup();
 // create dynamic DockWidget
             continue;
         }  // Rect
@@ -788,13 +797,16 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             settings.beginGroup(str);
             QString pos = settings.value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
+//            QVector<double> v = getVectorFromStr(pos);
+//            QPointF pXY(v.at(0), v.at(1));
             zEllipse *ellipse = new zEllipse(pXY,view->GlobalScale,view->GlobalRotate);
             QString title = settings.value("title").toString();
             ellipse->setTitle(title);
             ellipse->aicon = QIcon(":/images/vector_ellipse.png");
             bool objectvisible = settings.value("objectvisible", true).toBool();
             ellipse->setVisible(objectvisible);
-            int rotation = settings.value("rotation").toInt();
+            double rotation = settings.value("rotation").toDouble();
+//            qreal rotation = ellipse->getRotationFromCoords( QPointF(v.at(0),v.at(1)), QPointF(v.at(2),v.at(3)) );
             ellipse->setRotation(rotation);
             QString sizestr = settings.value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
@@ -803,11 +815,13 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 // create dynamic DockWidget
             view->scene()->addItem(ellipse);
             ellipse->updateBoundingRect();
-            settings.endGroup();
             emit view->insertZGraphItem(ellipse);
             view->show_profile_for_Z(ellipse);
             emit view->setZGraphDockToggled(ellipse);
             ellipse->dockw->setVisible(settings.value("dockvisible", true).toBool());
+            QString dockwpos = settings.value("dockwpos").toString();
+            ellipse->dockwpos = getPoint__fromStr(dockwpos);
+            settings.endGroup();
 // create dynamic DockWidget
             continue;
         }  // Ellipse
@@ -831,11 +845,13 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 // create dynamic DockWidget
             view->scene()->addItem(polyline);
             polyline->updateBoundingRect();
-            settings.endGroup();
             emit view->insertZGraphItem(polyline);
             view->show_profile_for_Z(polyline);
             emit view->setZGraphDockToggled(polyline);
             polyline->dockw->setVisible(settings.value("dockvisible", true).toBool());
+            QString dockwpos = settings.value("dockwpos").toString();
+            polyline->dockwpos = getPoint__fromStr(dockwpos);
+            settings.endGroup();
 // create dynamic DockWidget
             continue;
         }  // Polyline
@@ -859,17 +875,30 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
 // create dynamic DockWidget
             view->scene()->addItem(polygon);
             polygon->updateBoundingRect();
-            settings.endGroup();
             emit view->insertZGraphItem(polygon);
             view->show_profile_for_Z(polygon);
             emit view->setZGraphDockToggled(polygon);
             polygon->dockw->setVisible(settings.value("dockvisible", true).toBool());
+            QString dockwpos = settings.value("dockwpos").toString();
+            polygon->dockwpos = getPoint__fromStr(dockwpos);
+            settings.endGroup();
 // create dynamic DockWidget
             continue;
         }  // Polygon
     }  // foreach
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray(), 1);
+    restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
+}
+
+void MainWindow::restoreTRUEdockWidgetsPosition()
+{
+    auto graphList = view->getZGraphItemsList();
+    foreach(zGraph *item, graphList) {
+        item->dockw->move(item->dockwpos);
+        item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
+//        item->dockw->move( mapToGlobal(item->dockwpos) );
+    }
 }
 
 void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
@@ -1043,6 +1072,7 @@ void MainWindow::inputIndexDlgShow()
 {
     inputIndexDlg *dlg = new inputIndexDlg(this);
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
     QVector<double> wls = im_handler->current_image()->wls();
     dlg->setSpectralRange(wls);
     if (dlg->exec() == QDialog::Accepted) {
@@ -1065,6 +1095,8 @@ void MainWindow::inputIndexDlgShow()
 void MainWindow::settingsDlgShow()
 {
     settingsDialog *dlg = new settingsDialog(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
     if (dlg->exec() == QDialog::Accepted) {}
 }
 

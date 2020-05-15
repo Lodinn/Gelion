@@ -29,6 +29,7 @@ public:
     virtual QRectF getTitleRectangle() const = 0;
     virtual void updateBoundingRect() = 0;
     QDockWidget *dockw = nullptr;
+    QPoint dockwpos;
     QListWidgetItem *listwidget = nullptr;
     QCustomPlot *plot = nullptr;
     virtual bool pointIn(QPointF point) = 0;
@@ -39,6 +40,7 @@ public:
     QString typeString = "";
     void setParamsToDialog(zgraphParamDlg *dlg);
     void getParamsFromDialog(zgraphParamDlg *dlg);
+    double getRotationFromCoords(QPointF p1, QPointF p2);
     QVector<QPointF > profile;
 signals:
      void mouseMove();
@@ -66,6 +68,7 @@ protected:
      void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
      QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
      void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+     QPointF getRectPoint2(QPointF p1, qreal w, qreal rot);
 private:
 };
 

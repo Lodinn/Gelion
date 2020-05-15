@@ -1,11 +1,15 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
+#include <QAbstractButton>
+
 settingsDialog::settingsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::settingsDialog)
 {
     ui->setupUi(this);
+
+    ui->buttonBox->buttons().at(1)->setText("Отмена");
 
     setWindowIcon(QIcon(":/icons/256_colors.png"));
 
