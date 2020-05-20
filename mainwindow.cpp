@@ -1080,15 +1080,17 @@ void MainWindow::show_zgraph_list()
             csv_list.append(str);
             int count = zGraphList[0]->profile.count();
             for (int i=0; i<count; i++) {
-                QString str = QString("%1;").arg(zGraphList[0]->profile[i].rx());
+                QString str = QString(tr("%1;").arg(zGraphList[0]->profile[i].rx()));
                 foreach(zGraph *item, zGraphList)
-                    str.append(QString("%1;").arg(item->profile[i].ry()));
+                    str.append(QString(tr("%1;").arg(item->profile[i].ry())));
                 str = str.replace('.', ',');
                 csv_list.append(str);
             }  // for i
             QFile file(csv_file_name);
             file.open( QIODevice::Append | QIODevice::Text );
             QTextStream stream(&file);
+            stream.setCodec("UTF-8");
+            stream.setGenerateByteOrderMark(true);
             foreach(QString str, csv_list) stream << str << endl;
             stream.flush();
             file.close();
