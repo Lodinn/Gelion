@@ -49,6 +49,8 @@ void MainWindow::set_action_enabled(bool enable)
     view->polylineAct->setEnabled(enable);
     view->polygonAct->setEnabled(enable);
     indexAct->setEnabled(enable);
+    spectralAct->setEnabled(enable);
+    maskAct->setEnabled(enable);
 }
 
 void MainWindow::saveSettings()
@@ -199,6 +201,10 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     QRect desktop = QApplication::desktop()->screenGeometry();
     dockw->move(round(desktop.width()/5),round(desktop.height()/5));
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
+    wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
+    wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
+    wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
+    wPlot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
     wPlot->resize(420,150);  wPlot->addGraph();
 // give the axes some labels:
     wPlot->xAxis->setLabel("длина волны, нм");
@@ -333,9 +339,14 @@ void MainWindow::createActions() {
     const QIcon indexIcon =
         QIcon::fromTheme("Добавить индексное изображение", QIcon(":/icons/MapleLeaf.png"));
     indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
-    indexMenu->addAction(indexAct);
-    indexToolBar->addAction(indexAct);
+    indexMenu->addAction(indexAct);   indexToolBar->addAction(indexAct);
     connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
+    spectralAct = new QAction(QIcon(":/icons/full-spectrum.png"), tr("&Спектральный анализ"), this);
+    indexMenu->addAction(spectralAct);   indexToolBar->addAction(spectralAct);
+//    connect(spectralAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
+    maskAct = new QAction(QIcon(":/icons/icons8-theatre-mask-30.png"), tr("&Создания масок для изображения"), this);
+    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
+//    connect(maskAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
@@ -895,9 +906,11 @@ void MainWindow::restoreTRUEdockWidgetsPosition()
 {
     auto graphList = view->getZGraphItemsList();
     foreach(zGraph *item, graphList) {
-        item->dockw->move(item->dockwpos);
+        item->dockw->move(item->dockwpos - QPoint(76-68,43-12));
         item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
 //        item->dockw->move( mapToGlobal(item->dockwpos) );
+//        item->dockw->move( mapToParent(item->dockwpos) );
+//        item->dockw->move( mapTo(this, item->dockwpos) );
     }
 }
 
@@ -940,6 +953,23 @@ void MainWindow::addRecentFile()
     connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
     recentFileNames.append(dataFileName);
     fileMenu->insertAction(addSeparatorRecentFile, recentAct);
+}
+
+void MainWindow::saveGLOBALSettings()
+{
+    QString iniFileName = getGlobalIniFileName();
+    QSettings settings( iniFileName, QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+    settings.clear();
+
+}
+
+QString MainWindow::getGlobalIniFileName()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(writableLocation);
+    return writableLocation + "/" + info.completeBaseName() + ".ini";
 }
 
 void MainWindow::OpenRecentFile()
@@ -1115,7 +1145,7 @@ void MainWindow::add_index_pixmap(int num)
     view->GlobalChannelNum = num + 1;
 // ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
 //  depth в indexImages находится RGB, и оно отсутствуем в img SpectralImage
-    QImage img = im_handler->current_image()->get_index_rgb(true,num);
+    QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
     im_handler->current_image()->append_additional_image(img,
                                  view->index_title_str,view->index_formula_str);
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);

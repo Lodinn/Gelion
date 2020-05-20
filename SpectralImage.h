@@ -18,7 +18,7 @@ public slots:
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
-  QImage get_index_rgb(bool enhance_contrast = false, int num_index = 0);
+  QImage get_index_rgb(bool enhance_contrast = false, bool colorized = true, int num_index = 0);
   QVector<QPointF> get_profile(QPoint p);
   inline uint32_t get_bands_count() { return depth; }
   QList<QString> get_wl_list(int precision);
@@ -44,7 +44,10 @@ private:
   QVector<double > indexBrightness;
   double default_brightness = 3.5;
   int current_slice = -1;
+  QRgb get_rainbow_RGB(double Wavelength);
 public:
+  double wl380 = 380.0;
+  double wl781 = 781.0;
   QString fname;
   void append_additional_image(QImage image, QString index_name, QString index_formula);
   QImage get_additional_image(int num);

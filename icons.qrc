@@ -34,5 +34,7 @@
         <file>icons/csv.png</file>
         <file>icons/csv2.png</file>
         <file>icons/settings-150.png</file>
+        <file>icons/full-spectrum.png</file>
+        <file>icons/icons8-theatre-mask-30.png</file>
     </qresource>
 </RCC>

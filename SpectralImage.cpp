@@ -5,9 +5,10 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <QDir>
+#include <QtMath>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
-    img.clear();
+//    img.clear();
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
@@ -87,15 +88,27 @@ QImage SpectralImage::get_rgb(bool enhance_contrast, int red, int green, int blu
   return img;
 }
 
-QImage SpectralImage::get_index_rgb(bool enhance_contrast, int num_index)
+QImage SpectralImage::get_index_rgb(bool enhance_contrast, bool colorized, int num_index)
 {
     if(slice_size.width() <= 0 || slice_size.height() <= 0) return QImage();
     if(num_index < 0 || num_index > img.length() - 1) {
         qDebug() << "CRITICAL - WRONG INDEX";
         return QImage();
     }
+//qDebug() << "before";
+//    qDebug() << "count of img = " << get_raster().count() << num_index;
 
     QVector<QVector<double> > slice_index = get_band(num_index);
+
+    //&&&&&&&&&& sav efor control
+//    QFile file("G:/&&&proj/color_scheme/_slices_control_.bin");
+//    file.open(QIODevice::WriteOnly);
+//    QDataStream out(&file);
+//    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    out.setByteOrder(QDataStream::LittleEndian);
+//    out << slice_index;
+//    file.close();
+    //&&&&&&&&&& sav efor control
 
     if(slice_index.isEmpty()) {
       qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
@@ -111,22 +124,101 @@ QImage SpectralImage::get_index_rgb(bool enhance_contrast, int num_index)
       min_bw = std::min(min_bw, *std::min_element(slice_index[y].begin(), slice_index[y].end()));
     }
 
+    // NDVI -0.621685 0.915984
+
     QImage index_img(slice_size, QImage::Format_RGB32);
 
-    for(int y = 0; y < slice_size.height(); y++) {
-        QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
-        for(int x = 0; x < slice_size.width(); x++) {
-            if(enhance_contrast) {
-                double d = (slice_index[y][x] - min_bw) / (max_bw - min_bw) * 255.0;
-                im_scLine[x] = qRgb(qRound(d), qRound(d), qRound(d));
-            } else {
-                double dd = slice_index[y][x] * 255.0;
-                im_scLine[x] = qRgb(qRound(dd), qRound(dd), qRound(dd));
-            }  // if
-        }    // for int x
-    }  // for int y
+    if (colorized)  // с использованием цветовой схемы
+        for(int y = 0; y < slice_size.height(); y++) {
+            QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
+            for(int x = 0; x < slice_size.width(); x++) {
+                double virtual_wlen = wl380 + (slice_index[y][x] - min_bw)
+                        * (wl781 - wl380) / (max_bw - min_bw);
+                im_scLine[x] = get_rainbow_RGB(virtual_wlen);
+            }  // for int x
+        }  // for int y
+    else  // черно-белое изображение
+        for(int y = 0; y < slice_size.height(); y++) {
+            QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
+            for(int x = 0; x < slice_size.width(); x++) {
+                if(enhance_contrast) {
+                    double d = (slice_index[y][x] - min_bw) / (max_bw - min_bw) * 255.0;
+                    im_scLine[x] =  qRgb(qRound(d), qRound(d), qRound(d));
+                } else {
+                    double dd = slice_index[y][x] * 255.0;
+                    im_scLine[x] = qRgb(qRound(dd), qRound(dd), qRound(dd));
+                }  // if
+            }    // for int x
+        }  // for int y
 
     return index_img;
+}
+
+QRgb SpectralImage::get_rainbow_RGB(double Wavelength)
+{
+    static double Gamma = 0.80;
+    static double IntensityMax = 255;
+
+    double factor;
+    double Red,Green,Blue;
+
+    if((Wavelength >= 380) && (Wavelength<440)){
+        Red = -(Wavelength - 440) / (440 - 380);
+        Green = 0.0;
+        Blue = 1.0;
+    }else if((Wavelength >= 440) && (Wavelength<490)){
+        Red = 0.0;
+        Green = (Wavelength - 440) / (490 - 440);
+        Blue = 1.0;
+    }else if((Wavelength >= 490) && (Wavelength<510)){
+        Red = 0.0;
+        Green = 1.0;
+        Blue = -(Wavelength - 510) / (510 - 490);
+    }else if((Wavelength >= 510) && (Wavelength<580)){
+        Red = (Wavelength - 510) / (580 - 510);
+        Green = 1.0;
+        Blue = 0.0;
+    }else if((Wavelength >= 580) && (Wavelength<645)){
+        Red = 1.0;
+        Green = -(Wavelength - 645) / (645 - 580);
+        Blue = 0.0;
+    }else if((Wavelength >= 645) && (Wavelength<781)){
+        Red = 1.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }else{
+        Red = 0.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }
+
+// Let the intensity fall off near the vision limits
+
+    if((Wavelength >= 380) && (Wavelength<420)){
+        factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+    }else if((Wavelength >= 420) && (Wavelength<701)){
+        factor = 1.0;
+    }else if((Wavelength >= 701) && (Wavelength<781)){
+        factor = 0.3 + 0.7*(780 - Wavelength)  / (780 - 700);
+    }else{
+        factor = 0.0;
+    }
+
+    int r = 0, g = 0, b = 0;
+
+// Don't want 0^x = 1 for x <> 0
+    const double zero = 0.00000001;
+    if (Red < zero) r = 0;
+    else r = qRound(IntensityMax * qPow(Red * factor, Gamma));
+    r = qMin(255, r);
+    if (Green < zero) g = 0;
+    else g = qRound(IntensityMax * qPow(Green * factor, Gamma));
+    g = qMin(255, g);
+    if (Blue < zero) b = 0;
+    else b = qRound(IntensityMax * qPow(Blue * factor, Gamma));
+    b = qMin(255, b);
+
+    return qRgb(r,g,b);
 }
 
 QVector<QPointF> SpectralImage::get_profile(QPoint p) {

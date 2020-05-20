@@ -17,13 +17,33 @@ inputIndexDlg::inputIndexDlg(QWidget *parent) :
     ui->buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
+// "Normalized difference water index"
     QAction *action = new QAction("Normalized difference water index", this);
     action->setData("(R800-R650)/(R800+R650)");  predefined_index_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+// "Green Difference Vegetation Index (GDVI)"
     action = new QAction("Green Difference Vegetation Index (GDVI)", this);
     action->setData("R800-R650");  predefined_index_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+// "Pan NDVI"
+    action = new QAction("Pan NDVI", this);
+    action->setData("(r800-r550-r640-r450)/(r800+r550+r640+r450)");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+// "NIR/Blue Blue-normalized difference vegetation index"
+    action = new QAction("NIR/Blue Blue-normalized difference vegetation index", this);
+    action->setData("(r800-r450)/(r800+r450)");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+// "Curvative Index (CI)"
+    action = new QAction("Curvative Index (CI)", this);
+    action->setData("r675*r690/r683");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+// "Difference 833/658"
+    action = new QAction("Difference 833/658", this);
+    action->setData("r833-r658");  predefined_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+
+// https://www.indexdatabase.de/db/i.php
+
 }
 
 inputIndexDlg::~inputIndexDlg()

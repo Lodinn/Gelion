@@ -24,9 +24,6 @@ class MainWindow : public QMainWindow {
   void show_progress(int max_progress);
   void stop_reading_file();
   void delete_progress_dialog();
-  void show_profile(QPointF point, int id = -1);
-  void createDockWidgetForItem(zGraph *item);
-  void setZGraphDockToggled(zGraph *item);
   void winZGraphList();
   void indexList();
   void channelList();
@@ -45,6 +42,9 @@ class MainWindow : public QMainWindow {
   void OpenRecentFile();
   void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
+  void createDockWidgetForItem(zGraph *item);
+  void setZGraphDockToggled(zGraph *item);
+  void show_profile(QPointF point, int id = -1);
 private:
   void updateNewDataSet(bool index_update);  // ----------------
   QStringList recentFileNames;
@@ -54,8 +54,9 @@ private:
   void restoreSettingsVersionOne(QSettings &settings);
   void restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
   void restoreSettingsVersionTwo(QSettings &settings);
-
   void addRecentFile();
+  void saveGLOBALSettings();
+  QString getGlobalIniFileName();
  signals:
   void read_file(QString);
   void index_calculate(QString);
@@ -88,6 +89,8 @@ private:
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;
   QAction *indexAct;
+  QAction *spectralAct;
+  QAction *maskAct;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;

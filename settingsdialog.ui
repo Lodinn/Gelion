@@ -16,9 +16,9 @@
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>240</y>
-     <width>341</width>
+     <x>10</x>
+     <y>260</y>
+     <width>381</width>
      <height>32</height>
     </rect>
    </property>
@@ -27,6 +27,132 @@
    </property>
    <property name="standardButtons">
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_GLOBAL_settings">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>381</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Основные</string>
+   </property>
+   <widget class="QCheckBox" name="checkBox_save_settings">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>191</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сохранять состояние программы</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_ROI_settings">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>80</y>
+     <width>381</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Области интереса</string>
+   </property>
+   <widget class="QCheckBox" name="checkBox_save_NOTchecked_zObject">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>251</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сохранять неотмеченные области интереса</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_dock_width">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>420</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_dock_height">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>40</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>150</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_dock_height">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>42</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>окно профиля, высота</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_dock_width">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>42</y>
+      <width>141</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>окно профиля, ширина</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_images_settings">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>170</y>
+     <width>381</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Изображения</string>
    </property>
   </widget>
  </widget>

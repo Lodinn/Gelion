@@ -24,7 +24,6 @@ public slots:
     void setInputModeEllipse();
     void setInputModePolyline();
     void setInputModePolygon();
-    void show_profile_for_Z(zGraph *item);
     void moveGrabberRects();
     void releaseGrabberRects();
     void pressOneGrabberRect();
@@ -32,6 +31,7 @@ public slots:
     void moveOneGrabberRect(int num, QPointF point);
     void selectionZChanged();
     void deleteZGraphItem(zGraph *item);
+    void show_profile_for_Z(zGraph *item);
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;
     int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
@@ -69,7 +69,6 @@ public:
   void mouseMoveEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
   void contextMenuEvent(QContextMenuEvent *event) override;
-  void insPoint(QPoint pos);
  private:
   int pX0, pY0;
   QList<QGraphicsItem *> ROIs;
@@ -78,6 +77,7 @@ public:
   void setRotateItems(qreal &newangle);
   void setGrabberCoordTozRect();
   void setGrabberCoordTozEllipse();
+  void insPoint(QPoint pos);
   void createPolygon(QPoint pos);
   void createPolyline(QPoint pos);
   void multiPointsReplotRect(zGraph *item);
