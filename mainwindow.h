@@ -20,6 +20,7 @@ class MainWindow : public QMainWindow {
  private slots:
   void open();
   void folder();
+  void folder_debug();
  public slots:
   void show_progress(int max_progress);
   void stop_reading_file();
@@ -90,7 +91,8 @@ private:
   QAction *addSeparatorRecentFile;
   QAction *indexAct;
   QAction *spectralAct;
-  QAction *maskAct;
+//  QAction *maskAct;
+  QAction *histogramAct;
   void createActions();
   void createStatusBar();
   QThread *worker_thread = new QThread;
@@ -110,12 +112,14 @@ protected:
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
-  void createConstDockWidgets();
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
   QSlider *slider;
   void set_abstract_index_pixmap();
   void show_channel_list_update();
+
+  void createConstDockWidgets();
+
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);

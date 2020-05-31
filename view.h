@@ -37,6 +37,7 @@ public:
     int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
     QAction *openAct;
     QAction *localFolderAct = new QAction(QIcon(":/icons/folder.png"), "Текущий каталог ...");
+    QAction *debugFolderAct = new QAction(QIcon(":/icons/delete-32.png"), "debug ... очистить текущий каталог ...");
     QAction *pointAct;
     QAction *rectAct;
     QAction *ellipseAct;

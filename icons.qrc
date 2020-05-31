@@ -36,5 +36,7 @@
         <file>icons/settings-150.png</file>
         <file>icons/full-spectrum.png</file>
         <file>icons/icons8-theatre-mask-30.png</file>
+        <file>icons/histogram.png</file>
+        <file>icons/delete-32.png</file>
     </qresource>
 </RCC>

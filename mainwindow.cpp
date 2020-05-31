@@ -50,7 +50,7 @@ void MainWindow::set_action_enabled(bool enable)
     view->polygonAct->setEnabled(enable);
     indexAct->setEnabled(enable);
     spectralAct->setEnabled(enable);
-    maskAct->setEnabled(enable);
+    histogramAct->setEnabled(enable);
 }
 
 void MainWindow::saveSettings()
@@ -315,6 +315,8 @@ void MainWindow::createActions() {
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
   fileMenu->addAction(view->localFolderAct);
   connect(view->localFolderAct, &QAction::triggered, this, &MainWindow::folder);
+  fileMenu->addAction(view->debugFolderAct);
+  connect(view->debugFolderAct, &QAction::triggered, this, &MainWindow::folder_debug);
   fileMenu->addSeparator();
   addSeparatorRecentFile = fileMenu->addSeparator();  // для дальнейшей вставки списка файлов
   fileMenu->addAction(view->closeAct);
@@ -344,8 +346,12 @@ void MainWindow::createActions() {
     spectralAct = new QAction(QIcon(":/icons/full-spectrum.png"), tr("&Спектральный анализ"), this);
     indexMenu->addAction(spectralAct);   indexToolBar->addAction(spectralAct);
 //    connect(spectralAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
-    maskAct = new QAction(QIcon(":/icons/icons8-theatre-mask-30.png"), tr("&Создания масок для изображения"), this);
-    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
+//    maskAct = new QAction(QIcon(":/icons/icons8-theatre-mask-30.png"), tr("&Создания масок для изображения"), this);
+//    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
+    histogramAct = new QAction(QIcon(":/icons/histogram.png"), tr("&Отображать гистограмму"), this);
+    histogramAct->setCheckable(true); histogramAct->setChecked(true);
+
+    indexMenu->addAction(histogramAct);   indexToolBar->addAction(histogramAct);
 //    connect(maskAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
@@ -538,6 +544,14 @@ void MainWindow::folder()
     if (!dir.exists()) dir.mkpath(".");
     QProcess::startDetached(QString("explorer /root,\"%1\"")
                             .arg(QDir::toNativeSeparators(writableLocation)));
+}
+
+void MainWindow::folder_debug()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    qDebug() << writableLocation;
+    QDir dir(writableLocation);
+    dir.removeRecursively();
 }
 
 void MainWindow::show_progress(int max_progress) {
