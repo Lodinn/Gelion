@@ -353,6 +353,7 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
         item->plot->replot();
         item->profile.clear();
         for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
+        item->sigma = .0;
         return;
     }  // case zPoint::Type
     case zRect::Type : { multiPointsReplotRect(item);   return; }  // case zRect::Type
@@ -365,8 +366,9 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
 void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
 
     int d = imgHand->current_image()->get_bands_count();
-    QVector<double> x(d), y(d);
-    for (int i = 0; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
+    QVector<double> x(d), y(d), yup(d), ylw(d);
+    yup.fill(INT_MIN); ylw.fill(INT_MAX);  y.fill(.0);
+
     int count = 0;
     QRectF rect = item->boundingRect();
     for (int i=rect.left(); i<rect.left()+rect.width()+1; i++)
@@ -383,23 +385,30 @@ void gQGraphicsView::multiPointsReplotRect(zGraph *item) {
                 if (v.isEmpty()) continue;
                 if (v.length() != d) continue;
                 if (count == 0) for (int i = 0; i < d; ++i) x[i] = v[i].rx();
-                for (int i = 0; i < d; ++i) y[i] = y[i] + v[i].ry();
+                for (int i = 0; i < d; ++i) {
+                    y[i] = y[i] + v[i].ry();
+                    yup[i] = std::max(yup[i], v[i].ry());
+                    ylw[i] = std::min(ylw[i], v[i].ry());
+                }  // for
                 count++;
             }  // if
         }  // for
     if (count > 0) for (int i = 0; i < d; ++i) y[i] = y[i] / count;
     else return;
     item->plot->graph(0)->setData(x, y);
+    // sigma ++
+    item->calculateProfileWithSigma(x, y, yup, ylw);
+    item->plot->graph(1)->setData(x, ylw);
+    item->plot->graph(2)->setData(x, yup);
     item->plot->replot();
-    item->profile.clear();
-    for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
 }
 
 void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
 {
     int d = imgHand->current_image()->get_bands_count();
-    QVector<double> x(d), y(d);
-    for (int i = 0; i<d; i++) { x[i]=0.0;  y[i]=0.0; }
+    QVector<double> x(d), y(d), yup(d), ylw(d);
+    yup.fill(INT_MIN); ylw.fill(INT_MAX);  y.fill(.0);
+
     int count = 0;
     item->updateBoundingRect();
     QRectF rect = item->boundingRect();
@@ -412,16 +421,22 @@ void gQGraphicsView::multiPointsReplotPoly(zGraph *item)
                 if (v.isEmpty()) { qDebug() << count; continue; }
                 if (v.length() != d) { qDebug() << count; continue; }
                 if (count == 0) for (int i = 0; i < d; ++i) x[i] = v[i].rx();
-                for (int i = 0; i < d; ++i) y[i] = y[i] + v[i].ry();
+                for (int i = 0; i < d; ++i) {
+                    y[i] = y[i] + v[i].ry();
+                    yup[i] = std::max(yup[i], v[i].ry());
+                    ylw[i] = std::min(ylw[i], v[i].ry());
+                }  // for
                 count++;
             }  // if
         }  // for
     if (count > 0) for (int i = 0; i < d; ++i) y[i] = y[i] / count;
     else return;
     item->plot->graph(0)->setData(x, y);
+    // sigma ++
+    item->calculateProfileWithSigma(x, y, yup, ylw);
+    item->plot->graph(1)->setData(x, ylw);
+    item->plot->graph(2)->setData(x, yup);
     item->plot->replot();
-    item->profile.clear();
-    for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
 }
 
 void gQGraphicsView::moveGrabberRects()
@@ -627,6 +642,7 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
 void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
 {
   QGraphicsView::mousePressEvent(event);
+  if (empty) return;  // сцена не содержит гиперкуба
   if (event->modifiers() == Qt::ControlModifier)
       insertMode = gQGraphicsView::Point;
   switch (insertMode) {

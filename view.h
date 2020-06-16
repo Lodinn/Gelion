@@ -35,6 +35,8 @@ public slots:
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;
     int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
+    bool empty = true;  // сцена не содержит данных
+    QList<zGraph *> getZGraphItemsList();  // список рафических объектов на сцене
     QAction *openAct;
     QAction *localFolderAct = new QAction(QIcon(":/icons/folder.png"), "Текущий каталог ...");
     QAction *debugFolderAct = new QAction(QIcon(":/icons/delete-32.png"), "debug ... очистить текущий каталог ...");
@@ -54,7 +56,6 @@ public:
     zEllipse *tmpEllipse = nullptr;
     QList<zContourRect *> zcRects;
     QVector<QGraphicsLineItem *> tmpLines;
-    QList<zGraph *> getZGraphItemsList();
     void clearZGraphItemsList();
     void deleteGrabberRects();
     void deleteTmpLines();
@@ -90,6 +91,7 @@ public:
   void setZGraphDockToggled(zGraph *item);  // main toggleViewAction
   void point_picked(QPointF);
   void removeFromzGraphListWidget(zGraph *item);
+
 // FIXME: keeping two separate index lists here and in mainwindow. Subclass
 // instead and connect to plot directly?
 //  void roi_position_updated(QPair<int, QPointF> new_position);

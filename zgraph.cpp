@@ -72,6 +72,17 @@ double zGraph::getRotationFromCoords(QPointF p1, QPointF p2)
     return qRadiansToDegrees( qAtan2(dy, dx) );
 }
 
+void zGraph::calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw)
+{
+    profile.clear();
+    int d = x.count();
+    for (int i=0; i<d; i++) profile.append(QPointF(x[i],y[i]));
+    sigma = .0;
+    for(int i=0; i<d; i++)
+        sigma += (yup[i] - ylw[i]) * (yup[i] - ylw[i]);
+    if (d != 0) sigma = qSqrt(sigma / d);
+}
+
 void zGraph::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     emit mouseMove();

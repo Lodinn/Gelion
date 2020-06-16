@@ -137,8 +137,6 @@ void ImageHandler::append_index_raster(QString for_eval)
     }  // for
     current_image()->append_slice(output_array);
 
-// min max -0.621685 0.915984 right
-
     emit index_finished(current_image()->get_raster().length() - 1);
 }
 

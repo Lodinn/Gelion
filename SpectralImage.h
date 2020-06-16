@@ -7,6 +7,31 @@
 #include <QImage>
 #include <QDebug>
 
+QT_BEGIN_NAMESPACE
+namespace J09 {
+struct histogramType {
+    double min = INT_MAX;
+    double max = INT_MIN;
+    double sum = .0;
+    int hcount = 256;
+    QVector<double > vx, vy;  // статистика / совместимость с qCustomPlot
+    double lower = .0, upper = .0, sum_of_part = 100.;
+    double wl380 = 380.;
+    double wl781 = 781.;
+    double brightness = 1.;
+    double ___plotmouse = .005*3;
+    double ___sbrightness = .3;  // относительное положение 1. на слайдере
+    bool imgPreview = true;
+    bool colorized = true;
+    double rotation;  // previw picture rotate
+};  // histogramType
+struct spectralColorType {
+    QColor color;
+    int style;
+};  // spectralColorType
+}
+QT_END_NAMESPACE
+
 class SpectralImage : public QObject {
   Q_OBJECT
 public:
@@ -14,8 +39,11 @@ public:
   QString get_file_name() { return fname; }
   QVector<QVector<QVector<double> > > get_raster() { return img; }
   QSize get_raster_x_y_size() { return slice_size; }
+  void  calculateHistogram(bool full, uint16_t num);
 public slots:
+
   QVector<QVector<double> > get_band(uint16_t band);
+
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
   QImage get_index_rgb(bool enhance_contrast = false, bool colorized = true, int num_index = 0);
@@ -36,16 +64,18 @@ public slots:
 private:
   // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
+
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
   QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
   QVector<QPair<QString, QString> > indexNameFormulaList;  // списко индексов "наименование,формула"
   QVector<double > indexBrightness;
-  double default_brightness = 3.5;
+  double default_brightness = 1.5;
   int current_slice = -1;
   QRgb get_rainbow_RGB(double Wavelength);
 public:
+  QVector<J09::histogramType> histogram;  // статистика гистограммы
   double wl380 = 380.0;
   double wl781 = 781.0;
   QString fname;

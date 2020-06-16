@@ -5,7 +5,7 @@
 #include <QVector>
 #include <QList>
 #include <QSlider>
-#include <../BPLA/SpectralImage.h>
+#include "SpectralImage.h"
 
 class ImageHandler : public QObject {
   Q_OBJECT

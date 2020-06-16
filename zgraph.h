@@ -10,6 +10,26 @@
 #include <QGraphicsItem>
 #include <QPen>
 
+QT_BEGIN_NAMESPACE
+namespace ZG {
+struct histogramType {
+    double min = INT_MAX;
+    double max = INT_MIN;
+    double sum = .0;
+    int hcount = 256;
+    QVector<double > vx, vy;  // статистика / совместимлсть с qCustomPlot
+    double lower, upper, sum_of_part;
+    double wl380 = 380.;
+    double wl781 = 781.;
+    double brightness = 1.;
+    double ___plotmouse = .005;
+    double ___sbrightness = .3;
+    bool imgPreview = true;
+    bool colorized = true;
+};
+}
+QT_END_NAMESPACE
+
 //  Семейство графических объектов серии z ... область интереса "ОИ"
 // - точка             Point         1
 // - прямоугольник     Rect          2	с возможностью поворота
@@ -42,6 +62,10 @@ public:
     void getParamsFromDialog(zgraphParamDlg *dlg);
     double getRotationFromCoords(QPointF p1, QPointF p2);
     QVector<QPointF > profile;
+    double sigma = .0;
+    QVector<double > pup, plw;
+    void calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw);
+    int transparency = 50;
 signals:
      void mouseMove();
      void mouseRelease();

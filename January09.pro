@@ -24,6 +24,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
+  imagehistogram.cpp \
+  imagespectral.cpp \
   inputindexdlg.cpp \
         main.cpp \
         mainwindow.cpp \
@@ -36,6 +38,8 @@ SOURCES += \
     SpectralImage.cpp
 
 HEADERS += \
+  imagehistogram.h \
+  imagespectral.h \
   inputindexdlg.h \
         mainwindow.h \
   settingsdialog.h \

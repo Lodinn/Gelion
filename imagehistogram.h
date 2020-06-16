@@ -1,0 +1,65 @@
+#ifndef IMAGEHISTOGRAM_H
+#define IMAGEHISTOGRAM_H
+
+#include "qcustomplot.h"
+#include "../BPLA/SpectralImage.h"
+
+#include <QDockWidget>
+
+class imageHistogram : public QDockWidget
+{
+    Q_OBJECT
+public:
+    imageHistogram(QWidget * parent = 0);
+    void updateData(QString name, QString formula, QVector<QVector<double> > img, J09::histogramType &hg);
+private:
+    void  calculateHistogram(bool full);
+    bool eventFilter(QObject *object, QEvent *event);
+    void setupUi();
+    void setupConnections();
+    QCustomPlot *plot;
+    QGroupBox *bottomGroupBox;
+    QGridLayout *gridLayout;
+    QSlider *sliderBrightness;
+    QSlider *sliderLeftColorEdge;
+    QSlider *sliderRightColorEdge;
+    QCheckBox *previewImage;
+    QLabel *labelBrightness;
+    QLabel *labelLeftBlue;
+    QLabel *labelRightRed;
+    QPushButton *buttonAxisRescale;
+    QVBoxLayout *vertLayout;
+    QLabel *labelPreview;
+    QHBoxLayout *horzLayout;
+    QCPGraph *packet_lower, *packet_upper;
+    QCPItemBracket *bracket;
+    QCPItemText *bracketText;
+    QCPGraph *packet_left, *packet_center, *packet_right;
+    double bracketTextValue = 7.;
+    J09::histogramType *h_data = nullptr;
+    void setHistogramToSliders();
+    void getHistogramFromSliders();
+    void updatePreviewImage();
+    int histogramPlotTrigger = 0;
+    bool histogramPlotPAN = false;
+    QVector<QVector<double> > slice;
+    QImage get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized);
+    QRgb get_rainbow_RGB(double Wavelength);
+    void setHistogramToBracked();
+    QPixmap changeBrightnessPixmap(QImage &img, double brightness);
+    double bracketTextIndent = .9;
+    QCPGraph *graph;
+private slots:
+    void brightnessChanged();
+    void leftColorChanged();
+    void rightColorChanged();
+    void mousePress(QMouseEvent *event);
+    void mouseMove(QMouseEvent *event);
+    void mouseRelease(QMouseEvent *event);
+    void histogramPreview();
+    void axisRescale();
+
+
+};
+
+#endif // IMAGEHISTOGRAM_H

@@ -11,11 +11,19 @@
 #include <QtWidgets>
 #include <QDebug>
 
+bool MainWindow::eventFilter(QObject *object, QEvent *event)
+{
+    if (object == zGraphListWidget) qDebug() << "event" << event;
+    return QMainWindow::eventFilter(object, event);
+}
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   SetupUi();
 
   im_handler->moveToThread(worker_thread);
+
+  installEventFilter(this);
 
   setWindowTitle(QString("%1").arg(appName));
   QApplication::setApplicationName(appName);
@@ -49,8 +57,8 @@ void MainWindow::set_action_enabled(bool enable)
     view->polylineAct->setEnabled(enable);
     view->polygonAct->setEnabled(enable);
     indexAct->setEnabled(enable);
-    spectralAct->setEnabled(enable);
-    histogramAct->setEnabled(enable);
+//    spectralAct->setEnabled(enable);
+//    histogramAct->setEnabled(enable);
 }
 
 void MainWindow::saveSettings()
@@ -120,191 +128,8 @@ void MainWindow::SetupUi() {
   createActions();
   createStatusBar();
   createConstDockWidgets();
+  createMainConnections();
 
-  connect(this, SIGNAL(read_file(QString)), im_handler,
-          SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
-  connect(im_handler, SIGNAL(numbands_obtained(int)), this,
-          SLOT(show_progress(int)), Qt::DirectConnection);
-  connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
-  connect(im_handler, SIGNAL(finished()), this, SLOT(delete_progress_dialog()),
-          Qt::DirectConnection);
-
-  connect(view, SIGNAL(point_picked(QPointF)), this,
-          SLOT(show_profile(QPointF)));
-
-  connect(view,SIGNAL(insertZGraphItem(zGraph*)),this,SLOT(createDockWidgetForItem(zGraph*)));
-  connect(view,SIGNAL(setZGraphDockToggled(zGraph*)),this,SLOT(setZGraphDockToggled(zGraph*)));
-
-  connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
-  connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));
-  connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexList()));
-  connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));
-  connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
-  connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
-
-  connect(this, SIGNAL(index_calculate(QString)), im_handler,
-          SLOT(append_index_raster(QString)), Qt::DirectConnection);
-  connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(add_index_pixmap(int)));
-  connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(delete_progress_dialog()),
-          Qt::DirectConnection);
-}
-
-void MainWindow::show_profile(QPointF point, int id) {
-  int px, py;
-  px = int(point.rx());
-  py = int(point.ry());
-  QVector<QPointF> v = im_handler->current_image()->get_profile(QPoint(px, py));
-  if (v.length() == 0) return;
-
-  int d = im_handler->current_image()->get_bands_count();
-
-  QVector<double> x(d), y(d);
-  for (int i = 0; i < d; ++i) {
-    x[i] = v[i].rx();
-    y[i] = v[i].ry();
-  }
-
-  if (id < 0) {
-    QDockWidget *dock = new QDockWidget(tr("Plot profile"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
-                          Qt::BottomDockWidgetArea);
-    dock->setAllowedAreas(Qt::NoDockWidgetArea);
-    dock->setFixedHeight(200);
-    addDockWidget(Qt::BottomDockWidgetArea, dock);
-    wPlot = new QCustomPlot();
-    plots.append(wPlot);
-    dock->setWidget(wPlot);
-    wPlot->resize(500, 200);
-    wPlot->addGraph();
-    // give the axes some labels:
-    wPlot->xAxis->setLabel("длина волны, нм");
-    wPlot->yAxis->setLabel("коэффициент отражения");
-    // set axes ranges, so we see all data:
-    wPlot->xAxis->setRange(390, 1010);
-    wPlot->yAxis->setRange(0, 1.2);
-  } else if (id < plots.count()) {
-    wPlot = plots[id];
-  } else {
-    qDebug() << "CRITICAL - bad plot id";
-    return;
-  }
-  wPlot->graph(0)->setData(x, y);
-  wPlot->replot();
-}
-
-void MainWindow::createDockWidgetForItem(zGraph *item)
-{
-    QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
-    item->dockw = dockw;
-    dockw->setFloating(true);  dockw->setObjectName("zGraph ");
-    dockw->resize(420,150);
-    QRect desktop = QApplication::desktop()->screenGeometry();
-    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
-    wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
-    wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
-    wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
-    wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
-    wPlot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
-    wPlot->resize(420,150);  wPlot->addGraph();
-// give the axes some labels:
-    wPlot->xAxis->setLabel("длина волны, нм");
-    wPlot->yAxis->setLabel("коэффициент отражения");
-// set axes ranges, so we see all data:
-    wPlot->xAxis->setRange(390, 1010);
-    wPlot->yAxis->setRange(0, 1.2);
-    item->plot = wPlot;
-    addDockWidget(Qt::BottomDockWidgetArea, dockw);
-    dockw->hide();  dockw->setAllowedAreas(0);  // NoToolBarArea - !!! не прикрепляется к главному окну
-    QListWidgetItem *lwItem = new QListWidgetItem();
-    item->listwidget = lwItem;
-    lwItem->setText(item->getTitle());
-    QFont font = lwItem->font();  font.setBold(true);
-    lwItem->setFont(font);
-    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
-    lwItem->setCheckState(Qt::Checked);
-    lwItem->setIcon(item->aicon);
-    zGraphListWidget->insertItem(0, lwItem);
-}
-
-void MainWindow::setZGraphDockToggled(zGraph *item)
-{
-    connect(item->dockw->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
-}
-
-void MainWindow::winZGraphList()
-{
-    dockZGraphList->setVisible(!dockZGraphList->isVisible());
-}
-
-void MainWindow::indexList()
-{
-    dockIndexList->setVisible(!dockIndexList->isVisible());
-}
-
-void MainWindow::channelList()
-{
-    dockChannelList->setVisible(!dockChannelList->isVisible());
-}
-
-void MainWindow::winZGraphProfilesShowAll()
-{
-    QList<zGraph *> zitemlist = view->getZGraphItemsList();
-    foreach (zGraph *zitem, zitemlist)
-        zitem->dockw->setVisible(true);
-}
-
-void MainWindow::winZGraphProfilesHideAll()
-{
-    QList<zGraph *> zitemlist = view->getZGraphItemsList();
-    foreach (zGraph *zitem, zitemlist)
-        zitem->dockw->setVisible(false);
-}
-
-void MainWindow::listWidgetClicked(QListWidgetItem *item)
-{
-    QList<zGraph *> zitems = view->getZGraphItemsList();
-    zGraph *zgrap_item = nullptr;
-    foreach(zGraph *it, zitems)
-        if (it->listwidget == item) {
-            zgrap_item = it;
-        break;
-        }  // if
-    if (zgrap_item == nullptr) return;
-    if (zgrap_item->isSelected()) {
-        view->deleteGrabberRects();
-        view->deleteTmpLines();
-    }
-    if (item->checkState() == Qt::Checked) {
-        zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true); }
-    else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
-    zgrap_item->dockw->setVisible(false); }
-}
-
-void MainWindow::zGparhEditDialog(zGraph *item)
-{
-    zgraphParamDlg *dlg = new zgraphParamDlg(this);
-    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
-    dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
-    QPoint pos = dockZGraphList->geometry().bottomLeft()-QPoint(dlg->width(),0)+QPoint(dockZGraphList->width(),0);
-    dlg->move(pos);
-    item->setParamsToDialog(dlg);
-    if (dlg->exec() == QDialog::Accepted) {
-        if (dlg->ui->checkBoxZGraphDelete->isChecked()) {
-            view->deleteZGraphItem(item); return; }
-        item->getParamsFromDialog(dlg);
-    }  // if
-}
-
-void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
-{
-    zGraph *it = nullptr;
-    auto zGraphList = view->getZGraphItemsList();
-    foreach(zGraph *z, zGraphList)
-        if (z->listwidget == item) {
-            it = z;  break;
-        }  // foreach
-    if (it == nullptr) return;
-    zGparhEditDialog(it);
 }
 
 void MainWindow::createActions() {
@@ -344,13 +169,15 @@ void MainWindow::createActions() {
     indexMenu->addAction(indexAct);   indexToolBar->addAction(indexAct);
     connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
     spectralAct = new QAction(QIcon(":/icons/full-spectrum.png"), tr("&Спектральный анализ"), this);
+    spectralAct->setCheckable(true); spectralAct->setChecked(false);
+    spectralAct->setEnabled(false);
     indexMenu->addAction(spectralAct);   indexToolBar->addAction(spectralAct);
 //    connect(spectralAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 //    maskAct = new QAction(QIcon(":/icons/icons8-theatre-mask-30.png"), tr("&Создания масок для изображения"), this);
 //    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
     histogramAct = new QAction(QIcon(":/icons/histogram.png"), tr("&Отображать гистограмму"), this);
     histogramAct->setCheckable(true); histogramAct->setChecked(true);
-
+    histogramAct->setEnabled(false);
     indexMenu->addAction(histogramAct);   indexToolBar->addAction(histogramAct);
 //    connect(maskAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 // &&& windows
@@ -387,22 +214,42 @@ void MainWindow::createStatusBar() {
     statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
 }
 
-void MainWindow::toggleViewAction(bool b)
+void MainWindow::createMainConnections()
 {
-    Q_UNUSED(b)
-//    QList<QGraphicsItem *> items = view->scene()->items();
-    QList<zGraph *> zitemlist = view->getZGraphItemsList();
-    foreach (zGraph *zitem, zitemlist) {
-        auto lwItem = zGraphListWidget->item(zitemlist.indexOf(zitem));
-        if (zitem->isVisible()) lwItem->setCheckState(Qt::Checked);
-        else lwItem->setCheckState(Qt::Unchecked);
-        QFont font = lwItem->font();
-        font.setBold(zitem->dockw->isVisible());
-        lwItem->setFont(font);
-    }  // for
-    view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
-    view->indexListAct->setChecked(dockIndexList->isVisible());
-    view->channelListAct->setChecked(dockChannelList->isVisible());
+
+// im_handler
+
+    connect(this, SIGNAL(read_file(QString)), im_handler,
+            SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
+    connect(im_handler, SIGNAL(numbands_obtained(int)), this,
+            SLOT(show_progress(int)), Qt::DirectConnection);
+    connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
+    connect(im_handler, SIGNAL(finished()), this, SLOT(delete_progress_dialog()),
+            Qt::DirectConnection);
+
+    connect(this, SIGNAL(index_calculate(QString)), im_handler,
+            SLOT(append_index_raster(QString)), Qt::DirectConnection);
+    connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(add_index_pixmap(int)));
+    connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(delete_progress_dialog()),
+            Qt::DirectConnection);
+
+    connect(view, SIGNAL(point_picked(QPointF)), this,
+            SLOT(show_profile(QPointF)));
+
+    connect(view,SIGNAL(insertZGraphItem(zGraph*)),this,SLOT(createDockWidgetForItem(zGraph*)));
+    connect(view,SIGNAL(setZGraphDockToggled(zGraph*)),this,SLOT(setZGraphDockToggled(zGraph*)));
+
+    connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
+
+    connect(histogramAct, SIGNAL(triggered()), this, SLOT(histogramSlot()));  // гистограмма
+    connect(spectralAct, SIGNAL(triggered()), this, SLOT(spectralSlot()));  // СПЕКТРАЛЬНЫЙ АНАЛИЗ
+
+    connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));  // области интереса
+    connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexList()));  // изображения
+    connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));  // каналы
+    connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
+    connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
+
 }
 
 void MainWindow::createConstDockWidgets()
@@ -474,6 +321,215 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/step10_channels.png"), "Отображать каналы с шагом 10", this);
     action->setData(10);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+
+// СПЕКТРАЛЬНЫЙ АНАЛИЗ
+    imgSpectral->hide();
+    addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
+    connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+
+// АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
+    imgHistogram->hide();
+    addDockWidget(Qt::BottomDockWidgetArea, imgHistogram);
+    connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+
+}
+
+void MainWindow::show_profile(QPointF point, int id) {
+  int px, py;
+  px = int(point.rx());
+  py = int(point.ry());
+  QVector<QPointF> v = im_handler->current_image()->get_profile(QPoint(px, py));
+  if (v.length() == 0) return;
+
+  int d = im_handler->current_image()->get_bands_count();
+
+  QVector<double> x(d), y(d);
+  for (int i = 0; i < d; ++i) {
+    x[i] = v[i].rx();
+    y[i] = v[i].ry();
+  }
+
+  if (id < 0) {
+    QDockWidget *dock = new QDockWidget(tr("Plot profile"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
+                          Qt::BottomDockWidgetArea);
+    dock->setAllowedAreas(Qt::NoDockWidgetArea);
+    dock->setFixedHeight(200);
+    addDockWidget(Qt::BottomDockWidgetArea, dock);
+    wPlot = new QCustomPlot();
+    plots.append(wPlot);
+    dock->setWidget(wPlot);
+    wPlot->resize(500, 200);
+    wPlot->addGraph();
+    // give the axes some labels:
+    wPlot->xAxis->setLabel("длина волны, нм");
+    wPlot->yAxis->setLabel("коэффициент отражения");
+    // set axes ranges, so we see all data:
+    wPlot->xAxis->setRange(390, 1010);
+    wPlot->yAxis->setRange(0, 1.2);
+  } else if (id < plots.count()) {
+    wPlot = plots[id];
+  } else {
+    qDebug() << "CRITICAL - bad plot id";
+    return;
+  }
+  wPlot->graph(0)->setData(x, y);
+  wPlot->replot();
+}
+
+void MainWindow::createDockWidgetForItem(zGraph *item)
+{
+    spectralAct->setEnabled(true);
+    QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
+    item->dockw = dockw;
+    dockw->setFloating(true);  dockw->setObjectName("zGraph ");
+    dockw->resize(420,150);
+    QRect desktop = QApplication::desktop()->screenGeometry();
+//    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
+    wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
+    wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
+    wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
+    wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
+    wPlot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
+    wPlot->resize(420,150);  wPlot->addGraph();
+
+    QCPGraph *graph_lower = wPlot->addGraph();
+    graph_lower->setPen(Qt::NoPen);
+    graph_lower->setSelectable(QCP::stNone);
+    QCPGraph *graph_upper = wPlot->addGraph();
+    graph_upper->setPen(Qt::NoPen);
+    graph_upper->setBrush(QColor(200, 200, 200, item->transparency));
+    graph_upper->setSelectable(QCP::stNone);
+    graph_upper->setChannelFillGraph(graph_lower);
+
+// give the axes some labels:
+    wPlot->xAxis->setLabel("длина волны, нм");
+    wPlot->yAxis->setLabel("коэффициент отражения");
+// set axes ranges, so we see all data:
+    wPlot->xAxis->setRange(390, 1010);
+    wPlot->yAxis->setRange(0, 1.2);
+    item->plot = wPlot;
+    addDockWidget(Qt::BottomDockWidgetArea, dockw);
+    dockw->hide();  dockw->setAllowedAreas(0);  // NoToolBarArea - !!! не прикрепляется к главному окну
+    QListWidgetItem *lwItem = new QListWidgetItem();
+    item->listwidget = lwItem;
+    lwItem->setText(item->getTitle());
+    QFont font = lwItem->font();  font.setBold(true);
+    lwItem->setFont(font);
+    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+    lwItem->setCheckState(Qt::Checked);
+    lwItem->setIcon(item->aicon);
+    zGraphListWidget->insertItem(0, lwItem);
+}
+
+void MainWindow::setZGraphDockToggled(zGraph *item)
+{
+    connect(item->dockw->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+
+    if (imgSpectral->isVisible()) calculateVisibleZObject(true);
+
+}
+
+void MainWindow::winZGraphList()
+{
+    dockZGraphList->setVisible(!dockZGraphList->isVisible());
+}
+
+void MainWindow::indexList()
+{
+    dockIndexList->setVisible(!dockIndexList->isVisible());
+}
+
+void MainWindow::channelList()
+{
+    dockChannelList->setVisible(!dockChannelList->isVisible());
+}
+
+void MainWindow::winZGraphProfilesShowAll()
+{
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist)
+        zitem->dockw->setVisible(true);
+}
+
+void MainWindow::winZGraphProfilesHideAll()
+{
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist)
+        zitem->dockw->setVisible(false);
+}
+
+void MainWindow::listWidgetClicked(QListWidgetItem *item)
+{
+    QList<zGraph *> zitems = view->getZGraphItemsList();
+    zGraph *zgrap_item = nullptr;
+    foreach(zGraph *it, zitems)
+        if (it->listwidget == item) {
+            zgrap_item = it;
+        break;
+        }  // if
+    if (zgrap_item == nullptr) return;
+    if (zgrap_item->isSelected()) {
+        view->deleteGrabberRects();
+        view->deleteTmpLines();
+    }
+    if (item->checkState() == Qt::Checked) {
+        zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true);
+        spectralAct->setEnabled(true);
+        imgSpectral->updateData(zitems, true);
+    }
+    else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
+        zgrap_item->dockw->setVisible(false);
+
+        calculateVisibleZObject(false);  // проверим есть ли видимые объекты
+    }
+}
+
+void MainWindow::zGparhEditDialog(zGraph *item)
+{
+    zgraphParamDlg *dlg = new zgraphParamDlg(this);
+    dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
+    dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
+    QPoint pos = dockZGraphList->geometry().bottomLeft()-QPoint(dlg->width(),0)+QPoint(dockZGraphList->width(),0);
+    dlg->move(pos);
+    item->setParamsToDialog(dlg);
+    if (dlg->exec() == QDialog::Accepted) {
+        if (dlg->ui->checkBoxZGraphDelete->isChecked()) {
+            view->deleteZGraphItem(item);  return; }
+        item->getParamsFromDialog(dlg);
+    }  // if
+}
+
+void MainWindow::listWidgetDoubleClicked(QListWidgetItem *item)
+{
+    zGraph *it = nullptr;
+    auto zGraphList = view->getZGraphItemsList();
+    foreach(zGraph *z, zGraphList)
+        if (z->listwidget == item) {
+            it = z;  break;
+        }  // foreach
+    if (it == nullptr) return;
+    zGparhEditDialog(it);
+}
+
+void MainWindow::toggleViewAction(bool b)
+{
+    Q_UNUSED(b)
+//    QList<QGraphicsItem *> items = view->scene()->items();
+    QList<zGraph *> zitemlist = view->getZGraphItemsList();
+    foreach (zGraph *zitem, zitemlist) {
+        auto lwItem = zGraphListWidget->item(zitemlist.indexOf(zitem));
+        if (zitem->isVisible()) lwItem->setCheckState(Qt::Checked);
+        else lwItem->setCheckState(Qt::Unchecked);
+        QFont font = lwItem->font();
+        font.setBold(zitem->dockw->isVisible());
+        lwItem->setFont(font);
+    }  // for
+    view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
+    view->indexListAct->setChecked(dockIndexList->isVisible());
+    view->channelListAct->setChecked(dockChannelList->isVisible());
+    histogramAct->setChecked(imgHistogram->isVisible());
+    spectralAct->setChecked(imgSpectral->isVisible());
 }
 
 // connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
@@ -503,6 +559,7 @@ void MainWindow::add_envi_hdr_pixmap() {
 // dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
   if (!dataFileName.isEmpty()) saveSettings();  // ****************************
   dataFileName = im_handler->current_image()->get_file_name();
+  view->empty = false;  // сцена содержит данные
   view->openAct->setEnabled(true);
   updateNewDataSet(true);
   addRecentFile();
@@ -527,12 +584,25 @@ void MainWindow::updateNewDataSet(bool index_update)
     view->openAct->setEnabled(true);
 }
 
+void MainWindow::calculateVisibleZObject(bool rescale) {
+
+    auto z_list = view->getZGraphItemsList();  // z objects list
+    int count = 0;
+    foreach(zGraph *zg, z_list)
+        if (zg->isVisible()) count++;
+    if (count == 0) {
+        imgSpectral->hide();
+        spectralAct->setEnabled(false);
+        spectralAct->setChecked(false);
+        return;
+    }  // if
+    imgSpectral->updateData(z_list, rescale);
+}
+
 void MainWindow::listWidgetDeleteItem(zGraph *item)
 {
-//    zGraphListWidget->removeItemWidget(item->listwidget);
-//    zGraphListWidget->takeItem()
-//    delete item->listwidget;
     zGraphListWidget->update();
+    calculateVisibleZObject(false);
 }
 
 void MainWindow::folder()
@@ -593,6 +663,19 @@ void MainWindow::delete_progress_dialog() {
     delete progress_dialog;
     progress_dialog = nullptr;
   }
+}
+
+void MainWindow::histogramSlot()
+{
+    imgHistogram->setVisible(!imgHistogram->isVisible());
+}
+
+void MainWindow::spectralSlot()
+{
+    auto z_list = view->getZGraphItemsList();  // список рафических объектов на сцене
+    imgSpectral->updateData(z_list, true);
+    imgSpectral->setVisible(!imgSpectral->isVisible());
+
 }
 
 void MainWindow::createDockWidgetForChannels()
@@ -668,15 +751,6 @@ void MainWindow::createDockWidgetForIndexes()
     chListWidget->currentItem()->setSelected(false);  // конкурент
     set_abstract_index_pixmap();
 
-}
-
-void MainWindow::set_abstract_index_pixmap()
-{
-    double brightness = im_handler->current_image()->get_current_brightness();
-    im_handler->set_brightness_to_slider(slider, brightness);
-    QImage img = im_handler->get_REAL_current_image();
-    QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
-    view->mainPixmap->setPixmap(pxm);
 }
 
 QPointF MainWindow::getPointFromStr(QString str) {
@@ -920,11 +994,10 @@ void MainWindow::restoreTRUEdockWidgetsPosition()
 {
     auto graphList = view->getZGraphItemsList();
     foreach(zGraph *item, graphList) {
+
         item->dockw->move(item->dockwpos - QPoint(76-68,43-12));
         item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
-//        item->dockw->move( mapToGlobal(item->dockwpos) );
-//        item->dockw->move( mapToParent(item->dockwpos) );
-//        item->dockw->move( mapTo(this, item->dockwpos) );
+
     }
 }
 
@@ -941,6 +1014,7 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
 //----------------------------------------------------------------
     set_abstract_index_pixmap();
+    imgHistogram->hide();  histogramAct->setEnabled(false);
 }
 
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
@@ -952,6 +1026,8 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
 //----------------------------------------------------------------
     set_abstract_index_pixmap();
+    if (num==0) {imgHistogram->hide(); histogramAct->setEnabled(false); }
+    else { updateHistogram(); histogramAct->setEnabled(true); }
 }
 
 void MainWindow::addRecentFile()
@@ -1158,7 +1234,7 @@ void MainWindow::change_brightness(int value)
 void MainWindow::add_index_pixmap(int num)
 {
 // num - номер максимального slice, этот номер на 1 меньше чем нужный current_slice
-    view->GlobalChannelNum = num + 1;
+    view->GlobalChannelNum = num + 1;  histogramAct->setEnabled(true);
 // ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
 //  depth в indexImages находится RGB, и оно отсутствуем в img SpectralImage
     QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
@@ -1175,4 +1251,29 @@ void MainWindow::add_index_pixmap(int num)
 //    (r640-r680)/(640+r680)
 //----------------------------------------------------------
     set_abstract_index_pixmap();
+    show_histogram_widget();  // histogram
+}
+
+void MainWindow::set_abstract_index_pixmap()
+{
+    double brightness = im_handler->current_image()->get_current_brightness();
+    im_handler->set_brightness_to_slider(slider, brightness);
+    QImage img = im_handler->get_REAL_current_image();
+    QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm);
+}
+
+void MainWindow::show_histogram_widget() {
+
+    updateHistogram();
+}
+
+void MainWindow::updateHistogram()
+{
+    QVector<QVector<double> > slice_index = im_handler->current_image()->get_band(view->GlobalChannelNum-1);
+    QPair<QString, QString> name = im_handler->current_image()->get_current_formula();
+    imgHistogram->updateData(name.first, name.second, slice_index,
+                             im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
+    if (histogramAct->isChecked()) imgHistogram->show();
+    else imgHistogram->hide();
 }

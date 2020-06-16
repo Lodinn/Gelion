@@ -5,6 +5,8 @@
 #include "SpectralImage.h"
 #include "qcustomplot.h"
 #include "view.h"
+#include "imagespectral.h"
+#include "imagehistogram.h"
 
 #include <QGraphicsScene>
 #include <QMainWindow>
@@ -25,11 +27,17 @@ class MainWindow : public QMainWindow {
   void show_progress(int max_progress);
   void stop_reading_file();
   void delete_progress_dialog();
+
+  void histogramSlot();  // гистограмма
+  void spectralSlot();  // спектральный анализ
+
   void winZGraphList();
   void indexList();
   void channelList();
+
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
+
   void listWidgetDeleteItem(zGraph *item);
   void winZGraphProfilesShowAll();
   void winZGraphProfilesHideAll();
@@ -41,8 +49,10 @@ class MainWindow : public QMainWindow {
   void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
+
   void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
+
   void createDockWidgetForItem(zGraph *item);
   void setZGraphDockToggled(zGraph *item);
   void show_profile(QPointF point, int id = -1);
@@ -58,18 +68,15 @@ private:
   void addRecentFile();
   void saveGLOBALSettings();
   QString getGlobalIniFileName();
- signals:
-  void read_file(QString);
-  void index_calculate(QString);
+
  protected:
-  qreal qmainWindowScale =  .84;  // 0.84;
+  qreal qmainWindowScale =  .5;  // 0.84;
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
-  void SetupUi();
   QString dataFileName = "";
   QString appName = "Gelion";
-  bool saveSettingAtCloseApp = true;  // ---------
-  bool restoreSettingAtStartUp = true; // ---
+  bool saveSettingAtCloseApp = false;  // ---------
+  bool restoreSettingAtStartUp = false; // ---
   QString save_slices = "_slices_.bin";
   QString save_images = "_images_.png";
   QString save_formulas = "_formulas_.bin";
@@ -79,7 +86,8 @@ private:
 private:
 // Event handlers
   void closeEvent(QCloseEvent *event);
-  void set_action_enabled(bool enable);
+  bool eventFilter(QObject *object, QEvent *event);
+  void set_action_enabled(bool enable);  // action_enabled
   QPointF getPointFromStr(QString str);
   QPoint getPoint__fromStr(QString str);
   QVector<double> getVectorFromStr(QString str);
@@ -91,10 +99,15 @@ private:
   QAction *addSeparatorRecentFile;
   QAction *indexAct;
   QAction *spectralAct;
-//  QAction *maskAct;
   QAction *histogramAct;
+
+  //  QAction *maskAct;
+
   void createActions();
   void createStatusBar();
+  void createMainConnections();
+  void createConstDockWidgets();
+  void SetupUi();
   QThread *worker_thread = new QThread;
   ImageHandler *im_handler = new ImageHandler();
   QProgressDialog *progress_dialog = nullptr;
@@ -105,6 +118,11 @@ private:
       double green = 550.0;
       double blue = 460.0;
   } rgb_default;
+
+signals:
+ void read_file(QString);
+ void index_calculate(QString);
+
 protected:
   QDockWidget *dockZGraphList = new QDockWidget("Области интереса", this);
   QListWidget *zGraphListWidget = new QListWidget(dockZGraphList);
@@ -112,13 +130,16 @@ protected:
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
+  imageSpectral *imgSpectral = new imageSpectral(this);  // окно список профилей
+  imageHistogram *imgHistogram = new imageHistogram(this);  // окно отображения индексного изображения
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
   QSlider *slider;
   void set_abstract_index_pixmap();
   void show_channel_list_update();
-
-  void createConstDockWidgets();
+  void show_histogram_widget();
+  void updateHistogram();
+  void calculateVisibleZObject(bool rescale);
 
 public slots:
   void showContextMenuChannelList(const QPoint &pos);
@@ -128,6 +149,7 @@ public slots:
   void inputIndexDlgShow();
   void settingsDlgShow();
   void change_brightness(int value);
+
 };
 
 #endif  // MAINWINDOW_H

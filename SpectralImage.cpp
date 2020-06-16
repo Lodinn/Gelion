@@ -8,7 +8,7 @@
 #include <QtMath>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
-//    img.clear();
+    //    img.clear();
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
@@ -95,20 +95,8 @@ QImage SpectralImage::get_index_rgb(bool enhance_contrast, bool colorized, int n
         qDebug() << "CRITICAL - WRONG INDEX";
         return QImage();
     }
-//qDebug() << "before";
-//    qDebug() << "count of img = " << get_raster().count() << num_index;
 
     QVector<QVector<double> > slice_index = get_band(num_index);
-
-    //&&&&&&&&&& sav efor control
-//    QFile file("G:/&&&proj/color_scheme/_slices_control_.bin");
-//    file.open(QIODevice::WriteOnly);
-//    QDataStream out(&file);
-//    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
-//    out.setByteOrder(QDataStream::LittleEndian);
-//    out << slice_index;
-//    file.close();
-    //&&&&&&&&&& sav efor control
 
     if(slice_index.isEmpty()) {
       qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
@@ -253,6 +241,72 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   }
   img.append(slice);
   indexBrightness.append(default_brightness);
+  J09::histogramType hg;  // статистика гистограммы
+  hg.brightness = default_brightness;
+  histogram.append(hg);
+  uint16_t num = img.count() - 1;
+
+  if (num > depth - 1) calculateHistogram(true, num);
+
+}
+
+void SpectralImage::calculateHistogram(bool full, uint16_t num)
+{
+    QVector<QVector<double> > slice = get_band(num);
+    J09::histogramType hg = histogram[num];  // статистика гистограммы
+
+    int h = slice.count();  int w = slice.at(0).count();
+    if (full) {
+        hg.max = INT_MIN;  hg.min = INT_MAX;
+
+        for(int y = 0; y < h; y++) {
+            hg.max = std::max(hg.max, *std::max_element(slice[y].begin(), slice[y].end()));
+            hg.min = std::min(hg.min, *std::min_element(slice[y].begin(), slice[y].end()));
+        }  // for
+        if (hg.max == INT_MIN || hg.min == INT_MAX) {
+            qDebug() << "slice IS NOT CORRECT!!!";
+            return;
+        }  // error
+
+        hg.lower = hg.min;  hg.upper = hg.max;
+        hg.sum = .0;  hg.sum_of_part = 100.;
+        hg.vx.resize(hg.hcount);  hg.vy.resize(hg.hcount);  hg.vy.fill(0.);
+        if (std::abs(hg.max - hg.min) < 0.000001) {
+            qDebug() << "slice IS NOT CORRECT!!!";
+            return;
+        }  // error
+
+        double k = (hg.hcount-1.)/(hg.max-hg.min);
+        if (std::abs(k) < 0.000001) {
+            qDebug() << "slice IS NOT CORRECT!!!";
+            return;
+        }  // error
+
+        for (int i=0; i<hg.hcount; i++) hg.vx[i]=hg.min+i/k;
+        for (int y=0; y<h; y++)
+            for (int x=0; x<w; x++){
+                int num_int = qRound((slice[y][x]-hg.min)*k);
+                if (num_int < 0) num_int = 0;
+                if (num_int > hg.hcount - 1) num_int = hg.hcount - 1;
+                hg.vy[num_int]++;
+                hg.sum++;
+            }  // for
+        histogram[num] = hg;
+        return;
+    }  // if (full)
+    hg.sum_of_part = 0.;
+    for(int i=0;i<hg.hcount-1;i++) {
+        if (hg.vx[i] < hg.lower) continue;
+        if (hg.vx[i] > hg.upper) continue;
+        hg.sum_of_part += hg.vy[i];
+    }  // for
+    if (qAbs(hg.sum) < .000001) {
+        hg.sum_of_part = .0;  return;
+    }  // if
+    hg.sum_of_part = 100.*hg.sum_of_part/hg.sum;
+
+    histogram[num] = hg;
+
 }
 
 void SpectralImage::append_additional_image(QImage image, QString index_name, QString index_formula)
