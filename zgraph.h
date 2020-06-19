@@ -71,6 +71,7 @@ signals:
      void mouseRelease();
      void itemChange();
      void itemDelete(zGraph *);
+     void changeParamsFromDialog(zGraph *);
 protected:
      int fRectIndent = 12;
      QPointF fcenterPoint;

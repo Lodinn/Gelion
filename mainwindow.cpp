@@ -108,6 +108,7 @@ void MainWindow::SetupUi() {
   setWindowTitle("Gelion");
   QRect desktop = QApplication::desktop()->screenGeometry();
   int sw = desktop.width();  int sh = desktop.height();
+  desktop_width = sw;  desktop_height = sh;
   int left = round(sw*(1-qmainWindowScale)*0.5+200);
   int top = round(sh*(1-qmainWindowScale)*0.5);
   int width = round(sw*qmainWindowScale*.75);
@@ -172,14 +173,12 @@ void MainWindow::createActions() {
     spectralAct->setCheckable(true); spectralAct->setChecked(false);
     spectralAct->setEnabled(false);
     indexMenu->addAction(spectralAct);   indexToolBar->addAction(spectralAct);
-//    connect(spectralAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
-//    maskAct = new QAction(QIcon(":/icons/icons8-theatre-mask-30.png"), tr("&Создания масок для изображения"), this);
-//    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
+
     histogramAct = new QAction(QIcon(":/icons/histogram.png"), tr("&Отображать гистограмму"), this);
     histogramAct->setCheckable(true); histogramAct->setChecked(true);
     histogramAct->setEnabled(false);
     indexMenu->addAction(histogramAct);   indexToolBar->addAction(histogramAct);
-//    connect(maskAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
+
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
@@ -187,6 +186,7 @@ void MainWindow::createActions() {
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
   winMenu->addAction(view->indexListAct);   winToolBar->addAction(view->indexListAct);
   winMenu->addAction(view->channelListAct);   winToolBar->addAction(view->channelListAct);
+  winMenu->addAction(view->maskListAct);   winToolBar->addAction(view->maskListAct);
   winMenu->addAction(view->winZGraphListShowAllAct);   winToolBar->addAction(view->winZGraphListShowAllAct);
   winMenu->addAction(view->winZGraphListHideAllAct);   winToolBar->addAction(view->winZGraphListHideAllAct);
   winMenu->addSeparator();      winToolBar->addSeparator();
@@ -243,27 +243,49 @@ void MainWindow::createMainConnections()
 
     connect(histogramAct, SIGNAL(triggered()), this, SLOT(histogramSlot()));  // гистограмма
     connect(spectralAct, SIGNAL(triggered()), this, SLOT(spectralSlot()));  // СПЕКТРАЛЬНЫЙ АНАЛИЗ
+    connect(view, SIGNAL(changeZObject(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 
     connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));  // области интереса
     connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexList()));  // изображения
     connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));  // каналы
+    connect(view->maskListAct, SIGNAL(triggered()), this, SLOT(maskList()));  // маски
     connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
     connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
+
+}
+
+void MainWindow::spectralUpdateExt(zGraph *item)
+{
+    if (!imgSpectral->isVisible()) return;
+    auto zz_list = view->getZGraphItemsList();
+    qDebug() << "item" << item;
+    if (item == nullptr) {
+        imgSpectral->updateData(zz_list, true);  // обновление всех профилей
+        return;
+    }  // if
+
+    QList<zGraph *> z_list;  foreach(zGraph *z, zz_list) if (z->isVisible()) z_list.append(z);
+    int num = -1;
+    foreach(zGraph *z, z_list)
+        if (z == item) { num = z_list.indexOf(z); break; }
+    if (num == -1) return;
+    imgSpectral->updateDataOneProfile(item, num);
 
 }
 
 void MainWindow::createConstDockWidgets()
 {
     QRect rec = QApplication::desktop()->screenGeometry();
+    int scrHeignt4 = qRound(rec.height() / 4.5);
 // Области интереса
     dockZGraphList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(dockZGraphList, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenuZGraphList(QPoint)));
     dockZGraphList->setWindowIcon(QIcon(":/icons/windows2.png"));
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
-    dockZGraphList->setFixedSize(220,250);
+    dockZGraphList->setFixedSize(220,scrHeignt4-20);
     dockZGraphList->setWidget(zGraphListWidget);
-    dockZGraphList->move(rec.width() - 250,50);
+    dockZGraphList->move(rec.width() - 250,10+0*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     connect(zGraphListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
@@ -287,12 +309,25 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в *.csv файл ...", this);
     action->setData(5);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+// работа с изображениями - масками
+    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
+    action = new QAction(QIcon(":/icons/theater-roi.png"), "Создать маску из областей интереса ...", this);
+    action->setData(6);  show_zgraph_list_acts.append(action);  // mask - 6
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+
+    action = new QAction(QIcon(":/icons/theater-roi.png"), "Sun", this);
+    action->setData(7);  mask_list_acts.append(action);  // mask - 7
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(QIcon(":/icons/theater-roi.png"), "Shadow", this);
+    action->setData(8);  mask_list_acts.append(action);  // mask - 8
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+
 // Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
-    dockIndexList->setFixedSize(220,250);
+    dockIndexList->setFixedSize(220,scrHeignt4-20);
     dockIndexList->setWidget(indexListWidget);
-    dockIndexList->move(rec.width() - 250,350);
+    dockIndexList->move(rec.width() - 250,10+1*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
@@ -302,9 +337,9 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuChannelList(QPoint)));
     dockChannelList->setWindowIcon(QIcon(":/icons/list-channel.jpg"));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
-    dockChannelList->setFixedSize(220,350);
+    dockChannelList->setFixedSize(220,scrHeignt4-20);
     dockChannelList->setWidget(chListWidget);
-    dockChannelList->move(rec.width() - 250,650);
+    dockChannelList->move(rec.width() - 250,10+2*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
     connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
@@ -332,6 +367,13 @@ void MainWindow::createConstDockWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, imgHistogram);
     connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 
+// МАСКИ
+    dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
+    dockMaskImage->setFixedSize(220,scrHeignt4-20);
+    dockMaskImage->setWidget(maskListWidget);
+    dockMaskImage->move(rec.width() - 250,10+3*scrHeignt4);
+    addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
+    connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -420,6 +462,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
     zGraphListWidget->insertItem(0, lwItem);
+    connect(item, SIGNAL(changeParamsFromDialog(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 }
 
 void MainWindow::setZGraphDockToggled(zGraph *item)
@@ -443,6 +486,11 @@ void MainWindow::indexList()
 void MainWindow::channelList()
 {
     dockChannelList->setVisible(!dockChannelList->isVisible());
+}
+
+void MainWindow::maskList()
+{
+    dockMaskImage->setVisible(!dockMaskImage->isVisible());
 }
 
 void MainWindow::winZGraphProfilesShowAll()
@@ -528,6 +576,8 @@ void MainWindow::toggleViewAction(bool b)
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->indexListAct->setChecked(dockIndexList->isVisible());
     view->channelListAct->setChecked(dockChannelList->isVisible());
+    view->maskListAct->setChecked(dockMaskImage->isVisible());
+
     histogramAct->setChecked(imgHistogram->isVisible());
     spectralAct->setChecked(imgSpectral->isVisible());
 }
@@ -550,7 +600,6 @@ void MainWindow::open() {
   view->openAct->setEnabled(false);
   QApplication::processEvents();
   emit read_file(fname);
-// connect(this, SIGNAL(read_file(QString)),im_handler,SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
@@ -1101,6 +1150,12 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     QMenu menu(this);
     for (int i = 0; i < show_zgraph_list_acts.count(); i++)
         menu.addAction(show_zgraph_list_acts[i]);
+
+    QMenu *maskMenu = menu.addMenu(tr("Активные профили в маске ..."));
+
+    for (int i = 0; i < mask_list_acts.count(); i++)
+        maskMenu->addAction(mask_list_acts[i]);
+
     menu.exec(globalPos);
 }
 
@@ -1270,8 +1325,15 @@ void MainWindow::show_histogram_widget() {
 
 void MainWindow::updateHistogram()
 {
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
+    QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
+    maiPixmap = view->changeBrightnessPixmap(img, brightness);
+
     QVector<QVector<double> > slice_index = im_handler->current_image()->get_band(view->GlobalChannelNum-1);
     QPair<QString, QString> name = im_handler->current_image()->get_current_formula();
+
+    imgHistogram->setPreviewPixmap(maiPixmap);
     imgHistogram->updateData(name.first, name.second, slice_index,
                              im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
     if (histogramAct->isChecked()) imgHistogram->show();

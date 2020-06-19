@@ -54,6 +54,7 @@ void zGraph::getParamsFromDialog(zgraphParamDlg *dlg)
     listwidget->setFont(font);
     listwidget->setText(this->getTitle());
     this->updateBoundingRect();
+    emit changeParamsFromDialog(nullptr);
 }
 
 QPointF zGraph::getRectPoint2(QPointF p1, qreal w, qreal rot)

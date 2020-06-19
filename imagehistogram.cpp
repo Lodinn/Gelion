@@ -4,26 +4,28 @@ imageHistogram::imageHistogram(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
-    move(20,470);  resize(700,500);
-//    setupConnections();
+    move(20,470);  resize(1000,500);
+
 }
 
-//void imageHistogram::updateData(ZG::histogramType &hg)
-//{
-//}
-
-void imageHistogram::updateData(QString name, QString formula, QVector<QVector<double> > img, J09::histogramType &hg)
+void imageHistogram::updateData(QString name, QString formula, QVector<QVector<double> > img,
+                                J09::histogramType &hg)
 {
     if (h_data != nullptr) getHistogramFromSliders();
 
     this->disconnect();
     setWindowTitle(QString("Гистограмма - [ %1 \ %2 ]").arg(name).arg(formula));
 
-    slice = img;
+    slice = img;  main_size = QSize(slice[0].count(), slice.count());
     h_data = &hg;
+
+    updatePreviewData();  // загрузка параметров изображения
+
     disconnect();
     setHistogramToSliders();
     updatePreviewImage();  // true - colorized
+    previewPlot->rescaleAxes();
+
     graph->setData(h_data->vx, h_data->vy);
     plot->xAxis->setRange(h_data->min, h_data->max);
     plot->yAxis->setRange(0., *std::max_element(h_data->vy.begin(), h_data->vy.end()));
@@ -31,6 +33,21 @@ void imageHistogram::updateData(QString name, QString formula, QVector<QVector<d
     setHistogramToBracked();
 
     setupConnections();
+
+}
+
+void imageHistogram::setPreviewPixmap(QPixmap &mainRGB)
+{
+    previewRGB = &mainRGB;
+}
+
+void imageHistogram::updatePreviewData() {
+
+// Load Options Image as Pixmap
+    image_pixmap->topLeft->setCoords(0,0);
+    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
+    previewPlot->xAxis->setRange(0,main_size.width());
+    previewPlot->yAxis->setRange(0,main_size.height());
 
 }
 
@@ -76,6 +93,24 @@ void imageHistogram::calculateHistogram(bool full)
 
 bool imageHistogram::eventFilter(QObject *object, QEvent *event)
 {
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *key = static_cast<QKeyEvent *>(event);
+
+        if(key->key() == Qt::Key_W) {
+
+            if (h_data->rgb_preview == 0) {
+                h_data->rgb_preview = 1;
+                updatePreviewImage();  // true - colorized
+                return true;
+            }
+            if (h_data->rgb_preview == 1) {
+                h_data->rgb_preview = 0;
+                updatePreviewImage();  // true - colorized
+                return true;
+            }
+
+        }
+    }
     return QDockWidget::eventFilter(object, event);
 }
 
@@ -109,6 +144,8 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(labelRightRed, 0, 2, Qt::AlignLeft);
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
+    button90routate = new QPushButton("Повернуть на 90 градусов");
+    gridLayout->addWidget(button90routate, 2, 2, Qt::AlignLeft);
 
     bottomGroupBox->setLayout(gridLayout);
     bottomGroupBox->setMaximumHeight(100);
@@ -119,20 +156,24 @@ void imageHistogram::setupUi()
     vertLayout->addWidget(plot);
     vertLayout->addWidget(bottomGroupBox);
 
-    labelPreview = new QLabel;
+//    labelPreview = new QLabel;
+    previewPlot = new QCustomPlot();
+    setupPreviewPlot();  // настройка параметров просмотра
 
     horzLayout = new QHBoxLayout;
 
     horzLayout->addLayout(vertLayout);
-    horzLayout->addWidget(labelPreview);
+//    horzLayout->addWidget(labelPreview);
+    horzLayout->addWidget(previewPlot);
 
-    horzLayout->setStretch(0,1);
+//    horzLayout->setStretch(0,1);
 
     QWidget *widget  = new QWidget;  // вспомогательный виджет
     widget->setLayout(horzLayout);
     setWidget(widget);
-    setMinimumWidth(1000);
-    setMaximumHeight(530);
+    setMinimumWidth(750);
+    setMinimumHeight(300);
+//    setMaximumHeight(530);
 
     // data
     // ........
@@ -181,6 +222,7 @@ void imageHistogram::setupConnections()
     // подключаем сигналы и слоты окна
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
+    connect(button90routate, &QPushButton::clicked, this, &imageHistogram::routate90);
     connect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
     connect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
     connect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
@@ -227,11 +269,21 @@ void imageHistogram::getHistogramFromSliders()
 
 void imageHistogram::updatePreviewImage()
 {
-    QImage img = get_index_rgb_ext( slice, h_data->colorized );
-    QPixmap pixmap = changeBrightnessPixmap( img, h_data->brightness );
-    QMatrix rm;    rm.rotate(90.);
-    pixmap = pixmap.transformed(rm);
-    labelPreview->setPixmap(pixmap);
+//    labelPreview->setPixmap(pixmap);
+    QMatrix rm;    rm.rotate(h_data->rotation);
+
+    switch (h_data->rgb_preview) {
+    case 0 :{ QImage img = get_index_rgb_ext( slice, h_data->colorized );
+        QPixmap pixmap = changeBrightnessPixmap( img, h_data->brightness );
+        pixmap = pixmap.transformed(rm); image_pixmap->setPixmap(pixmap);
+        break; }
+    case 1 : {
+        QPixmap pixmap = previewRGB->transformed(rm); image_pixmap->setPixmap(pixmap); break; }
+    }  // switch
+
+    image_pixmap->topLeft->setCoords(0,0);
+    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
+    previewPlot->replot();
 }
 
 QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized)
@@ -427,6 +479,20 @@ QPixmap imageHistogram::changeBrightnessPixmap(QImage &img, double brightness)
 
 }
 
+void imageHistogram::setupPreviewPlot()
+{
+    previewPlot->resize(500,500);
+/// Allow zoom and move
+    previewPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+// Add pixmap
+    image_pixmap = new QCPItemPixmap(previewPlot);
+    image_pixmap->setVisible(true);
+    previewPlot->addLayer("image");
+    image_pixmap->setLayer("image");
+    image_pixmap->setScaled(true);
+
+}
+
 void imageHistogram::mousePress(QMouseEvent *event)
 {
     if (histogramPlotTrigger == 0) return;
@@ -489,7 +555,8 @@ void imageHistogram::mouseRelease(QMouseEvent *event)
 
 void imageHistogram::histogramPreview()
 {
-    labelPreview->setVisible(previewImage->isChecked());
+//    labelPreview->setVisible(previewImage->isChecked());
+    previewPlot->setVisible(previewImage->isChecked());
 }
 
 void imageHistogram::axisRescale()
@@ -499,4 +566,12 @@ void imageHistogram::axisRescale()
     calculateHistogram(false);
     setHistogramToBracked();
     updatePreviewImage();  // true - colorized
+}
+
+void imageHistogram::routate90()
+{
+    h_data->rotation += 90.;
+    if (h_data->rotation > 360.) h_data->rotation -= 360.;
+    updatePreviewImage();  // true - colorized
+    qDebug() << "h_data->rotation" << h_data->rotation;
 }

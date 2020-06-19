@@ -11,13 +11,15 @@ class imageHistogram : public QDockWidget
     Q_OBJECT
 public:
     imageHistogram(QWidget * parent = 0);
-    void updateData(QString name, QString formula, QVector<QVector<double> > img, J09::histogramType &hg);
+    void updateData(QString name, QString formula, QVector<QVector<double> > img,
+                    J09::histogramType &hg);
+    void setPreviewPixmap(QPixmap &mainRGB);
 private:
     void  calculateHistogram(bool full);
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
     void setupConnections();
-    QCustomPlot *plot;
+    QCustomPlot *plot, *previewPlot;
     QGroupBox *bottomGroupBox;
     QGridLayout *gridLayout;
     QSlider *sliderBrightness;
@@ -28,6 +30,7 @@ private:
     QLabel *labelLeftBlue;
     QLabel *labelRightRed;
     QPushButton *buttonAxisRescale;
+    QPushButton *button90routate;
     QVBoxLayout *vertLayout;
     QLabel *labelPreview;
     QHBoxLayout *horzLayout;
@@ -43,12 +46,17 @@ private:
     int histogramPlotTrigger = 0;
     bool histogramPlotPAN = false;
     QVector<QVector<double> > slice;
+    QSize main_size;
     QImage get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized);
     QRgb get_rainbow_RGB(double Wavelength);
     void setHistogramToBracked();
     QPixmap changeBrightnessPixmap(QImage &img, double brightness);
     double bracketTextIndent = .9;
     QCPGraph *graph;
+    QPixmap *previewRGB;
+    QCPItemPixmap *image_pixmap;
+    void setupPreviewPlot();  // настройка параметров просмотра
+    void updatePreviewData();  // загрузка параметров изображения
 private slots:
     void brightnessChanged();
     void leftColorChanged();
@@ -58,7 +66,7 @@ private slots:
     void mouseRelease(QMouseEvent *event);
     void histogramPreview();
     void axisRescale();
-
+    void routate90();
 
 };
 

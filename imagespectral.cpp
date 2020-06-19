@@ -38,6 +38,7 @@ imageSpectral::imageSpectral(QWidget *parent)
 
 void imageSpectral::updateData(QList<zGraph *> list, bool rescale)
 {
+    graph_list = list;
     // data
     plot->clearGraphs();
 
@@ -82,11 +83,13 @@ void imageSpectral::updateData(QList<zGraph *> list, bool rescale)
 void imageSpectral::updateDataOneProfile(zGraph *item, int num)
 {
     if (num > plot->graphCount() - 1) return;
-    tracer->setGraph(0x0);
-    tracer->updatePosition();
+//    tracer->setGraph(0x0);
+//    tracer->updatePosition();
     int n = item->profile.count();
     QVector<double> x(n), y(n);
-    for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
+    for (int i=0; i<n; i++) {
+        x[i] = item->profile[i].rx();
+        y[i] = item->profile[i].ry(); }
     plot->graph(num)->setData(x, y);
     plot->replot();
 }
@@ -352,11 +355,24 @@ void imageSpectral::mouseMove(QMouseEvent *event)
 
 void imageSpectral::spectralSetAllRange()
 {
+    sXmin = INT_MAX;  sXmax = INT_MIN;
+    sYmin = .0;  sYmax = INT_MIN;
+    foreach(zGraph *item, graph_list) {
+        if (!item->isVisible()) continue;
+        int n = item->profile.count();
+        QVector<double> x(n), y(n);
+        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
+        sXmin = std::min(sXmin, *std::min_element(x.begin(), x.end()));
+        sXmax = std::max(sXmax, *std::max_element(x.begin(), x.end()));
+        sYmax = std::max(sYmax, *std::max_element(y.begin(), y.end()));
+    }  // foreach
+
     plot->xAxis->setRange(sXmin, sXmax);
     plot->yAxis->setRange(sYmin, sYmax);
     plot->xAxis2->setRange(sXmin, sXmax);
     plot->yAxis2->setRange(sYmin, sYmax);
     plot->replot();
+
 }
 
 void imageSpectral::selectionChanged()

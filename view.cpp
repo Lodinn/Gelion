@@ -43,6 +43,10 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     channelListAct = new QAction(channelListIcon, "Список Каналов", this);
     channelListAct->setCheckable(true); channelListAct->setChecked(true);
 
+    const QIcon maskListIcon = QIcon::fromTheme("Список изображений-масок", QIcon(":/icons/theater.png"));
+    maskListAct = new QAction(maskListIcon, "Список изображений-масок", this);
+    maskListAct->setCheckable(true); maskListAct->setChecked(true);
+
     const QIcon ShowAllIcon = QIcon::fromTheme("Показать все профили", QIcon(":/icons/profs_show.png"));
     const QIcon HideAllIcon = QIcon::fromTheme("Скрыть все профили", QIcon(":/icons/profs_hide.png"));
     winZGraphListShowAllAct = new QAction(ShowAllIcon, "Показать все профили", this);
@@ -354,12 +358,17 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
         item->profile.clear();
         for (int i=0; i<d; i++) item->profile.append(QPointF(x[i],y[i]));
         item->sigma = .0;
+        emit changeZObject(item);
         return;
     }  // case zPoint::Type
-    case zRect::Type : { multiPointsReplotRect(item);   return; }  // case zRect::Type
-    case zEllipse::Type : { multiPointsReplotRect(item);  return; }  // case zEllipse::Type
-    case zPolyline::Type : { multiPointsReplotPoly(item);  return; }  // case zPolyline::Type
-    case zPolygon::Type : { multiPointsReplotPoly(item);  return; }  // case zPolygon::Type
+    case zRect::Type : { multiPointsReplotRect(item);
+        emit changeZObject(nullptr);  return; }  // case zRect::Type
+    case zEllipse::Type : { multiPointsReplotRect(item);
+        emit changeZObject(nullptr); return; }  // case zEllipse::Type
+    case zPolyline::Type : { multiPointsReplotPoly(item);
+        emit changeZObject(nullptr); return; }  // case zPolyline::Type
+    case zPolygon::Type : { multiPointsReplotPoly(item);
+        emit changeZObject(nullptr); return; }  // case zPolygon::Type
     }  // switch
 }
 

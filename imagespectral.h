@@ -17,6 +17,7 @@ public:
     int getGraphCount() { return plot->graphCount()- mRainbow; }
 private:
     QCustomPlot *plot;
+    QList<zGraph *> graph_list;
     QVector<J09::spectralColorType> spectralColor;
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();

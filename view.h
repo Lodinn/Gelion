@@ -49,6 +49,7 @@ public:
     QAction *winZGraphListAct;
     QAction *indexListAct;
     QAction *channelListAct;
+    QAction *maskListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
     zGraph *grabberItem = nullptr;
@@ -91,6 +92,7 @@ public:
   void setZGraphDockToggled(zGraph *item);  // main toggleViewAction
   void point_picked(QPointF);
   void removeFromzGraphListWidget(zGraph *item);
+  void changeZObject(zGraph *item);
 
 // FIXME: keeping two separate index lists here and in mainwindow. Subclass
 // instead and connect to plot directly?

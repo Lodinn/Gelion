@@ -38,5 +38,7 @@
         <file>icons/icons8-theatre-mask-30.png</file>
         <file>icons/histogram.png</file>
         <file>icons/delete-32.png</file>
+        <file>icons/theater.png</file>
+        <file>icons/theater-roi.png</file>
     </qresource>
 </RCC>

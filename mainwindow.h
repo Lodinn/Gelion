@@ -34,6 +34,7 @@ class MainWindow : public QMainWindow {
   void winZGraphList();
   void indexList();
   void channelList();
+  void maskList();
 
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
@@ -70,13 +71,15 @@ private:
   QString getGlobalIniFileName();
 
  protected:
-  qreal qmainWindowScale =  .5;  // 0.84;
+  qreal qmainWindowScale =  .84;  // 0.84;
+  int desktop_width, desktop_height;
+  bool saveSettingAtCloseApp = false;  // ---------
+  bool restoreSettingAtStartUp = false; // ---
+
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
   QString dataFileName = "";
   QString appName = "Gelion";
-  bool saveSettingAtCloseApp = false;  // ---------
-  bool restoreSettingAtStartUp = false; // ---
   QString save_slices = "_slices_.bin";
   QString save_images = "_images_.png";
   QString save_formulas = "_formulas_.bin";
@@ -94,6 +97,7 @@ private:
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;
+  QPixmap maiPixmap;
   QMenu *fileMenu;
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;
@@ -108,6 +112,7 @@ private:
   void createMainConnections();
   void createConstDockWidgets();
   void SetupUi();
+
   QThread *worker_thread = new QThread;
   ImageHandler *im_handler = new ImageHandler();
   QProgressDialog *progress_dialog = nullptr;
@@ -134,7 +139,10 @@ protected:
   imageHistogram *imgHistogram = new imageHistogram(this);  // окно отображения индексного изображения
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
+  QVector<QAction *> mask_list_acts;
   QSlider *slider;
+  QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
+  QListWidget *maskListWidget = new QListWidget(dockMaskImage);
   void set_abstract_index_pixmap();
   void show_channel_list_update();
   void show_histogram_widget();
@@ -149,6 +157,7 @@ public slots:
   void inputIndexDlgShow();
   void settingsDlgShow();
   void change_brightness(int value);
+  void spectralUpdateExt(zGraph *item);
 
 };
 

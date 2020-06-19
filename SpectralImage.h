@@ -23,7 +23,8 @@ struct histogramType {
     double ___sbrightness = .3;  // относительное положение 1. на слайдере
     bool imgPreview = true;
     bool colorized = true;
-    double rotation;  // previw picture rotate
+    double rotation = .0;  // previw picture rotate
+    int rgb_preview = 0;  // 0 - index, 1 - rgb, 2 - black\white, 3 - mask
 };  // histogramType
 struct spectralColorType {
     QColor color;
@@ -40,6 +41,7 @@ public:
   QVector<QVector<QVector<double> > > get_raster() { return img; }
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
+  double getBrightness(uint32_t num) { return indexBrightness.at(num); }
 public slots:
 
   QVector<QVector<double> > get_band(uint16_t band);
@@ -64,6 +66,8 @@ public slots:
 private:
   // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
+  QVector<QVector<QVector<quint8> > > mask;  // маска изображения, 0 - нет, больше нуля - маска
+  int mask_index = -1;  // текущий номер маски
 
   QVector<double> wavelengths;
   QSize slice_size;
