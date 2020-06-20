@@ -13,6 +13,8 @@
 #include <QProgressDialog>
 #include <QThread>
 
+// аааааааааа
+
 class MainWindow : public QMainWindow {
   Q_OBJECT
 
