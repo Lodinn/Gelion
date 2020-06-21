@@ -7,18 +7,18 @@
 
 #include <QDockWidget>
 
-class imageSpectral : public QDockWidget
+class SpectralPlot : public QDockWidget
 {
     Q_OBJECT
 public:
-    imageSpectral(QWidget * parent = 0);
+    SpectralPlot(QWidget * parent = nullptr);
     void updateData(QList<zGraph *> list, bool rescale);
     void updateDataOneProfile(zGraph *item, int num);
     int getGraphCount() { return plot->graphCount()- mRainbow; }
 private:
     QCustomPlot *plot;
     QList<zGraph *> graph_list;
-    QVector<J09::spectralColorType> spectralColor;
+    QVector<J09::plotStyle> plot_styles_cycle;
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
     void setupConnections();

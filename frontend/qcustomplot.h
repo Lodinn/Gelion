@@ -3625,8 +3625,8 @@ public:
                        };
   Q_ENUMS(RefreshPriority)
   
-  explicit QCustomPlot(QWidget *parent = 0);
-  virtual ~QCustomPlot();
+  explicit QCustomPlot(QWidget *parent = nullptr);
+  virtual ~QCustomPlot() override;
   
   // getters:
   QRect viewport() const { return mViewport; }
@@ -3686,7 +3686,7 @@ public:
   // specialized interface for QCPGraph:
   QCPGraph *graph(int index) const;
   QCPGraph *graph() const;
-  QCPGraph *addGraph(QCPAxis *keyAxis=0, QCPAxis *valueAxis=0);
+  QCPGraph *addGraph(QCPAxis *keyAxis=nullptr, QCPAxis *valueAxis=nullptr);
   bool removeGraph(QCPGraph *graph);
   bool removeGraph(int index);
   int clearGraphs();
@@ -3711,7 +3711,7 @@ public:
   bool setCurrentLayer(const QString &name);
   bool setCurrentLayer(QCPLayer *layer);
   int layerCount() const;
-  bool addLayer(const QString &name, QCPLayer *otherLayer=0, LayerInsertMode insertMode=limAbove);
+  bool addLayer(const QString &name, QCPLayer *otherLayer=nullptr, LayerInsertMode insertMode=limAbove);
   bool removeLayer(QCPLayer *layer);
   bool moveLayer(QCPLayer *layer, QCPLayer *otherLayer, LayerInsertMode insertMode=limAbove);
   
@@ -3829,8 +3829,8 @@ protected:
   bool registerGraph(QCPGraph *graph);
   bool registerItem(QCPAbstractItem* item);
   void updateLayerIndices() const;
-  QCPLayerable *layerableAt(const QPointF &pos, bool onlySelectable, QVariant *selectionDetails=0) const;
-  QList<QCPLayerable*> layerableListAt(const QPointF &pos, bool onlySelectable, QList<QVariant> *selectionDetails=0) const;
+  QCPLayerable *layerableAt(const QPointF &pos, bool onlySelectable, QVariant *selectionDetails=nullptr) const;
+  QList<QCPLayerable*> layerableListAt(const QPointF &pos, bool onlySelectable, QList<QVariant> *selectionDetails=nullptr) const;
   void drawBackground(QCPPainter *painter);
   void setupPaintBuffers();
   QCPAbstractPaintBuffer *createPaintBuffer();
@@ -3879,7 +3879,7 @@ class QCPAbstractPlottable1D : public QCPAbstractPlottable, public QCPPlottableI
   
 public:
   QCPAbstractPlottable1D(QCPAxis *keyAxis, QCPAxis *valueAxis);
-  virtual ~QCPAbstractPlottable1D();
+  virtual ~QCPAbstractPlottable1D() override;
   
   // virtual methods of 1d plottable interface:
   virtual int dataCount() const Q_DECL_OVERRIDE;
@@ -3894,7 +3894,7 @@ public:
   virtual int findEnd(double sortKey, bool expandedRange=true) const Q_DECL_OVERRIDE;
   
   // reimplemented virtual methods:
-  virtual double selectTest(const QPointF &pos, bool onlySelectable, QVariant *details=0) const Q_DECL_OVERRIDE;
+  virtual double selectTest(const QPointF &pos, bool onlySelectable, QVariant *details=nullptr) const Q_DECL_OVERRIDE;
   virtual QCPPlottableInterface1D *interface1D() Q_DECL_OVERRIDE { return this; }
   
 protected:

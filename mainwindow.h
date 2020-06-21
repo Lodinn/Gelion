@@ -5,7 +5,7 @@
 #include "SpectralImage.h"
 #include "qcustomplot.h"
 #include "view.h"
-#include "imagespectral.h"
+#include "spectralplot.h"
 #include "imagehistogram.h"
 
 #include <QGraphicsScene>
@@ -137,7 +137,7 @@ protected:
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);
-  imageSpectral *imgSpectral = new imageSpectral(this);  // окно список профилей
+  SpectralPlot *imgSpectral = new SpectralPlot(this);  // окно список профилей
   imageHistogram *imgHistogram = new imageHistogram(this);  // окно отображения индексного изображения
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;

@@ -1,6 +1,6 @@
-#include "imagespectral.h"
+#include "spectralplot.h"
 
-imageSpectral::imageSpectral(QWidget *parent)
+SpectralPlot::SpectralPlot(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
@@ -8,35 +8,45 @@ imageSpectral::imageSpectral(QWidget *parent)
     setupConnections();
 
 // цвета и стили профилей
-    J09::spectralColorType sct;
-    sct.color = QColor(255,0,0);  sct.style = 1; spectralColor.append(sct); // red style 1
-    sct.color = QColor(0,255,0);  sct.style = 2; spectralColor.append(sct); // green style 2
-    sct.color = QColor(0,0,255);  sct.style = 3; spectralColor.append(sct); // blue style 3
-    sct.color = QColor(57,57,57);  sct.style = 4; spectralColor.append(sct); // grey style 4
+    J09::plotStyle sct;
+    sct.style = 1;
+    sct.color = QColor(31, 119, 180); plot_styles_cycle.append(sct);
+    sct.color = QColor(255, 127, 14); plot_styles_cycle.append(sct);
+    sct.color = QColor(44, 160, 44); plot_styles_cycle.append(sct);
+    sct.color = QColor(214, 39, 40); plot_styles_cycle.append(sct);
+    sct.color = QColor(148, 103, 189); plot_styles_cycle.append(sct);
+    sct.color = QColor(140, 86, 75); plot_styles_cycle.append(sct);
+    sct.color = QColor(227, 119, 194); plot_styles_cycle.append(sct);
+    sct.color = QColor(127, 127, 127); plot_styles_cycle.append(sct);
+    sct.color = QColor(188, 189, 34); plot_styles_cycle.append(sct);
+    sct.color = QColor(23, 190, 207); plot_styles_cycle.append(sct);
+//    sct.color = QColor(255,0,0);  sct.style = 1; plot_styles_cycle.append(sct); // red style 1
+//    sct.color = QColor(0,255,0);  sct.style = 2; plot_styles_cycle.append(sct); // green style 2
+//    sct.color = QColor(0,0,255);  sct.style = 3; plot_styles_cycle.append(sct); // blue style 3
+//    sct.color = QColor(57,57,57);  sct.style = 4; plot_styles_cycle.append(sct); // grey style 4
 
-    sct.color = QColor(255,0,0);  sct.style = 5; spectralColor.append(sct); // red style 5
-    sct.color = QColor(0,255,0);  sct.style = 6; spectralColor.append(sct); // green style 6
-    sct.color = QColor(0,0,255);  sct.style = 7; spectralColor.append(sct); // blue style 7
-    sct.color = QColor(57,57,57);  sct.style = 8; spectralColor.append(sct); // grey style 8
+//    sct.color = QColor(255,0,0);  sct.style = 5; plot_styles_cycle.append(sct); // red style 5
+//    sct.color = QColor(0,255,0);  sct.style = 6; plot_styles_cycle.append(sct); // green style 6
+//    sct.color = QColor(0,0,255);  sct.style = 7; plot_styles_cycle.append(sct); // blue style 7
+//    sct.color = QColor(57,57,57);  sct.style = 8; plot_styles_cycle.append(sct); // grey style 8
 
-    sct.color = QColor(255,0,0);  sct.style = 4; spectralColor.append(sct); // red style 4
-    sct.color = QColor(0,255,0);  sct.style = 3; spectralColor.append(sct); // green style 3
-    sct.color = QColor(0,0,255);  sct.style = 2; spectralColor.append(sct); // blue style 2
-    sct.color = QColor(57,57,57);  sct.style = 1; spectralColor.append(sct); // grey style 1
+//    sct.color = QColor(255,0,0);  sct.style = 4; plot_styles_cycle.append(sct); // red style 4
+//    sct.color = QColor(0,255,0);  sct.style = 3; plot_styles_cycle.append(sct); // green style 3
+//    sct.color = QColor(0,0,255);  sct.style = 2; plot_styles_cycle.append(sct); // blue style 2
+//    sct.color = QColor(57,57,57);  sct.style = 1; plot_styles_cycle.append(sct); // grey style 1
 
-    sct.color = QColor(255,0,0);  sct.style = 8; spectralColor.append(sct); // red style 8
-    sct.color = QColor(0,255,0);  sct.style = 7; spectralColor.append(sct); // green style 7
-    sct.color = QColor(0,0,255);  sct.style = 6; spectralColor.append(sct); // blue style 6
-    sct.color = QColor(57,57,57);  sct.style = 5; spectralColor.append(sct); // grey style 5
+//    sct.color = QColor(255,0,0);  sct.style = 8; plot_styles_cycle.append(sct); // red style 8
+//    sct.color = QColor(0,255,0);  sct.style = 7; plot_styles_cycle.append(sct); // green style 7
+//    sct.color = QColor(0,0,255);  sct.style = 6; plot_styles_cycle.append(sct); // blue style 6
+//    sct.color = QColor(57,57,57);  sct.style = 5; plot_styles_cycle.append(sct); // grey style 5
 
-    sct.color = QColor(255,0,0);  sct.style = 2; spectralColor.append(sct); // red style 8
-    sct.color = QColor(0,255,0);  sct.style = 4; spectralColor.append(sct); // green style 7
-    sct.color = QColor(0,0,255);  sct.style = 1; spectralColor.append(sct); // blue style 6
-    sct.color = QColor(57,57,57);  sct.style = 3; spectralColor.append(sct); // grey style 5
-
+//    sct.color = QColor(255,0,0);  sct.style = 2; plot_styles_cycle.append(sct); // red style 8
+//    sct.color = QColor(0,255,0);  sct.style = 4; plot_styles_cycle.append(sct); // green style 7
+//    sct.color = QColor(0,0,255);  sct.style = 1; plot_styles_cycle.append(sct); // blue style 6
+//    sct.color = QColor(57,57,57);  sct.style = 3; plot_styles_cycle.append(sct); // grey style 5
 }
 
-void imageSpectral::updateData(QList<zGraph *> list, bool rescale)
+void SpectralPlot::updateData(QList<zGraph *> list, bool rescale)
 {
     graph_list = list;
     // data
@@ -57,15 +67,13 @@ void imageSpectral::updateData(QList<zGraph *> list, bool rescale)
         plot->graph()->setData(x, y);
          QPen graphPen;
 
-        int num = list.indexOf(item);
-        if (num > spectralColor.count() - 1) num -= spectralColor.count();
-        graphPen.setColor(spectralColor[num].color);
+        int num = list.indexOf(item) % plot_styles_cycle.count();
+        graphPen.setColor(plot_styles_cycle[num].color);
         graphPen.setWidthF(1.);
         plot->graph()->setPen(graphPen);
 
-        int style = spectralColor[num].style;
-        plot->graph()->setScatterStyle(QCPScatterStyle((QCPScatterStyle::ScatterShape)(style)));
-
+        int style = plot_styles_cycle[num].style;
+        plot->graph()->setScatterStyle(QCPScatterStyle(static_cast<QCPScatterStyle::ScatterShape>(style)));
     }  // foreach
 
 //    if (rescale) spectralAnalisysPlot->rescaleAxes();
@@ -80,7 +88,7 @@ void imageSpectral::updateData(QList<zGraph *> list, bool rescale)
 
 }
 
-void imageSpectral::updateDataOneProfile(zGraph *item, int num)
+void SpectralPlot::updateDataOneProfile(zGraph *item, int num)
 {
     if (num > plot->graphCount() - 1) return;
 //    tracer->setGraph(0x0);
@@ -94,14 +102,12 @@ void imageSpectral::updateDataOneProfile(zGraph *item, int num)
     plot->replot();
 }
 
-void imageSpectral::setRainbowSpectralRanges()
-{
+void SpectralPlot::setRainbowSpectralRanges() {
     // attempt to nice picture
 
     int legeng_min = plot->legend->itemCount();
 
-    QVector<double> x(2), y(2);
-    double up = 10.;  y[0] = up;   y[1] = up;
+    QVector<double> x(2), y(2, 10);
 
     x[0] = 700.;  x[1] = 635.;
     plot->addGraph();
@@ -129,11 +135,6 @@ void imageSpectral::setRainbowSpectralRanges()
     plot->graph()->setData(x, y);
     plot->graph()->setBrush(QBrush(QColor(255, 128, 0, 50)));
 
-    // chlorophyll
-    x[0] = 675.;  x[1] = 676.;    plot->addGraph();
-    plot->graph()->setData(x, y);
-    plot->graph()->setBrush(QBrush(QColor(0, 0, 255, 50)));
-
     int legeng_max = plot->legend->itemCount();
 
     for(int i = legeng_max - 1; i >= legeng_min; i--) {
@@ -144,7 +145,7 @@ void imageSpectral::setRainbowSpectralRanges()
 
 }
 
-bool imageSpectral::eventFilter(QObject *object, QEvent *event)
+bool SpectralPlot::eventFilter(QObject *object, QEvent *event)
 {
     if (object == plot &&
             event->type() == QEvent::KeyPress) {
@@ -198,11 +199,11 @@ bool imageSpectral::eventFilter(QObject *object, QEvent *event)
     return QDockWidget::eventFilter(object, event);
 }
 
-void imageSpectral::setupUi()
+void SpectralPlot::setupUi()
 {
     setObjectName("imageSpectral");
     setWindowTitle("Спектральный анализ");
-    setAllowedAreas(0);  setFloating(true);
+    setAllowedAreas(nullptr);  setFloating(true);
 
     installEventFilter(this);
 
@@ -255,19 +256,18 @@ void imageSpectral::setupUi()
     plot->yAxis->setLabel("коэффициент отражения");
     plot->legend->setVisible(true);
     plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignLeft|Qt::AlignTop);
-    QFont legendFont = font();
-    legendFont.setPointSize(7);
+    QFont legendFont = QFont("Helvetica", 8);
     plot->legend->setFont(legendFont);
     plot->legend->setSelectedFont(legendFont);
     plot->legend->setSelectableParts(QCPLegend::spItems);
-    plot->legend->setRowSpacing(0);
+//    plot->legend->setRowSpacing(1);
 
 }
 
-void imageSpectral::setupConnections()
+void SpectralPlot::setupConnections()
 {
     // allRange - need corrected
-    connect(axisResizeButton, &QPushButton::clicked, this, &imageSpectral::spectralSetAllRange);
+    connect(axisResizeButton, &QPushButton::clicked, this, &SpectralPlot::spectralSetAllRange);
 
     // connect slot that ties some axis selections together (especially opposite axes):
     connect(plot, SIGNAL(selectionChangedByUser()), this, SLOT(selectionChanged()));
@@ -285,7 +285,7 @@ void imageSpectral::setupConnections()
 
 }
 
-void imageSpectral::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
+void SpectralPlot::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
 {
     // since we know we only have QCPGraphs in the plot, we can immediately access interface1D()
     // usually it's better to first check whether interface1D() returns non-zero, and only then use it.
@@ -303,16 +303,15 @@ void imageSpectral::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
     }  // if
 }
 
-QStringList imageSpectral::getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue) {
-
+QStringList SpectralPlot::getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue) {
     QStringList strlist;
-    strlist.append(QString("x = r%1 нм y = %2 * ").arg(keyValue).arg(dataValue));
+    strlist.append(QString(u8"\u03BB = %1 \u043D\u043C r = %2\n").arg(keyValue).arg(dataValue));
     strlist.append(QString("Спектр '%1' точка #%2 ( дл.волны %3 нм ) коэффициент отражения %4").
                    arg(name).arg(dataIndex).arg(keyValue).arg(dataValue));
     return strlist;
 }
 
-void imageSpectral::mousePress(QMouseEvent *event)
+void SpectralPlot::mousePress(QMouseEvent *event)
 {
     // if an axis is selected, only allow the direction of that axis to be dragged
     // if no axis is selected, both directions may be dragged
@@ -327,7 +326,7 @@ void imageSpectral::mousePress(QMouseEvent *event)
         tracer->setStyle(QCPItemTracer::tsNone);
 }
 
-void imageSpectral::mouseWheel()
+void SpectralPlot::mouseWheel()
 {
     // if an axis is selected, only allow the direction of that axis to be zoomed
     // if no axis is selected, both directions may be zoomed
@@ -340,20 +339,16 @@ void imageSpectral::mouseWheel()
         plot->axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
 }
 
-void imageSpectral::mouseMove(QMouseEvent *event)
-{
-    switch (plot->legend->selectTest(event->pos(), false) >= 0) {
-    case true : if (plot->cursor().shape() != Qt::ArrowCursor)
-            plot->setCursor(Qt::ArrowCursor);
-        break;
-    case false : if (plot->cursor().shape() != Qt::CrossCursor)
-            plot->setCursor(Qt::CrossCursor);
-        break;
-    }  // switch legend
-
+void SpectralPlot::mouseMove(QMouseEvent *event)  {
+  if (plot->legend->selectTest(event->pos(), false) >= 0) {
+    if (plot->cursor().shape() != Qt::ArrowCursor)
+      plot->setCursor(Qt::ArrowCursor);
+    else if (plot->cursor().shape() != Qt::CrossCursor)
+      plot->setCursor(Qt::CrossCursor);
+  }  // switch legend
 }
 
-void imageSpectral::spectralSetAllRange()
+void SpectralPlot::spectralSetAllRange()
 {
     sXmin = INT_MAX;  sXmax = INT_MIN;
     sYmin = .0;  sYmax = INT_MIN;
@@ -375,7 +370,7 @@ void imageSpectral::spectralSetAllRange()
 
 }
 
-void imageSpectral::selectionChanged()
+void SpectralPlot::selectionChanged()
 {
     /*
      normally, axis base line, axis tick labels and axis labels are selectable separately, but we want
@@ -413,7 +408,7 @@ void imageSpectral::selectionChanged()
       QCPGraph *graph = plot->graph(i);
       QCPPlottableLegendItem *item = plot->legend->itemWithPlottable(graph);
 
-      if (item == 0x0) continue;
+      if (item == nullptr) continue;
       if (item->selected() || graph->selected())
       {
         item->setSelected(true);

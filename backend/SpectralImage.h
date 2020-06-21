@@ -9,7 +9,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace J09 {
-struct histogramType {
+  struct histogramType {
     double min = INT_MAX;
     double max = INT_MIN;
     double sum = .0;
@@ -25,11 +25,11 @@ struct histogramType {
     bool colorized = true;
     double rotation = .0;  // previw picture rotate
     int rgb_preview = 0;  // 0 - index, 1 - rgb, 2 - black\white, 3 - mask
-};  // histogramType
-struct spectralColorType {
+  };  // histogramType
+  struct plotStyle {
     QColor color;
     int style;
-};  // spectralColorType
+  };  // spectralColorType
 }
 QT_END_NAMESPACE
 
