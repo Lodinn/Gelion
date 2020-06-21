@@ -1,9 +1,9 @@
 #ifndef IMAGESPECTRAL_H
 #define IMAGESPECTRAL_H
 
-#include "../BPLA/qcustomplot.h"
-#include "../BPLA/zgraph.h"
-#include "../BPLA/SpectralImage.h"
+#include "frontend/qcustomplot.h"
+#include "frontend/zgraph.h"
+#include "backend/SpectralImage.h"
 
 #include <QDockWidget>
 

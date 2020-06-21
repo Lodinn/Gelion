@@ -2,7 +2,7 @@
 #define IMAGEHISTOGRAM_H
 
 #include "qcustomplot.h"
-#include "../BPLA/SpectralImage.h"
+#include "backend/SpectralImage.h"
 
 #include <QDockWidget>
 
@@ -10,7 +10,7 @@ class imageHistogram : public QDockWidget
 {
     Q_OBJECT
 public:
-    imageHistogram(QWidget * parent = 0);
+    imageHistogram(QWidget * parent = nullptr);
     void updateData(QString name, QString formula, QVector<QVector<double> > img,
                     J09::histogramType &hg);
     void setPreviewPixmap(QPixmap &mainRGB);

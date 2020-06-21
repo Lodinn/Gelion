@@ -14,7 +14,7 @@ void imageHistogram::updateData(QString name, QString formula, QVector<QVector<d
     if (h_data != nullptr) getHistogramFromSliders();
 
     this->disconnect();
-    setWindowTitle(QString("Гистограмма - [ %1 \ %2 ]").arg(name).arg(formula));
+    setWindowTitle(QString("Гистограмма - [ %1 \\ %2 ]").arg(name).arg(formula));
 
     slice = img;  main_size = QSize(slice[0].count(), slice.count());
     h_data = &hg;
@@ -60,7 +60,7 @@ void imageHistogram::calculateHistogram(bool full)
             h_data->max = std::max(h_data->max, *std::max_element(slice[y].begin(), slice[y].end()));
             h_data->min = std::min(h_data->min, *std::min_element(slice[y].begin(), slice[y].end()));
         }  // for
-        if (h_data->max == INT_MIN || h_data->min == INT_MAX) {
+        if (h_data->max < INT_MIN + 1 || h_data->min > INT_MAX - 1) {
             qDebug() << "slice IS NOT CORRECT!!!";
             return;
         }  // error
@@ -118,7 +118,8 @@ void imageHistogram::setupUi()
 {
     setObjectName("histogram");
     setWindowTitle("Гистограмма");
-    setAllowedAreas(0);  setFloating(true);
+    setAllowedAreas(nullptr);
+    setFloating(true);
     installEventFilter(this);
 
     bottomGroupBox = new QGroupBox("");
@@ -463,9 +464,9 @@ QPixmap imageHistogram::changeBrightnessPixmap(QImage &img, double brightness)
     int h, s, v;
     qreal t_brightnessValue = brightness;
     for(int row = 0; row < img.height(); ++row) {
-        unsigned int * data = (unsigned int *) img.scanLine(row);
+        uint32_t* data = reinterpret_cast<uint32_t*>(img.scanLine(row));
         for(int col = 0; col < img.width(); ++col) {
-            unsigned int & pix = data[col];
+            uint32_t & pix = data[col];
             color.setRgb(qRed(pix), qGreen(pix), qBlue(pix));
             color.getHsv(&h, &s, &v);
             v *= t_brightnessValue; // значение, на которое надо увеличить яркость

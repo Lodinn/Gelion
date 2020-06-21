@@ -22,38 +22,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+INCLUDEPATH += $$PWD/backend $$PWD/frontend
 
-SOURCES += \
-  imagehistogram.cpp \
-  imagespectral.cpp \
-  inputindexdlg.cpp \
-        main.cpp \
-        mainwindow.cpp \
-  settingsdialog.cpp \
-    view.cpp \
-    ImageHandler.cpp \
-    qcustomplot.cpp \
-    zgraph.cpp \
-    zgraphparamdlg.cpp \
-    SpectralImage.cpp
+SOURCES +=  $$PWD/frontend/*.cpp \
+            $$PWD/backend/*.cpp \
+            $$PWD/main.cpp \
+            $$PWD/mainwindow.cpp
 
-HEADERS += \
-  imagehistogram.h \
-  imagespectral.h \
-  inputindexdlg.h \
-        mainwindow.h \
-  settingsdialog.h \
-    view.h \
-    ImageHandler.h \
-    qcustomplot.h \
-    zgraph.h \
-    zgraphparamdlg.h \
-    SpectralImage.h
+HEADERS +=  $$PWD/frontend/*.h \
+            $$PWD/backend/*.h \
+            $$PWD/mainwindow.h
 
-RESOURCES += \
-    icons.qrc
+RESOURCES += $$PWD/icons.qrc
 
-FORMS += \
-    inputindexdlg.ui \
-    settingsdialog.ui \
-    zgraphparamdlg.ui
+FORMS += $$PWD/frontend/*.ui

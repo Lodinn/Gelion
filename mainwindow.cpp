@@ -426,7 +426,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     item->dockw = dockw;
     dockw->setFloating(true);  dockw->setObjectName("zGraph ");
     dockw->resize(420,150);
-    QRect desktop = QApplication::desktop()->screenGeometry();
+//    QRect desktop = QApplication::desktop()->screenGeometry();
 //    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
     wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
@@ -452,7 +452,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     wPlot->yAxis->setRange(0, 1.2);
     item->plot = wPlot;
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
-    dockw->hide();  dockw->setAllowedAreas(0);  // NoToolBarArea - !!! не прикрепляется к главному окну
+    dockw->hide();  dockw->setAllowedAreas(nullptr);  // NoToolBarArea - !!! не прикрепляется к главному окну
     QListWidgetItem *lwItem = new QListWidgetItem();
     item->listwidget = lwItem;
     lwItem->setText(item->getTitle());
@@ -652,6 +652,7 @@ void MainWindow::listWidgetDeleteItem(zGraph *item)
 {
     zGraphListWidget->update();
     calculateVisibleZObject(false);
+    Q_UNUSED(item);
 }
 
 void MainWindow::folder()
