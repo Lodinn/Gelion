@@ -86,9 +86,20 @@ void MainWindow::saveSettings()
     settings.setValue("dockChannelList", dockChannelList->isVisible());
     settings.setValue("dockIndexList", dockIndexList->isVisible());
     settings.setValue("indexCount", indexListWidget->count());  // количество расчетных изображений
+
+    saveSettingsZ(settings, false);
+
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState(1));
+
+}
+
+void MainWindow::saveSettingsZ(QSettings &settings, bool save_checked_only)
+{
     auto graphList = view->getZGraphItemsList();
     int num = 0;
     foreach(zGraph *zg, graphList) {
+        if (save_checked_only && !zg->isVisible()) continue;
         QStringList strlist = zg->getSettings(num);
         foreach(QString str, strlist) {
             int index = str.indexOf(zg->setsep);
@@ -99,9 +110,6 @@ void MainWindow::saveSettings()
         }  // for
         num++;
     }  // for
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState(1));
-// C:\Users\a9161\AppData\Local\Gelion\REFLECTANCE_xxx_022
 }
 
 void MainWindow::SetupUi() {

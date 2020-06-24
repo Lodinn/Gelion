@@ -109,8 +109,15 @@ bool imageHistogram::eventFilter(QObject *object, QEvent *event)
                 return true;
             }
 
-        }
-    }
+        } // if Key_W
+
+        if(key->key() == Qt::Key_S) { routate90(true);
+            return true; }  // if
+
+        if(key->key() == Qt::Key_A) { routate90(false);
+            return true; }  // if
+
+    }  // KeyPress
     return QDockWidget::eventFilter(object, event);
 }
 
@@ -145,8 +152,10 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(labelRightRed, 0, 2, Qt::AlignLeft);
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
-    button90routate = new QPushButton("Повернуть на 90 градусов");
-    gridLayout->addWidget(button90routate, 2, 2, Qt::AlignLeft);
+//    button90routate = new QPushButton("Повернуть на 90 градусов");
+//    gridLayout->addWidget(button90routate, 2, 2, Qt::AlignLeft);
+    QLabel *label = new QLabel(" Используйте Клавиши 'W' 'S' 'A' ");
+    gridLayout->addWidget(label, 3, 0, Qt::AlignLeft);
 
     bottomGroupBox->setLayout(gridLayout);
     bottomGroupBox->setMaximumHeight(100);
@@ -223,7 +232,7 @@ void imageHistogram::setupConnections()
     // подключаем сигналы и слоты окна
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
-    connect(button90routate, &QPushButton::clicked, this, &imageHistogram::routate90);
+//    connect(button90routate, &QPushButton::clicked, this, &imageHistogram::routate90);
     connect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
     connect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
     connect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
@@ -569,10 +578,16 @@ void imageHistogram::axisRescale()
     updatePreviewImage();  // true - colorized
 }
 
-void imageHistogram::routate90()
+void imageHistogram::routate90(bool clockwise)
 {
-    h_data->rotation += 90.;
-    if (h_data->rotation > 360.) h_data->rotation -= 360.;
-    updatePreviewImage();  // true - colorized
-    qDebug() << "h_data->rotation" << h_data->rotation;
+    if (clockwise) {
+        h_data->rotation += 90.;
+        if (h_data->rotation > 360.) h_data->rotation -= 360.;
+    } else {
+        h_data->rotation -= 90.;
+        if (h_data->rotation < 0.) h_data->rotation += 360.;
+    }  // if
+
+    updatePreviewImage();
+
 }

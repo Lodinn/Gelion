@@ -13,8 +13,6 @@
 #include <QProgressDialog>
 #include <QThread>
 
-// аааааааааа
-
 class MainWindow : public QMainWindow {
   Q_OBJECT
 
@@ -63,6 +61,7 @@ private:
   void updateNewDataSet(bool index_update);  // ----------------
   QStringList recentFileNames;
   void saveSettings();
+  void saveSettingsZ(QSettings &settings, bool save_checked_only);  // save Z Objects
   void restoreIndexes();
   void restoreSettings();
   void restoreSettingsVersionOne(QSettings &settings);

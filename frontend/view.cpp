@@ -922,6 +922,24 @@ void gQGraphicsView::contextMenuEvent(QContextMenuEvent *event)
     menu.exec(event->globalPos());
 }
 
+void gQGraphicsView::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_S) {  // поворот на 90 градусов
+        qreal angle = 90.;
+        rotate(angle);
+        GlobalRotate -= angle;
+        setRotateItems(GlobalRotate);
+        return;
+    }  // if Key_W
+    if (event->key() == Qt::Key_A) {  // поворот на -90 градусов
+        qreal angle = -90.;
+        rotate(angle);
+        GlobalRotate -= angle;
+        setRotateItems(GlobalRotate);
+        return;
+    }  // if Key_W
+}
+
 void gQGraphicsView::insPoint(QPoint pos)
 {
     QPointF point = mapToScene(pos);

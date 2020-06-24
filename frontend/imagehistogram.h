@@ -30,7 +30,7 @@ private:
     QLabel *labelLeftBlue;
     QLabel *labelRightRed;
     QPushButton *buttonAxisRescale;
-    QPushButton *button90routate;
+//    QPushButton *button90routate;
     QVBoxLayout *vertLayout;
     QLabel *labelPreview;
     QHBoxLayout *horzLayout;
@@ -66,7 +66,7 @@ private slots:
     void mouseRelease(QMouseEvent *event);
     void histogramPreview();
     void axisRescale();
-    void routate90();
+    void routate90(bool clockwise);
 
 };
 

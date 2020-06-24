@@ -72,6 +72,7 @@ public:
   void mouseMoveEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
   void contextMenuEvent(QContextMenuEvent *event) override;
+  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
  private:
   int pX0, pY0;
   QList<QGraphicsItem *> ROIs;
