@@ -928,6 +928,7 @@ void gQGraphicsView::keyPressEvent(QKeyEvent *event)
         qreal angle = 90.;
         rotate(angle);
         GlobalRotate -= angle;
+        if (GlobalRotate < .0) GlobalRotate += 360.;
         setRotateItems(GlobalRotate);
         return;
     }  // if Key_W
@@ -935,6 +936,7 @@ void gQGraphicsView::keyPressEvent(QKeyEvent *event)
         qreal angle = -90.;
         rotate(angle);
         GlobalRotate -= angle;
+        if (GlobalRotate > 360.) GlobalRotate -= 360.;
         setRotateItems(GlobalRotate);
         return;
     }  // if Key_W

@@ -40,5 +40,7 @@
         <file>icons/delete-32.png</file>
         <file>icons/theater.png</file>
         <file>icons/theater-roi.png</file>
+        <file>icons/delete-32-1.png</file>
+        <file>icons/save.png</file>
     </qresource>
 </RCC>

@@ -151,6 +151,8 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(labelLeftBlue, 0, 1, Qt::AlignLeft);
     gridLayout->addWidget(labelRightRed, 0, 2, Qt::AlignLeft);
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
+//    buttonAxisRescale->setMinimumHeight(25);
+    buttonAxisRescale->setFixedHeight(25);
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
 //    button90routate = new QPushButton("Повернуть на 90 градусов");
 //    gridLayout->addWidget(button90routate, 2, 2, Qt::AlignLeft);

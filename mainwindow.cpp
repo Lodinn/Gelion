@@ -123,9 +123,9 @@ void MainWindow::SetupUi() {
   int height = round(sh*qmainWindowScale);
   move( left, top );
   resize( width, height );
-  const QIcon icon =
-      QIcon::fromTheme("mainwindow", QIcon(":/icons/256_colors.png"));
-  setWindowIcon(icon);
+
+  setWindowIcon(icon256);
+
   scene = new QGraphicsScene(this);
   view = new gQGraphicsView(scene);
   view->imgHand = im_handler;
@@ -149,6 +149,9 @@ void MainWindow::createActions() {
   connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
   fileMenu->addAction(view->localFolderAct);
   connect(view->localFolderAct, &QAction::triggered, this, &MainWindow::folder);
+  view->saveAct->setShortcut(QKeySequence::SaveAs);                             // main save
+  fileMenu->addAction(view->saveAct);
+  connect(view->saveAct, &QAction::triggered, this, &MainWindow::save);
   fileMenu->addAction(view->debugFolderAct);
   connect(view->debugFolderAct, &QAction::triggered, this, &MainWindow::folder_debug);
   fileMenu->addSeparator();
@@ -158,6 +161,7 @@ void MainWindow::createActions() {
   fileToolBar = addToolBar(tr("Файл"));  fileToolBar->setObjectName("fileToolBar");
   fileToolBar->addAction(view->openAct);
   fileToolBar->addAction(view->localFolderAct);
+  fileToolBar->addAction(view->saveAct);                        // main save
   fileToolBar->addSeparator();
 // &&& inset ROI menu
   QMenu *itemsMenu = menuBar()->addMenu("&Области интереса");
@@ -224,6 +228,7 @@ void MainWindow::createStatusBar() {
 
 void MainWindow::createMainConnections()
 {
+// file menu
 
 // im_handler
 
@@ -253,6 +258,7 @@ void MainWindow::createMainConnections()
     connect(spectralAct, SIGNAL(triggered()), this, SLOT(spectralSlot()));  // СПЕКТРАЛЬНЫЙ АНАЛИЗ
     connect(view, SIGNAL(changeZObject(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 
+// view
     connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));  // области интереса
     connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexList()));  // изображения
     connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));  // каналы
@@ -306,6 +312,9 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все области интереса", this);
     action->setData(2);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = view->winZGraphListDeleteAllAct;  // Удалить выделенные области интереса ...
+    action->setData(11);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
     action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
     action = new QAction(QIcon(":/icons/profs_show.png"), "Отобразить все профили", this);
     action->setData(3);  show_zgraph_list_acts.append(action);
@@ -317,17 +326,23 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в *.csv файл ...", this);
     action->setData(5);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(QIcon(":/icons/open.png"), "Загрузить профили из файла ...", this);
+    action->setData(6);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+    action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные профили в файл ...", this);
+    action->setData(7);  show_zgraph_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 // работа с изображениями - масками
     action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
     action = new QAction(QIcon(":/icons/theater-roi.png"), "Создать маску из областей интереса ...", this);
-    action->setData(6);  show_zgraph_list_acts.append(action);  // mask - 6
+    action->setData(8);  show_zgraph_list_acts.append(action);  // mask - 6
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
     action = new QAction(QIcon(":/icons/theater-roi.png"), "Sun", this);
-    action->setData(7);  mask_list_acts.append(action);  // mask - 7
+    action->setData(9);  mask_list_acts.append(action);  // mask - 7
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
     action = new QAction(QIcon(":/icons/theater-roi.png"), "Shadow", this);
-    action->setData(8);  mask_list_acts.append(action);  // mask - 8
+    action->setData(10);  mask_list_acts.append(action);  // mask - 8
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
 // Изображения
@@ -665,13 +680,40 @@ void MainWindow::listWidgetDeleteItem(zGraph *item)
 
 void MainWindow::folder()
 {
+    auto writableLocation = makeWritableLocation();
+    QProcess::startDetached(QString("explorer /root,\"%1\"")
+                            .arg(QDir::toNativeSeparators(writableLocation)));
+}
+
+QString MainWindow::makeWritableLocation()
+{
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     QFileInfo fi(dataFileName);
     writableLocation += "/" + fi.completeBaseName();
     QDir dir(writableLocation);
     if (!dir.exists()) dir.mkpath(".");
-    QProcess::startDetached(QString("explorer /root,\"%1\"")
-                            .arg(QDir::toNativeSeparators(writableLocation)));
+    return writableLocation;
+}
+
+void MainWindow::save()
+{
+    if (dataFileName.isEmpty()) {
+        QMessageBox msgBox;
+        msgBox.setWindowIcon(icon256);
+        msgBox.setWindowTitle("Ошибка");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setText("Для сохранения необходимо загрузить данные !");
+        msgBox.exec();
+        return;
+    }  // if
+
+    auto writableLocation = makeWritableLocation();
+    QString fileName= QFileDialog::getSaveFileName(this, "Save image", writableLocation, "PNG (*.png);;JPEG (*.JPEG);;BMP Files (*.bmp)" );
+    if (!fileName.isNull())
+    {
+        QPixmap pixmap = view->grab();
+        pixmap.save(fileName);
+    }  // if
 }
 
 void MainWindow::folder_debug()
@@ -1160,7 +1202,7 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     for (int i = 0; i < show_zgraph_list_acts.count(); i++)
         menu.addAction(show_zgraph_list_acts[i]);
 
-    QMenu *maskMenu = menu.addMenu(tr("Активные профили в маске ..."));
+    QMenu *maskMenu = menu.addMenu(tr("Отфильтровать по маске"));
 
     for (int i = 0; i < mask_list_acts.count(); i++)
         maskMenu->addAction(mask_list_acts[i]);
@@ -1250,6 +1292,25 @@ void MainWindow::show_zgraph_list()
             file.close();
             return;
         }  // case 5
+        case 11 : {    // Удалить все области интереса ...
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Удаление областей интереса");
+            msgBox.setText("Вы подтверждаете удаление всех областей интереса ?\nВосстановить удаление будет невозможно !");
+            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            msgBox.buttons().at(0)->setText("Да");
+            msgBox.buttons().at(1)->setText("Отмена");
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setWindowIcon(icon256);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
+            int res = msgBox.exec();
+            if (res == QMessageBox::Ok) {   // нажата кнопка Ok
+                view->clearForAllObjects();
+                zGraphListWidget->clear();
+                spectralAct->setEnabled(false);
+            }  // if QMessageBox::Ok
+
+            return;
+        }  // case 11
         }  // switch
     }  // if
 }

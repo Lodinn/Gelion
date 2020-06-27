@@ -40,6 +40,7 @@ public:
     QAction *openAct;
     QAction *localFolderAct = new QAction(QIcon(":/icons/folder.png"), "Текущий каталог ...");
     QAction *debugFolderAct = new QAction(QIcon(":/icons/delete-32.png"), "debug ... очистить текущий каталог ...");
+    QAction *saveAct = new QAction(QIcon(":/icons/save.png"), "Сохранить как ...");
     QAction *pointAct;
     QAction *rectAct;
     QAction *ellipseAct;
@@ -52,6 +53,7 @@ public:
     QAction *maskListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
+    QAction *winZGraphListDeleteAllAct = new QAction(QIcon(":/icons/delete-32-1.png"), "Удалить выделенные области интереса ...");
     zGraph *grabberItem = nullptr;
     zRect *tmpRect = nullptr;
     zEllipse *tmpEllipse = nullptr;

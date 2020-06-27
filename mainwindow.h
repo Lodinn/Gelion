@@ -19,9 +19,12 @@ class MainWindow : public QMainWindow {
  public:
   MainWindow(QWidget *parent = 0);
   ~MainWindow();
+ private:
+  QString makeWritableLocation();
  private slots:
   void open();
   void folder();
+  void save();                      // main save
   void folder_debug();
  public slots:
   void show_progress(int max_progress);
@@ -58,6 +61,7 @@ class MainWindow : public QMainWindow {
   void setZGraphDockToggled(zGraph *item);
   void show_profile(QPointF point, int id = -1);
 private:
+  const QIcon icon256 = QIcon::fromTheme("mainwindow", QIcon(":/icons/256_colors.png"));
   void updateNewDataSet(bool index_update);  // ----------------
   QStringList recentFileNames;
   void saveSettings();
@@ -109,10 +113,10 @@ private:
   //  QAction *maskAct;
 
   void createActions();
-  void createStatusBar();
   void createMainConnections();
   void createConstDockWidgets();
   void SetupUi();
+  void createStatusBar();
 
   QThread *worker_thread = new QThread;
   ImageHandler *im_handler = new ImageHandler();
