@@ -27,6 +27,7 @@ private:
     QGridLayout *gridLayout;
     QTextEdit *textEdit;
     QPushButton *axisResizeButton;
+    QCheckBox *rainbowCheckBox;
     QStatusBar *statusBar;
     QVBoxLayout *dockLayout;
     void spectralSetAllRange();
@@ -36,12 +37,14 @@ private:
     void setRainbowSpectralRanges();
     QStringList getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue);
     int mRainbow;
+    void updateDataRainbow(bool r_show);
 private slots:
     void selectionChanged();
     void mousePress(QMouseEvent *event);
     void mouseWheel();
     void mouseMove(QMouseEvent *event);
     void graphClicked(QCPAbstractPlottable*,int);
+    void rainbowShow(bool checked);
 };
 
 #endif // IMAGESPECTRAL_H

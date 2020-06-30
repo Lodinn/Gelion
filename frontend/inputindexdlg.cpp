@@ -17,7 +17,7 @@ inputIndexDlg::inputIndexDlg(QWidget *parent) :
     ui->buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-// "Normalized difference water index"
+/*  // "Normalized difference water index"
     QAction *action = new QAction("Normalized difference water index", this);
     action->setData("(R800-R650)/(R800+R650)");  predefined_index_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
@@ -40,10 +40,21 @@ inputIndexDlg::inputIndexDlg(QWidget *parent) :
 // "Difference 833/658"
     action = new QAction("Difference 833/658", this);
     action->setData("r833-r658");  predefined_index_list_acts.append(action);
-    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+    connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu())); */
 
 // https://www.indexdatabase.de/db/i.php
 
+}
+
+void inputIndexDlg::setDefaultIndexList(QVector<J09::indexType> indexList)
+{
+    predefined_index_list_acts.clear();  namesList.clear();
+    foreach(J09::indexType item, indexList) {
+        namesList.append(item.name);
+        QAction *action = new QAction(item.name, this);
+        action->setData(item.formula);  predefined_index_list_acts.append(action);
+        connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+    }  // foreach
 }
 
 inputIndexDlg::~inputIndexDlg()

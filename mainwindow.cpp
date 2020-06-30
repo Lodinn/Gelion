@@ -13,7 +13,7 @@
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event)
 {
-    if (object == zGraphListWidget) qDebug() << "event" << event;
+//    if (object == zGraphListWidget) qDebug() << "event" << event;
     return QMainWindow::eventFilter(object, event);
 }
 
@@ -23,10 +23,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   im_handler->moveToThread(worker_thread);
 
-  installEventFilter(this);
+//  installEventFilter(this);
 
   setWindowTitle(QString("%1").arg(appName));
   QApplication::setApplicationName(appName);
+
+  loadMainSettings();
+
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
 
@@ -46,6 +49,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
       saveSettings();
       im_handler->save_settings_all_images(save_file_names);
   }  // if
+  saveMainSettings();
 }
 
 void MainWindow::set_action_enabled(bool enable)
@@ -260,9 +264,9 @@ void MainWindow::createMainConnections()
 
 // view
     connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));  // области интереса
-    connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexList()));  // изображения
-    connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelList()));  // каналы
-    connect(view->maskListAct, SIGNAL(triggered()), this, SLOT(maskList()));  // маски
+    connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexListUpdate()));  // изображения
+    connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelListUpdate()));  // каналы
+    connect(view->maskListAct, SIGNAL(triggered()), this, SLOT(maskListUpdate()));  // маски
     connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
     connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
 
@@ -297,7 +301,7 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuZGraphList(QPoint)));
     dockZGraphList->setWindowIcon(QIcon(":/icons/windows2.png"));
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
-    dockZGraphList->setFixedSize(220,scrHeignt4-20);
+    dockZGraphList->setFixedSize(220,scrHeignt4-30);
     dockZGraphList->setWidget(zGraphListWidget);
     dockZGraphList->move(rec.width() - 250,10+0*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
@@ -348,7 +352,7 @@ void MainWindow::createConstDockWidgets()
 // Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
-    dockIndexList->setFixedSize(220,scrHeignt4-20);
+    dockIndexList->setFixedSize(220,scrHeignt4-30);
     dockIndexList->setWidget(indexListWidget);
     dockIndexList->move(rec.width() - 250,10+1*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
@@ -360,7 +364,7 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuChannelList(QPoint)));
     dockChannelList->setWindowIcon(QIcon(":/icons/list-channel.jpg"));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
-    dockChannelList->setFixedSize(220,scrHeignt4-20);
+    dockChannelList->setFixedSize(220,scrHeignt4-30);
     dockChannelList->setWidget(chListWidget);
     dockChannelList->move(rec.width() - 250,10+2*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
@@ -392,7 +396,7 @@ void MainWindow::createConstDockWidgets()
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
-    dockMaskImage->setFixedSize(220,scrHeignt4-20);
+    dockMaskImage->setFixedSize(220,scrHeignt4-30);
     dockMaskImage->setWidget(maskListWidget);
     dockMaskImage->move(rec.width() - 250,10+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
@@ -446,12 +450,18 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 {
     spectralAct->setEnabled(true);
     QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
+
     item->dockw = dockw;
     dockw->setFloating(true);  dockw->setObjectName("zGraph ");
     dockw->resize(420,150);
 //    QRect desktop = QApplication::desktop()->screenGeometry();
 //    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
+
+    wPlot->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(wPlot, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showContextMenuDockOfItem(QPoint)));
+
     wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
     wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
     wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
@@ -501,17 +511,17 @@ void MainWindow::winZGraphList()
     dockZGraphList->setVisible(!dockZGraphList->isVisible());
 }
 
-void MainWindow::indexList()
+void MainWindow::indexListUpdate()
 {
     dockIndexList->setVisible(!dockIndexList->isVisible());
 }
 
-void MainWindow::channelList()
+void MainWindow::channelListUpdate()
 {
     dockChannelList->setVisible(!dockChannelList->isVisible());
 }
 
-void MainWindow::maskList()
+void MainWindow::maskListUpdate()
 {
     dockMaskImage->setVisible(!dockMaskImage->isVisible());
 }
@@ -708,6 +718,7 @@ void MainWindow::save()
     }  // if
 
     auto writableLocation = makeWritableLocation();
+
     QString fileName= QFileDialog::getSaveFileName(this, "Save image", writableLocation, "PNG (*.png);;JPEG (*.JPEG);;BMP Files (*.bmp)" );
     if (!fileName.isNull())
     {
@@ -898,6 +909,65 @@ void MainWindow::restoreSettings()
     case 2 : { restoreSettingsVersionTwo(settings); break ; }
     default: return;
     }  // switch
+}
+
+void MainWindow::loadMainSettings()
+{
+
+    QString fname = getMainSettingsFileName();
+    if (!QFile::exists(fname)) {
+        QFileInfo info(fname);
+        QFile::copy("../BPLA/configuration/" + info.completeBaseName() + ".conf", fname);
+    }  // if exists
+
+    QFileInfo info(fname);
+    QSettings settings( fname , QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+
+// СПИСОК СПЕКТРАЛЬНЫХ ИНДЕКСОВ
+    settings.beginGroup( "Indexes" );           // Indexes
+    QStringList list = settings.allKeys();
+    foreach(QString str, list) {
+        J09::indexType indexItem;
+        indexItem.name = str;
+        indexItem.formula = settings.value(str, "wrong").toString().toLower();
+        if (indexItem.formula == "wrong") continue;
+        indexList.append(indexItem);
+    }  // foreach
+    settings.endGroup();
+
+}
+
+void MainWindow::saveMainSettings()
+{
+    QString fname = getMainSettingsFileName();
+    QSettings settings( fname , QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+
+    settings.beginGroup( "General" );
+    settings.setValue( "load_resent_project", GLOBAL_SETTINGS.load_resent_project );
+    settings.setValue( "save_project_settings", GLOBAL_SETTINGS.save_project_settings );
+    settings.setValue( "restore_project_settings", GLOBAL_SETTINGS.restore_project_settings );
+    settings.setValue( "resent_files_count", GLOBAL_SETTINGS.resent_files_count );
+    settings.setValue( "save_not_checked_roi", GLOBAL_SETTINGS.save_not_checked_roi );
+    settings.setValue( "zobject_dock_size_w", GLOBAL_SETTINGS.zobject_dock_size_w );
+    settings.setValue( "zobject_dock_size_h", GLOBAL_SETTINGS.zobject_dock_size_h );
+    settings.setValue( "zobjects_prof_rainbow_show", GLOBAL_SETTINGS.zobjects_prof_rainbow_show );
+    settings.endGroup();
+
+    settings.beginGroup( "Indexes" );
+    foreach(J09::indexType item, indexList) settings.setValue( item.name, item.formula );
+    settings.endGroup();
+
+}
+
+QString MainWindow::getMainSettingsFileName()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(writableLocation);
+    return writableLocation + "/" + info.completeBaseName() + ".conf";
 }
 
 void MainWindow::restoreSettingsVersionOne(QSettings &settings)
@@ -1210,6 +1280,14 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     menu.exec(globalPos);
 }
 
+void MainWindow::showContextMenuDockOfItem(const QPoint &pos)
+{
+    QPoint globalPos = mapToGlobal(pos);
+    QMenu menu(this);
+    menu.addAction(show_zgraph_list_acts[0]);
+    menu.exec(globalPos);
+}
+
 void MainWindow::show_channel_list_update() {
     for (int row = 0; row < chListWidget->count(); row++) {
         if (row % view->GlobalChannelStep == 0)
@@ -1307,6 +1385,7 @@ void MainWindow::show_zgraph_list()
                 view->clearForAllObjects();
                 zGraphListWidget->clear();
                 spectralAct->setEnabled(false);
+                imgSpectral->hide();
             }  // if QMessageBox::Ok
 
             return;
@@ -1318,6 +1397,9 @@ void MainWindow::show_zgraph_list()
 void MainWindow::inputIndexDlgShow()
 {
     inputIndexDlg *dlg = new inputIndexDlg(this);
+// update index list
+    dlg->setDefaultIndexList(indexList);
+
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
     dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
     QVector<double> wls = im_handler->current_image()->wls();
@@ -1335,6 +1417,13 @@ void MainWindow::inputIndexDlgShow()
             qDebug() << "wrong index !!!";
             return;
         }  // if
+// update index list
+        J09::indexType indexItem;
+        indexItem.name = dlg->ui->lineEditInputTitle->text();
+        indexItem.formula = dlg->ui->lineEditInputFormula->text();
+        if (dlg->namesList.indexOf(indexItem.name) == -1)
+            indexList.append(indexItem);
+
         emit index_calculate(for_eval);
     }  // if
 }

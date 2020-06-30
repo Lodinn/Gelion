@@ -30,6 +30,20 @@ namespace J09 {
     QColor color;
     int style;
   };  // spectralColorType
+  struct indexType {
+      QString name;
+      QString formula;
+  };
+  struct globalSettingsType {
+      bool load_resent_project = true;  // при запуске загружать последний проект
+      bool save_project_settings = false;  // сохранять настройки проекта
+      bool restore_project_settings = false;  // восстанавливать настройки проекта
+      int resent_files_count = 3;  // количество последних файлов
+      bool save_not_checked_roi = true;  // сохранять в настройках неотмеченные области интереса
+      int zobject_dock_size_w = 420;  // размеры окна профиля, пиксели
+      int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
+      bool zobjects_prof_rainbow_show = true;  // заливка спектральных диапазонов
+  };
 }
 QT_END_NAMESPACE
 

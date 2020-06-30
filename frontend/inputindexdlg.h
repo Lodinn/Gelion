@@ -1,6 +1,8 @@
 #ifndef INPUTINDEXDLG_H
 #define INPUTINDEXDLG_H
 
+#include "SpectralImage.h"
+
 #include <QDialog>
 
 namespace Ui {
@@ -18,6 +20,8 @@ public:
     QString get_index_title();
     QString get_formula();
     Ui::inputIndexDlg *ui;
+    void setDefaultIndexList(QVector<J09::indexType> indexList);
+    QStringList namesList;
 private slots:
     void predefined_index_menu();
     void on_pushButtonIndexes_clicked();

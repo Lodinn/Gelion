@@ -81,7 +81,7 @@ void SpectralPlot::updateData(QList<zGraph *> list, bool rescale)
 
     // spectral colors
     int count = getGraphCount();
-    setRainbowSpectralRanges();
+    if (rainbowCheckBox->isChecked()) setRainbowSpectralRanges();
     mRainbow = getGraphCount() - count;
 
     plot->replot();
@@ -216,6 +216,9 @@ void SpectralPlot::setupUi()
     gridLayout->addWidget(textEdit, 0, 0, Qt::AlignLeft);
     axisResizeButton = new QPushButton("Полный масштаб");
     gridLayout->addWidget(axisResizeButton, 0, 1, Qt::AlignLeft);
+    rainbowCheckBox = new QCheckBox("Заливка спектральных диапазонов");
+    rainbowCheckBox->setChecked(true);
+    gridLayout->addWidget(rainbowCheckBox, 1, 0, Qt::AlignLeft);
 
     statusBar = new QStatusBar;  //in constructor for example
     statusBar->showMessage(tr("Здесь появится информация о точке выбранного профиля"));
@@ -283,6 +286,13 @@ void SpectralPlot::setupConnections()
     // connect slot that shows a message in the status bar when a graph is clicked:
     connect(plot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(graphClicked(QCPAbstractPlottable*,int)));
 
+    // connect rainbowCheckBox
+    connect(rainbowCheckBox, SIGNAL(clicked(bool)), this, SLOT(rainbowShow(bool)));
+}
+
+void SpectralPlot::rainbowShow(bool checked)
+{
+    updateDataRainbow(checked);
 }
 
 void SpectralPlot::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
@@ -309,6 +319,37 @@ QStringList SpectralPlot::getGraphClickedStrings(int dataIndex, QString name, do
     strlist.append(QString("Спектр '%1' точка #%2 ( дл.волны %3 нм ) коэффициент отражения %4").
                    arg(name).arg(dataIndex).arg(keyValue).arg(dataValue));
     return strlist;
+}
+
+void SpectralPlot::updateDataRainbow(bool r_show)
+{
+    // data
+    plot->clearGraphs();
+    foreach(zGraph *item, graph_list) {
+        if (!item->isVisible()) continue;
+        int n = item->profile.count();
+        QVector<double> x(n), y(n);
+        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
+        plot->addGraph();
+        plot->graph()->setName(item->getTitle());
+        plot->graph()->setData(x, y);
+         QPen graphPen;
+
+        int num = graph_list.indexOf(item) % plot_styles_cycle.count();
+        graphPen.setColor(plot_styles_cycle[num].color);
+        graphPen.setWidthF(1.);
+        plot->graph()->setPen(graphPen);
+
+        int style = plot_styles_cycle[num].style;
+        plot->graph()->setScatterStyle(QCPScatterStyle(static_cast<QCPScatterStyle::ScatterShape>(style)));
+    }  // foreach
+
+    // spectral colors
+    int count = getGraphCount();
+    if (r_show) setRainbowSpectralRanges();
+    mRainbow = getGraphCount() - count;
+
+    plot->replot();
 }
 
 void SpectralPlot::mousePress(QMouseEvent *event)

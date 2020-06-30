@@ -35,9 +35,9 @@ class MainWindow : public QMainWindow {
   void spectralSlot();  // спектральный анализ
 
   void winZGraphList();
-  void indexList();
-  void channelList();
-  void maskList();
+  void indexListUpdate();
+  void channelListUpdate();
+  void maskListUpdate();
 
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
@@ -68,6 +68,9 @@ private:
   void saveSettingsZ(QSettings &settings, bool save_checked_only);  // save Z Objects
   void restoreIndexes();
   void restoreSettings();
+  void loadMainSettings();
+  void saveMainSettings();
+  QString getMainSettingsFileName();
   void restoreSettingsVersionOne(QSettings &settings);
   void restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
   void restoreSettingsVersionTwo(QSettings &settings);
@@ -80,6 +83,9 @@ private:
   int desktop_width, desktop_height;
   bool saveSettingAtCloseApp = false;  // ---------
   bool restoreSettingAtStartUp = false; // ---
+// global data settings
+  QVector<J09::indexType> indexList;
+  J09::globalSettingsType GLOBAL_SETTINGS;  // ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
@@ -154,9 +160,10 @@ protected:
   void updateHistogram();
   void calculateVisibleZObject(bool rescale);
 
-public slots:
+private slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
+  void showContextMenuDockOfItem(const QPoint &pos);
   void show_channel_list();
   void show_zgraph_list();
   void inputIndexDlgShow();
