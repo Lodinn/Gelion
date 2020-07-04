@@ -42,5 +42,6 @@
         <file>icons/theater-roi.png</file>
         <file>icons/delete-32-1.png</file>
         <file>icons/save.png</file>
+        <file>icons/pdf.png</file>
     </qresource>
 </RCC>

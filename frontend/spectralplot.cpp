@@ -91,8 +91,6 @@ void SpectralPlot::updateData(QList<zGraph *> list, bool rescale)
 void SpectralPlot::updateDataOneProfile(zGraph *item, int num)
 {
     if (num > plot->graphCount() - 1) return;
-//    tracer->setGraph(0x0);
-//    tracer->updatePosition();
     int n = item->profile.count();
     QVector<double> x(n), y(n);
     for (int i=0; i<n; i++) {
@@ -162,10 +160,6 @@ bool SpectralPlot::eventFilter(QObject *object, QEvent *event)
                 plot->replot();
 
                 double dataValue = graph->data()->at(tracerIndex)->mainValue();
-//                QString message = QString("r%1 коэффициент отражения %2\n").arg(value).arg(dataValue);
-//                textEdit->insertPlainText(message);
-//                statusBar->showMessage(QString("graph '%1' at point #%2 ( %3 nm ) with value %4.").
-//                                 arg(graph->name()).arg(tracerIndex).arg(value).arg(dataValue));
                 auto message = getGraphClickedStrings(tracerIndex, graph->name(), value, dataValue);
                 textEdit->insertPlainText(message.at(0));
                 statusBar->showMessage(message.at(1));
@@ -183,10 +177,6 @@ bool SpectralPlot::eventFilter(QObject *object, QEvent *event)
                 plot->replot();
 
                 double dataValue = graph->data()->at(tracerIndex)->mainValue();
-//                QString message = QString("r%1 коэффициент отражения %2\n").arg(value).arg(dataValue);
-//                textEdit->insertPlainText(message);
-//                statusBar->showMessage(QString("graph '%1' at point #%2 ( %3 nm ) with value %4.").
-//                                 arg(graph->name()).arg(tracerIndex).arg(value).arg(dataValue));
                 auto message = getGraphClickedStrings(tracerIndex, graph->name(), value, dataValue);
                 textEdit->insertPlainText(message.at(0));
                 statusBar->showMessage(message.at(1));
@@ -243,8 +233,14 @@ void SpectralPlot::setupUi()
 
     // qcustomplot
 
-    // Инициализируем трассировщик
+    // Инициализируем трассировщик большой и маленький
     tracer = new QCPItemTracer(plot);
+    tracer_tolltip = new QCPItemTracer(plot);
+    tracer_tolltip->setInterpolating(false);
+    tracer_tolltip->setPen(QPen(Qt::red));
+    tracer_tolltip->setBrush(Qt::transparent);
+    tracer_tolltip->setSize(9);
+
     // Interactions
     plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes |
                                     QCP::iSelectLegend | QCP::iSelectPlottables);
@@ -255,7 +251,6 @@ void SpectralPlot::setupUi()
                     "Спектральные профили областей интереса");
     plot->plotLayout()->addElement(0, 0, title);
     plot->xAxis->setLabel("длина волны, нм");
-//    spectralAnalisysPlot->xAxis->setSelectableParts(QCPAxis::spAxis);
     plot->yAxis->setLabel("коэффициент отражения");
     plot->legend->setVisible(true);
     plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignLeft|Qt::AlignTop);
@@ -263,13 +258,15 @@ void SpectralPlot::setupUi()
     plot->legend->setFont(legendFont);
     plot->legend->setSelectedFont(legendFont);
     plot->legend->setSelectableParts(QCPLegend::spItems);
-//    plot->legend->setRowSpacing(1);
 
 }
 
 void SpectralPlot::setupConnections()
 {
-    // allRange - need corrected
+    plot->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
+
+    // allRange
     connect(axisResizeButton, &QPushButton::clicked, this, &SpectralPlot::spectralSetAllRange);
 
     // connect slot that ties some axis selections together (especially opposite axes):
@@ -295,6 +292,37 @@ void SpectralPlot::rainbowShow(bool checked)
     updateDataRainbow(checked);
 }
 
+void SpectralPlot::contextMenuRequest(QPoint pos)
+{
+    QMenu *menu = new QMenu(plot);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    QAction *act = menu->addAction("Сохранить изображение ...", this, SLOT(savePlotToPdfJpgPng()));
+    act->setIcon(QIcon(":/icons/pdf.png"));
+    menu->addSeparator();
+    act = menu->addAction("Сохранить профили в Excel *.csv файл ...", this, SLOT(savePlotToCsv()));
+    act->setIcon(QIcon(":/icons/csv2.png"));
+    act = menu->addAction("Сохранить области интереса в *.roi файл ...", this, SLOT(savePlotToRoi()));
+    act->setIcon(QIcon(":/icons/save.png"));
+
+    menu->popup(plot->mapToGlobal(pos));
+
+}
+
+void SpectralPlot::savePlotToPdfJpgPng()
+{
+
+}
+
+void SpectralPlot::savePlotToCsv()
+{
+
+}
+
+void SpectralPlot::savePlotToRoi()
+{
+
+}
+
 void SpectralPlot::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
 {
     // since we know we only have QCPGraphs in the plot, we can immediately access interface1D()
@@ -316,6 +344,7 @@ void SpectralPlot::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
 QStringList SpectralPlot::getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue) {
     QStringList strlist;
     strlist.append(QString(u8"\u03BB = %1 \u043D\u043C r = %2\n").arg(keyValue).arg(dataValue));
+    // λ = 807.84 нм r = 0.102217
     strlist.append(QString("Спектр '%1' точка #%2 ( дл.волны %3 нм ) коэффициент отражения %4").
                    arg(name).arg(dataIndex).arg(keyValue).arg(dataValue));
     return strlist;
@@ -387,6 +416,18 @@ void SpectralPlot::mouseMove(QMouseEvent *event)  {
     else if (plot->cursor().shape() != Qt::CrossCursor)
       plot->setCursor(Qt::CrossCursor);
   }  // switch legend
+
+// tracep ToolTip
+    MouseOverPlotHeight(event);
+
+}
+
+void SpectralPlot::MouseOverPlotHeight(QMouseEvent *event)
+{
+    QCustomPlot *curPlot = plot;
+    QString strNameX = QString(u8" \u03BB = ");
+    QString strNameY = "r = ";
+    DisplayCurveData(event, curPlot, strNameX, strNameY);
 }
 
 void SpectralPlot::spectralSetAllRange()
@@ -457,3 +498,115 @@ void SpectralPlot::selectionChanged()
       }
     }
 }
+
+void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QString strNameX, QString strNameY)
+{
+    QCPAbstractPlottable *plottable = curPlot->plottableAt(event->localPos());
+    if(plottable)
+    {
+        double x = curPlot->xAxis->pixelToCoord(event->localPos().x());
+        double y = curPlot->yAxis->pixelToCoord(event->localPos().y());
+
+        QCPGraph *graph =  qobject_cast<QCPGraph*>(plottable);
+
+// tracer_tolltip
+        if (graph) {
+
+            tracer_tolltip->setStyle(QCPItemTracer::tsCircle);
+            tracer_tolltip->setGraph(graph);
+            tracer_tolltip->setGraphKey(plot->xAxis->pixelToCoord(event->pos().x()));
+            tracer_tolltip->updatePosition();
+            plot->replot();
+            double key = tracer_tolltip->position->key();
+            double value = tracer_tolltip->position->value();
+            QString key_str = QString(u8"%1 \u043D\u043C").arg(key);
+            QFont f = curPlot->font();  f.setPointSize(7);
+            QToolTip::setFont(f);
+            QToolTip::showText(event->globalPos(),
+            tr("<table>"
+               "<tr>"
+                "<td>%L1</td>"
+               "</tr>"
+               "<tr>"
+                "<td>%L2</td>" "<td>%L3</td>"
+               "</tr>"
+               "<tr>"
+                "<td>%L4</td>" "<td>%L5</td>"
+               "</tr>"
+               "</table>").arg(plottable->name()).arg(strNameX).arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());
+        }  // if (graph)
+
+/*        if (graph)                    https://www.qcustomplot.com/index.php/support/forum/183
+        {
+            double key = 0;
+            double value = 0;
+            bool ok = false;
+            double maxx = std::numeric_limits<double>::max();
+            double maxy = std::numeric_limits<double>::max();
+
+            QCPDataRange dataRange = graph->data()->dataRange();
+            QCPGraphDataContainer::const_iterator begin = graph->data()->at(dataRange.begin());
+            QCPGraphDataContainer::const_iterator end = graph->data()->at(dataRange.end());
+
+            int n = end-begin;
+            if (n>0)
+            {
+                double *dx = new double[n];
+                double *dy = new double[n];
+
+                int index =0;
+                for (QCPGraphDataContainer::const_iterator it=begin; it<end; it++)
+                {
+                    dx[index] = qAbs(x - it->key);
+                    dy[index] = qAbs(y - it->value);
+                    if ((dx[index] < maxx) && (dy[index] < maxy))
+                    {
+                        key = it->key;
+                        value = it->value;
+                        ok = true;
+                        maxx = dx[index];
+                        maxy = dy[index];
+                    }
+                    index++;
+                }
+                delete dy;
+                delete dx;
+
+                if (ok)
+                {
+                    QString key_str = QString(u8"%1 \u043D\u043C").arg(key);
+                    QFont f = curPlot->font();  f.setPointSize(7);
+                    QToolTip::setFont(f);
+                    QToolTip::showText(event->globalPos(),
+                    tr("<table>"
+                       "<tr>"
+                        "<td>%L1</td>"
+                       "</tr>"
+                       "<tr>"
+                        "<td>%L2</td>" "<td>%L3</td>"
+                       "</tr>"
+                       "<tr>"
+                        "<td>%L4</td>" "<td>%L5</td>"
+                       "</tr>"
+                       "</table>").arg(plottable->name()).arg(strNameX).arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());
+                }
+            }
+        }  // if (graph)        */
+    }
+    else {
+        QToolTip::hideText();
+        tracer_tolltip->setStyle(QCPItemTracer::tsNone);
+        tracer_tolltip->setGraph(nullptr);
+        plot->replot();
+    }
+}
+/*                    QToolTip::showText(event->globalPos(),
+                    tr("<table>"
+                         "<tr>"
+                           "<td>%L1:</td>" "<td>%L2</td>"
+                         "</tr>"
+                         "<tr>"
+                           "<td>%L3:</td>" "<td>%L4</td>"
+                         "</tr>"
+                      "</table>").arg(strNameX).arg(key).arg(strNameY).arg(value), curPlot, curPlot->rect());
+*/

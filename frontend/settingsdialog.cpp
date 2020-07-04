@@ -23,3 +23,13 @@ settingsDialog::~settingsDialog()
 {
     delete ui;
 }
+
+void settingsDialog::setGlobalSettings(J09::globalSettingsType GS)
+{
+
+}
+
+void settingsDialog::getGlobalSettings(J09::globalSettingsType &GS)
+{
+
+}

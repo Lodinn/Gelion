@@ -20,6 +20,7 @@ private:
     void setupUi();
     void setupConnections();
     QCustomPlot *plot, *previewPlot;
+    QCPTextElement *title;
     QGroupBox *bottomGroupBox;
     QGridLayout *gridLayout;
     QSlider *sliderBrightness;
@@ -67,6 +68,10 @@ private slots:
     void histogramPreview();
     void axisRescale();
     void routate90(bool clockwise);
+    void contextMenuRequest(QPoint pos);
+    void savePlotToPdfJpgPng();
+    void saveIndexToPdfJpgPng();
+
 
 };
 

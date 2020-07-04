@@ -32,6 +32,12 @@ void zGraph::setFont(QString family, int pointSize, int weight, bool italic)
     ffont = QFont(family, pointSize, weight, italic);
 }
 
+void zGraph::setContextMenuConnection()
+{
+    plot->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
+}
+
 void zGraph::setParamsToDialog(zgraphParamDlg *dlg)
 {
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
@@ -82,6 +88,36 @@ void zGraph::calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVe
     for(int i=0; i<d; i++)
         sigma += (yup[i] - ylw[i]) * (yup[i] - ylw[i]);
     if (d != 0) sigma = qSqrt(sigma / d);
+}
+
+void zGraph::contextMenuRequest(QPoint pos)
+{
+    QMenu *menu = new QMenu(plot);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    QAction *act = menu->addAction("Сохранить изображение ...", this, SLOT(savePlotToPdfJpgPng()));
+    act->setIcon(QIcon(":/icons/pdf.png"));
+    menu->addSeparator();
+    act = menu->addAction("Сохранить профиль в Excel *.csv файл ...", this, SLOT(savePlotToCsv()));
+    act->setIcon(QIcon(":/icons/csv2.png"));
+    act = menu->addAction("Сохранить область интереса в *.roi файл ...", this, SLOT(savePlotToRoi()));
+    act->setIcon(QIcon(":/icons/save.png"));
+
+    menu->popup(plot->mapToGlobal(pos));
+}
+
+void zGraph::savePlotToPdfJpgPng()
+{
+    qDebug("pdf");
+}
+
+void zGraph::savePlotToCsv()
+{
+    qDebug("csv");
+}
+
+void zGraph::savePlotToRoi()
+{
+    qDebug("roi");
 }
 
 void zGraph::mouseMoveEvent(QGraphicsSceneMouseEvent *event)

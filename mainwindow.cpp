@@ -29,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   QApplication::setApplicationName(appName);
 
   loadMainSettings();
+  imgSpectral->rainbowCheckBox->setChecked(GLOBAL_SETTINGS.zobjects_prof_rainbow_show);
 
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
@@ -49,6 +50,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
       saveSettings();
       im_handler->save_settings_all_images(save_file_names);
   }  // if
+  GLOBAL_SETTINGS.zobjects_prof_rainbow_show = imgSpectral->rainbowCheckBox->isChecked();
   saveMainSettings();
 }
 
@@ -63,6 +65,17 @@ void MainWindow::set_action_enabled(bool enable)
     indexAct->setEnabled(enable);
 //    spectralAct->setEnabled(enable);
 //    histogramAct->setEnabled(enable);
+}
+
+QString MainWindow::getDataSetPath()
+{
+    if (dataFileName.isEmpty()) return QString();
+    QFileInfo info(dataFileName);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
 }
 
 void MainWindow::saveSettings()
@@ -301,7 +314,7 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuZGraphList(QPoint)));
     dockZGraphList->setWindowIcon(QIcon(":/icons/windows2.png"));
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
-    dockZGraphList->setFixedSize(220,scrHeignt4-30);
+    dockZGraphList->setFixedSize(220,scrHeignt4-36);
     dockZGraphList->setWidget(zGraphListWidget);
     dockZGraphList->move(rec.width() - 250,10+0*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
@@ -316,7 +329,7 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/profs_hide.png"), "Скрыть все области интереса", this);
     action->setData(2);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = view->winZGraphListDeleteAllAct;  // Удалить выделенные области интереса ...
+    action = view->winZGraphListDeleteAllAct;  // Удалить все области интереса ...
     action->setData(11);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
     action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
@@ -327,13 +340,13 @@ void MainWindow::createConstDockWidgets()
     action->setData(4);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
     action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
-    action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в *.csv файл ...", this);
+    action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в Excel *.csv файл ...", this);
     action->setData(5);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = new QAction(QIcon(":/icons/open.png"), "Загрузить профили из файла ...", this);
+    action = new QAction(QIcon(":/icons/open.png"), "Загрузить области интереса из файла ...", this);
     action->setData(6);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные профили в файл ...", this);
+    action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные области интереса в файл ...", this);
     action->setData(7);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 // работа с изображениями - масками
@@ -352,7 +365,7 @@ void MainWindow::createConstDockWidgets()
 // Изображения
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
-    dockIndexList->setFixedSize(220,scrHeignt4-30);
+    dockIndexList->setFixedSize(220,scrHeignt4-36);
     dockIndexList->setWidget(indexListWidget);
     dockIndexList->move(rec.width() - 250,10+1*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
@@ -364,7 +377,7 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuChannelList(QPoint)));
     dockChannelList->setWindowIcon(QIcon(":/icons/list-channel.jpg"));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
-    dockChannelList->setFixedSize(220,scrHeignt4-30);
+    dockChannelList->setFixedSize(220,scrHeignt4-36);
     dockChannelList->setWidget(chListWidget);
     dockChannelList->move(rec.width() - 250,10+2*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
@@ -396,7 +409,7 @@ void MainWindow::createConstDockWidgets()
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
-    dockMaskImage->setFixedSize(220,scrHeignt4-30);
+    dockMaskImage->setFixedSize(220,scrHeignt4-36);
     dockMaskImage->setWidget(maskListWidget);
     dockMaskImage->move(rec.width() - 250,10+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
@@ -458,10 +471,6 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 //    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
 
-    wPlot->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(wPlot, SIGNAL(customContextMenuRequested(QPoint)),
-            this, SLOT(showContextMenuDockOfItem(QPoint)));
-
     wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
     wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
     wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
@@ -484,6 +493,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     wPlot->xAxis->setRange(390, 1010);
     wPlot->yAxis->setRange(0, 1.2);
     item->plot = wPlot;
+    item->setContextMenuConnection();
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
     dockw->hide();  dockw->setAllowedAreas(nullptr);  // NoToolBarArea - !!! не прикрепляется к главному окну
     QListWidgetItem *lwItem = new QListWidgetItem();
@@ -719,7 +729,7 @@ void MainWindow::save()
 
     auto writableLocation = makeWritableLocation();
 
-    QString fileName= QFileDialog::getSaveFileName(this, "Save image", writableLocation, "PNG (*.png);;JPEG (*.JPEG);;BMP Files (*.bmp)" );
+    QString fileName= QFileDialog::getSaveFileName(this, "Сохранение главного изображения", writableLocation, "Файлы PNG (*.png);;Файлы JPEG (*.jpeg);;Файлы BMP (*.bmp)" );
     if (!fileName.isNull())
     {
         QPixmap pixmap = view->grab();
@@ -924,6 +934,17 @@ void MainWindow::loadMainSettings()
     QSettings settings( fname , QSettings::IniFormat );
     QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
     settings.setIniCodec( codec );
+
+    settings.beginGroup( "General" );
+    GLOBAL_SETTINGS.load_resent_project = settings.value( "load_resent_project", true).toBool();
+    GLOBAL_SETTINGS.save_project_settings = settings.value( "save_project_settings", false).toBool();
+    GLOBAL_SETTINGS.restore_project_settings = settings.value( "restore_project_settings", false).toBool();
+    GLOBAL_SETTINGS.resent_files_count = settings.value( "resent_files_count", 3).toInt();
+    GLOBAL_SETTINGS.save_not_checked_roi = settings.value( "save_not_checked_roi", true).toBool();
+    GLOBAL_SETTINGS.zobject_dock_size_w = settings.value( "zobject_dock_size_w", 420).toInt();
+    GLOBAL_SETTINGS.zobject_dock_size_h = settings.value( "zobject_dock_size_h", 150).toInt();
+    GLOBAL_SETTINGS.zobjects_prof_rainbow_show = settings.value( "zobjects_prof_rainbow_show", true).toBool();
+    settings.endGroup();
 
 // СПИСОК СПЕКТРАЛЬНЫХ ИНДЕКСОВ
     settings.beginGroup( "Indexes" );           // Indexes
@@ -1280,14 +1301,6 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     menu.exec(globalPos);
 }
 
-void MainWindow::showContextMenuDockOfItem(const QPoint &pos)
-{
-    QPoint globalPos = mapToGlobal(pos);
-    QMenu menu(this);
-    menu.addAction(show_zgraph_list_acts[0]);
-    menu.exec(globalPos);
-}
-
 void MainWindow::show_channel_list_update() {
     for (int row = 0; row < chListWidget->count(); row++) {
         if (row % view->GlobalChannelStep == 0)
@@ -1342,11 +1355,11 @@ void MainWindow::show_zgraph_list()
             }  // foreach
             return;
         }  // case 4
-        case 5 : {    // Сохранить все профили в *.csv файл ...
+        case 5 : {    // Сохранить все профили в Excel *.csv файл ...
             if (zGraphList.count() == 0) return;
             QString csv_file_name = QFileDialog::getSaveFileName(
-                this, tr("Сохранить профили в *.csv файл"), QCoreApplication::applicationDirPath(),
-                tr("CSV Files (*.csv);;CSV Files (*.scv)"));
+                this, tr("Сохранить профили в Excel *.csv файл"), QCoreApplication::applicationDirPath(),
+                tr("CSV Files (Excel *.csv);;CSV Files (*.scv)"));
             if (csv_file_name.isEmpty()) return;
             QStringList csv_list;
             QString str = "длина волны, нм;";
@@ -1370,9 +1383,44 @@ void MainWindow::show_zgraph_list()
             file.close();
             return;
         }  // case 5
+        case 7 : {    // Сохранить выделенные области интереса в файл ...
+            auto proj_path = getDataSetPath();
+            if (proj_path.isEmpty()) {
+                QMessageBox msgBox;
+                msgBox.setWindowIcon(icon256);
+                msgBox.setWindowTitle("Ошибка");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(" Нет загруженного проекта !");
+                msgBox.exec();
+                return;
+            }
+// проверка на наличие сохраняемых областей интереса
+            auto graphList = view->getZGraphItemsList();
+            int count = 0;
+            foreach(zGraph *item, graphList) if (item->isVisible()) count++;
+            if (!count) {
+                QMessageBox msgBox;
+                msgBox.setWindowIcon(icon256);
+                msgBox.setWindowTitle("Ошибка");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(" Нет выделенных областей интереса !");
+                msgBox.exec();
+                return;
+            }
+            QString fname = QFileDialog::getSaveFileName(
+                this, tr("Сохранение выделенных областей интереса"), proj_path,
+                tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
+            if (fname.isEmpty()) return;
+            QSettings settings( fname, QSettings::IniFormat );
+            QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+            settings.setIniCodec( codec );
+            settings.clear();
+            saveSettingsZ(settings, true);
+            return;
+        }  // case 7
         case 11 : {    // Удалить все области интереса ...
             QMessageBox msgBox;
-            msgBox.setWindowTitle("Удаление областей интереса");
+            msgBox.setWindowTitle("Удаление всех областей интереса");
             msgBox.setText("Вы подтверждаете удаление всех областей интереса ?\nВосстановить удаление будет невозможно !");
             msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
             msgBox.buttons().at(0)->setText("Да");
@@ -1380,8 +1428,12 @@ void MainWindow::show_zgraph_list()
             msgBox.setIcon(QMessageBox::Critical);
             msgBox.setWindowIcon(icon256);
             msgBox.setDefaultButton(QMessageBox::Cancel);
+            QPoint pos = dockZGraphList->pos();
+            QPoint mv(-300,200);
+            msgBox.move(pos + mv);
+
             int res = msgBox.exec();
-            if (res == QMessageBox::Ok) {   // нажата кнопка Ok
+            if (res == QMessageBox::Ok) {   // нажата кнопка Да
                 view->clearForAllObjects();
                 zGraphListWidget->clear();
                 spectralAct->setEnabled(false);

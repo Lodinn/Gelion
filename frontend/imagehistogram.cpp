@@ -14,7 +14,9 @@ void imageHistogram::updateData(QString name, QString formula, QVector<QVector<d
     if (h_data != nullptr) getHistogramFromSliders();
 
     this->disconnect();
-    setWindowTitle(QString("Гистограмма - [ %1 \\ %2 ]").arg(name).arg(formula));
+    QString plot_title = QString("Гистограмма - [ %1 \\ %2 ]").arg(name).arg(formula);
+    setWindowTitle(plot_title);
+    title->setText(plot_title);
 
     slice = img;  main_size = QSize(slice[0].count(), slice.count());
     h_data = &hg;
@@ -164,6 +166,9 @@ void imageHistogram::setupUi()
 
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
+    plot->plotLayout()->insertRow(0);
+    title = new QCPTextElement(plot, "Гистограмма");
+    plot->plotLayout()->addElement(0, 0, title);
 
     vertLayout->addWidget(plot);
     vertLayout->addWidget(bottomGroupBox);
@@ -226,12 +231,15 @@ void imageHistogram::setupUi()
 
 void imageHistogram::setupConnections()
 {
+    plot->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
 
-    // Подключаем сигналы событий мыши от полотна графика к слотам для их обработки
+
+// Подключаем сигналы событий мыши от полотна графика к слотам для их обработки
     connect(plot, &QCustomPlot::mousePress, this, &imageHistogram::mousePress);
     connect(plot, &QCustomPlot::mouseMove, this, &imageHistogram::mouseMove);
     connect(plot, &QCustomPlot::mouseRelease, this, &imageHistogram::mouseRelease);
-    // подключаем сигналы и слоты окна
+// подключаем сигналы и слоты окна
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
 //    connect(button90routate, &QPushButton::clicked, this, &imageHistogram::routate90);
@@ -540,13 +548,14 @@ void imageHistogram::mouseMove(QMouseEvent *event)
     }  // if
 
     double coordX = plot->xAxis->pixelToCoord(event->pos().x());
+    double dx = h_data->___plotmouse * (h_data->max - h_data->min) / plot->width();
 
-    if (qAbs(coordX-h_data->lower)<h_data->___plotmouse) {
+    if ( qAbs(coordX-h_data->lower) < dx ) {
         if (plot->cursor().shape() != Qt::SplitHCursor)
             plot->setCursor(Qt::SplitHCursor);
         histogramPlotTrigger = 1; return; }
 
-    if (qAbs(coordX-h_data->upper)<h_data->___plotmouse) {
+    if ( qAbs(coordX-h_data->upper) < dx ) {
         if (plot->cursor().shape() != Qt::SplitHCursor)
             plot->setCursor(Qt::SplitHCursor);
         histogramPlotTrigger = 2; return; }
@@ -591,5 +600,29 @@ void imageHistogram::routate90(bool clockwise)
     }  // if
 
     updatePreviewImage();
+
+}
+
+void imageHistogram::contextMenuRequest(QPoint pos)
+{
+    QMenu *menu = new QMenu(plot);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    QAction *act = menu->addAction("Сохранить изображение гистограммы...", this, SLOT(savePlotToPdfJpgPng()));
+    act->setIcon(QIcon(":/icons/pdf.png"));
+    menu->addSeparator();
+    act = menu->addAction("Сохранить изображение индекса...", this, SLOT(saveIndexToPdfJpgPng()));
+    act->setIcon(QIcon(":/icons/palette.png"));
+
+    menu->popup(plot->mapToGlobal(pos));
+
+}
+
+void imageHistogram::savePlotToPdfJpgPng()
+{
+
+}
+
+void imageHistogram::saveIndexToPdfJpgPng()
+{
 
 }

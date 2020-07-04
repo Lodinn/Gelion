@@ -65,6 +65,7 @@ private:
   void updateNewDataSet(bool index_update);  // ----------------
   QStringList recentFileNames;
   void saveSettings();
+  QString getDataSetPath();
   void saveSettingsZ(QSettings &settings, bool save_checked_only);  // save Z Objects
   void restoreIndexes();
   void restoreSettings();
@@ -163,7 +164,6 @@ protected:
 private slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
-  void showContextMenuDockOfItem(const QPoint &pos);
   void show_channel_list();
   void show_zgraph_list();
   void inputIndexDlgShow();

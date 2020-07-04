@@ -53,7 +53,7 @@ public:
     QAction *maskListAct;
     QAction *winZGraphListShowAllAct;
     QAction *winZGraphListHideAllAct;
-    QAction *winZGraphListDeleteAllAct = new QAction(QIcon(":/icons/delete-32-1.png"), "Удалить выделенные области интереса ...");
+    QAction *winZGraphListDeleteAllAct = new QAction(QIcon(":/icons/delete-32-1.png"), "Удалить все области интереса ...");
     zGraph *grabberItem = nullptr;
     zRect *tmpRect = nullptr;
     zEllipse *tmpEllipse = nullptr;

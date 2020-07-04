@@ -19,7 +19,7 @@ namespace J09 {
     double wl380 = 380.;
     double wl781 = 781.;
     double brightness = 1.;
-    double ___plotmouse = .005*3;
+    double ___plotmouse = 3;  // область притяжения курсора в пикселях
     double ___sbrightness = .3;  // относительное положение 1. на слайдере
     bool imgPreview = true;
     bool colorized = true;

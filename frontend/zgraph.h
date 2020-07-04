@@ -48,10 +48,13 @@ public:
     void setFont(QString family, int pointSize, int weight, bool italic);
     virtual QRectF getTitleRectangle() const = 0;
     virtual void updateBoundingRect() = 0;
+
     QDockWidget *dockw = nullptr;
+    QCustomPlot *plot = nullptr;
+    void setContextMenuConnection();
+
     QPoint dockwpos;
     QListWidgetItem *listwidget = nullptr;
-    QCustomPlot *plot = nullptr;
     virtual bool pointIn(QPointF point) = 0;
     virtual QPolygonF getTitlePolygon() = 0;
     virtual QStringList getSettings(int num) = 0;
@@ -72,6 +75,11 @@ signals:
      void itemChange();
      void itemDelete(zGraph *);
      void changeParamsFromDialog(zGraph *);
+private slots:
+     void contextMenuRequest(QPoint pos);
+     void savePlotToPdfJpgPng();
+     void savePlotToCsv();
+     void savePlotToRoi();
 protected:
      int fRectIndent = 12;
      QPointF fcenterPoint;

@@ -15,6 +15,7 @@ public:
     void updateData(QList<zGraph *> list, bool rescale);
     void updateDataOneProfile(zGraph *item, int num);
     int getGraphCount() { return plot->graphCount()- mRainbow; }
+    QCheckBox *rainbowCheckBox;
 private:
     QCustomPlot *plot;
     QList<zGraph *> graph_list;
@@ -22,12 +23,11 @@ private:
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
     void setupConnections();
-    QCPItemTracer *tracer;
+    QCPItemTracer *tracer, *tracer_tolltip;
     QGroupBox *bottomGroupBox;
     QGridLayout *gridLayout;
     QTextEdit *textEdit;
     QPushButton *axisResizeButton;
-    QCheckBox *rainbowCheckBox;
     QStatusBar *statusBar;
     QVBoxLayout *dockLayout;
     void spectralSetAllRange();
@@ -38,6 +38,9 @@ private:
     QStringList getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue);
     int mRainbow;
     void updateDataRainbow(bool r_show);
+    void MouseOverPlotHeight(QMouseEvent *event);
+    void DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QString strNameX, QString strNameY);
+
 private slots:
     void selectionChanged();
     void mousePress(QMouseEvent *event);
@@ -45,6 +48,10 @@ private slots:
     void mouseMove(QMouseEvent *event);
     void graphClicked(QCPAbstractPlottable*,int);
     void rainbowShow(bool checked);
+    void contextMenuRequest(QPoint pos);
+    void savePlotToPdfJpgPng();
+    void savePlotToCsv();
+    void savePlotToRoi();
 };
 
 #endif // IMAGESPECTRAL_H
