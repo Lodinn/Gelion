@@ -73,7 +73,9 @@ private:
   void saveMainSettings();
   QString getMainSettingsFileName();
   void restoreSettingsVersionOne(QSettings &settings);
+  void createZGraphItemFromGroups(QStringList &groups, QSettings &settings);  // создать объекты из текстового списка
   void restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
+  void restoreDockWidgetsPositionExt();  // // восстанавливает коррдинаты окон для загруженных ОИ
   void restoreSettingsVersionTwo(QSettings &settings);
   void addRecentFile();
   void saveGLOBALSettings();
@@ -151,6 +153,7 @@ protected:
   imageHistogram *imgHistogram = new imageHistogram(this);  // окно отображения индексного изображения
   QVector<QAction *> show_channel_list_acts;
   QVector<QAction *> show_zgraph_list_acts;
+  QVector<QAction *> show_index_list_acts;
   QVector<QAction *> mask_list_acts;
   QSlider *slider;
   QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
@@ -164,6 +167,8 @@ protected:
 private slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
+  void showContextMenuDockIndexList(const QPoint &pos);
+  void show_index_list();
   void show_channel_list();
   void show_zgraph_list();
   void inputIndexDlgShow();

@@ -101,6 +101,10 @@ void zGraph::contextMenuRequest(QPoint pos)
     act->setIcon(QIcon(":/icons/csv2.png"));
     act = menu->addAction("Сохранить область интереса в *.roi файл ...", this, SLOT(savePlotToRoi()));
     act->setIcon(QIcon(":/icons/save.png"));
+    menu->addSeparator();
+    act = menu->addAction("Масштаб по размеру профиля", this, SLOT(plotRescaleAxes()));
+    act->setIcon(QIcon(":/icons/fit-to-height.png"));
+
 
     menu->popup(plot->mapToGlobal(pos));
 }
@@ -118,6 +122,12 @@ void zGraph::savePlotToCsv()
 void zGraph::savePlotToRoi()
 {
     qDebug("roi");
+}
+
+void zGraph::plotRescaleAxes()
+{
+    plot->rescaleAxes();
+    plot->replot();
 }
 
 void zGraph::mouseMoveEvent(QGraphicsSceneMouseEvent *event)

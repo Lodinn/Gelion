@@ -43,5 +43,6 @@
         <file>icons/delete-32-1.png</file>
         <file>icons/save.png</file>
         <file>icons/pdf.png</file>
+        <file>icons/fit-to-height.png</file>
     </qresource>
 </RCC>

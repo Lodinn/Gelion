@@ -80,6 +80,7 @@ private slots:
      void savePlotToPdfJpgPng();
      void savePlotToCsv();
      void savePlotToRoi();
+     void plotRescaleAxes();
 protected:
      int fRectIndent = 12;
      QPointF fcenterPoint;

@@ -289,7 +289,7 @@ void MainWindow::spectralUpdateExt(zGraph *item)
 {
     if (!imgSpectral->isVisible()) return;
     auto zz_list = view->getZGraphItemsList();
-    qDebug() << "item" << item;
+//    qDebug() << "item" << item;
     if (item == nullptr) {
         imgSpectral->updateData(zz_list, true);  // обновление всех профилей
         return;
@@ -363,6 +363,9 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
 // Изображения
+    dockIndexList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(dockIndexList, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showContextMenuDockIndexList(QPoint)));
     dockIndexList->setWindowIcon(QIcon(":/icons/palette.png"));
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
     dockIndexList->setFixedSize(220,scrHeignt4-36);
@@ -371,6 +374,10 @@ void MainWindow::createConstDockWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+// контекстное меню для индексных изображений
+    action = new QAction(QIcon(":/icons/delete-32.png"), "Удалить индексное изображение", this);
+    action->setData(0);  show_index_list_acts.append(action);
+    connect(action, SIGNAL(triggered()), this, SLOT(show_index_list()));
 // Список Каналов
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(chListWidget, SIGNAL(customContextMenuRequested(QPoint)),
@@ -448,7 +455,7 @@ void MainWindow::show_profile(QPointF point, int id) {
     wPlot->yAxis->setLabel("коэффициент отражения");
     // set axes ranges, so we see all data:
     wPlot->xAxis->setRange(390, 1010);
-    wPlot->yAxis->setRange(0, 1.2);
+    wPlot->yAxis->setRange(0, 1.5);
   } else if (id < plots.count()) {
     wPlot = plots[id];
   } else {
@@ -1027,6 +1034,16 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
     view->indexListAct->setChecked(dockIndexList->isVisible());
     view->PAN = false;
     QStringList groups = settings.childGroups();
+
+    createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
+
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray(), 1);
+    restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
+}
+
+void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &settings)
+{
     foreach(QString str, groups) {
         if (str.indexOf("Point") != -1) {
             settings.beginGroup(str);
@@ -1039,7 +1056,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             bool objectvisible = settings.value("objectvisible", true).toBool();
             point->setVisible(objectvisible);
 // create dynamic DockWidget
-            view->scene()->addItem(point);
+            view->scene()->addItem(point);          // view->scene()->addItem(point);
             point->updateBoundingRect();
             emit view->insertZGraphItem(point);
             view->show_profile_for_Z(point);
@@ -1071,7 +1088,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             rect->frectSize.setWidth(fsize.rx());
             rect->frectSize.setHeight(fsize.ry());
 // create dynamic DockWidget
-            view->scene()->addItem(rect);
+            view->scene()->addItem(rect);          // view->scene()->addItem(rect);
             rect->updateBoundingRect();
             emit view->insertZGraphItem(rect);
             view->show_profile_for_Z(rect);
@@ -1103,7 +1120,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             ellipse->frectSize.setWidth(fsize.rx());
             ellipse->frectSize.setHeight(fsize.ry());
 // create dynamic DockWidget
-            view->scene()->addItem(ellipse);
+            view->scene()->addItem(ellipse);          // view->scene()->addItem(ellipse);
             ellipse->updateBoundingRect();
             emit view->insertZGraphItem(ellipse);
             view->show_profile_for_Z(ellipse);
@@ -1133,7 +1150,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             for (int i=0; i<x.length();i++)
                 polyline->fpolygon.append(QPoint(x[i],y[i]));
 // create dynamic DockWidget
-            view->scene()->addItem(polyline);
+            view->scene()->addItem(polyline);          // view->scene()->addItem(polyline);
             polyline->updateBoundingRect();
             emit view->insertZGraphItem(polyline);
             view->show_profile_for_Z(polyline);
@@ -1163,7 +1180,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             for (int i=0; i<x.length();i++)
                 polygon->fpolygon.append(QPoint(x[i],y[i]));
 // create dynamic DockWidget
-            view->scene()->addItem(polygon);
+            view->scene()->addItem(polygon);          // view->scene()->addItem(polygon);
             polygon->updateBoundingRect();
             emit view->insertZGraphItem(polygon);
             view->show_profile_for_Z(polygon);
@@ -1176,9 +1193,7 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
             continue;
         }  // Polygon
     }  // foreach
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray(), 1);
-    restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
+
 }
 
 void MainWindow::restoreTRUEdockWidgetsPosition()
@@ -1188,8 +1203,30 @@ void MainWindow::restoreTRUEdockWidgetsPosition()
 
         item->dockw->move(item->dockwpos - QPoint(76-68,43-12));
         item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
+        item->plot->rescaleAxes();
+        item->plot->replot();
 
-    }
+    }  // foreach
+}
+
+void MainWindow::restoreDockWidgetsPositionExt()
+{
+    auto graphList = view->getZGraphItemsList();
+    foreach(zGraph *item, graphList) {
+
+        item->plot->rescaleAxes();
+        item->plot->replot();
+        QPoint item_pos = view->mapFromScene(item->pos().rx(), item->pos().ry());
+        item_pos = this->mapToGlobal(item_pos);
+        if (item_pos.x() < 50) continue;
+        if (item_pos.y() < 50) continue;
+        QRect rect = QApplication::desktop()->screenGeometry();
+        if (item_pos.x() > rect.width() - 70) continue;
+        if (item_pos.y() > rect.height() - 70) continue;
+        item->dockw->move(item_pos + QPoint(0,60));
+        item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
+
+    }  // foreach
 }
 
 void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
@@ -1301,6 +1338,57 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     menu.exec(globalPos);
 }
 
+void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
+{
+    if (dataFileName.isEmpty()) return;
+    QPoint globalPos = indexListWidget->mapToGlobal(pos);
+    QMenu menu(this);
+    for (int i = 0; i < show_index_list_acts.count(); i++) {
+        if (i == 0) {
+            QString current_item = indexListWidget->currentItem()->text();
+            show_index_list_acts[i]->setText(QString("Удалить индексное изображение %1").arg(current_item));
+        }  // if
+        menu.addAction(show_index_list_acts[i]);
+    }  // for
+    menu.exec(globalPos);
+}
+
+void MainWindow::show_index_list()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        int num = action->data().toInt();
+        switch (num) {
+        case 0 : {    // Удалить индексное изображение
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Удаление индексного изображения");
+            msgBox.setText(QString("Вы подтверждаете удаление индексного изображения %1 ?\nВосстановить удаление будет невозможно !")
+                           .arg(indexListWidget->currentItem()->text()));
+            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            msgBox.buttons().at(0)->setText("Да");
+            msgBox.buttons().at(1)->setText("Отмена");
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setWindowIcon(icon256);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
+            QPoint pos = dockIndexList->pos();
+            QPoint mv(-300,200);
+            msgBox.move(pos + mv);
+
+            int res = msgBox.exec();
+
+     /*       if (res == QMessageBox::Ok) {   // нажата кнопка Да
+                view->clearForAllObjects();
+                zGraphListWidget->clear();
+                spectralAct->setEnabled(false);
+                imgSpectral->hide();
+            }  // if QMessageBox::Ok */
+
+            return;
+        }  // case 0
+        }  // switch
+    }  // if
+}
+
 void MainWindow::show_channel_list_update() {
     for (int row = 0; row < chListWidget->count(); row++) {
         if (row % view->GlobalChannelStep == 0)
@@ -1383,6 +1471,37 @@ void MainWindow::show_zgraph_list()
             file.close();
             return;
         }  // case 5
+        case 6 : {    // Загрузить области интереса из файла ...
+            auto proj_path = getDataSetPath();
+            if (proj_path.isEmpty()) {
+                QMessageBox msgBox;
+                msgBox.setWindowIcon(icon256);
+                msgBox.setWindowTitle("Ошибка");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(" Нет загруженного проекта !");
+                msgBox.exec();
+                return;
+            }
+            QFileDialog fd;
+            fd.move(dockZGraphList->pos() + QPoint(-fd.width(),dockZGraphList->height()));
+            QString fname = fd.getOpenFileName(
+                this, tr("Загрузка выделенных областей интереса"), proj_path,
+                tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
+            if (fname.isEmpty()) return;
+
+            QSettings settings( fname, QSettings::IniFormat );
+            QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+            settings.setIniCodec( codec );
+            QStringList groups = settings.childGroups();
+
+            createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
+            restoreDockWidgetsPositionExt();  // восстанавливает коррдинаты окон для загруженных ОИ
+            auto graphList = view->getZGraphItemsList();
+            if (imgSpectral->isVisible()) imgSpectral->updateData(graphList, true);  // обновление всех профилей
+            if (graphList.count() > 0) spectralAct->setEnabled(true);
+
+            return;
+        }  // case 6
         case 7 : {    // Сохранить выделенные области интереса в файл ...
             auto proj_path = getDataSetPath();
             if (proj_path.isEmpty()) {

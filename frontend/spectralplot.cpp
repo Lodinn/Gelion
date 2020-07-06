@@ -4,7 +4,7 @@ SpectralPlot::SpectralPlot(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
-    move(20,20);  resize(600,600);
+    move(20,20);  resize(1000,600);
     setupConnections();
 
 // цвета и стили профилей
