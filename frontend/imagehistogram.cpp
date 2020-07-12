@@ -1,4 +1,5 @@
 #include "imagehistogram.h"
+#include "addMaskDialog.h"
 
 imageHistogram::imageHistogram(QWidget *parent)
     : QDockWidget(parent)
@@ -8,7 +9,7 @@ imageHistogram::imageHistogram(QWidget *parent)
 
 }
 
-void imageHistogram::updateData(QString name, QString formula, QVector<QVector<double> > img,
+void imageHistogram::updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
                                 J09::histogramType &hg)
 {
     if (h_data != nullptr) getHistogramFromSliders();
@@ -18,15 +19,19 @@ void imageHistogram::updateData(QString name, QString formula, QVector<QVector<d
     setWindowTitle(plot_title);
     title->setText(plot_title);
 
+    f_data_file_name = data_file_name;
+    f_title = name; f_formula = formula;
     slice = img;  main_size = QSize(slice[0].count(), slice.count());
     h_data = &hg;
 
     updatePreviewData();  // загрузка параметров изображения
 
-    disconnect();
+//    disconnect();
     setHistogramToSliders();
     updatePreviewImage();  // true - colorized
     previewPlot->rescaleAxes();
+    previewPlot->yAxis->setRangeLower(.0);
+    previewPlot->yAxis2->setRangeLower(.0);
 
     graph->setData(h_data->vx, h_data->vy);
     plot->xAxis->setRange(h_data->min, h_data->max);
@@ -51,6 +56,20 @@ void imageHistogram::updatePreviewData() {
     previewPlot->xAxis->setRange(0,main_size.width());
     previewPlot->yAxis->setRange(0,main_size.height());
 
+}
+
+QString imageHistogram::getMaskFormula()
+{
+    QString str("");
+    if (inverseMask->isChecked()) str = "inv";
+    return QString("{%1}[%2-%3%4]").arg(f_formula).arg(h_data->lower).arg(h_data->upper).arg(str);
+}
+
+QString imageHistogram::getMaskTitle()
+{
+    QString str("");
+    if (inverseMask->isChecked()) str = "inv";
+    return QString("{%1}[%2-%3%4]").arg(f_title).arg(h_data->lower).arg(h_data->upper).arg(str);
 }
 
 void imageHistogram::calculateHistogram(bool full)
@@ -100,16 +119,10 @@ bool imageHistogram::eventFilter(QObject *object, QEvent *event)
 
         if(key->key() == Qt::Key_W) {
 
-            if (h_data->rgb_preview == 0) {
-                h_data->rgb_preview = 1;
-                updatePreviewImage();  // true - colorized
-                return true;
-            }
-            if (h_data->rgb_preview == 1) {
-                h_data->rgb_preview = 0;
-                updatePreviewImage();  // true - colorized
-                return true;
-            }
+            h_data->rgb_preview++;
+            if (h_data->rgb_preview > 2) h_data->rgb_preview = 0;
+            updatePreviewImage();
+            return true;
 
         } // if Key_W
 
@@ -153,13 +166,18 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(labelLeftBlue, 0, 1, Qt::AlignLeft);
     gridLayout->addWidget(labelRightRed, 0, 2, Qt::AlignLeft);
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
-//    buttonAxisRescale->setMinimumHeight(25);
     buttonAxisRescale->setFixedHeight(25);
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
-//    button90routate = new QPushButton("Повернуть на 90 градусов");
-//    gridLayout->addWidget(button90routate, 2, 2, Qt::AlignLeft);
+    buttonMaskSave = new QPushButton("Добавить в список Маски ...");
+    buttonMaskSave->setFixedHeight(25);
+    gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
     QLabel *label = new QLabel(" Используйте Клавиши 'W' 'S' 'A' ");
+    label->setFixedHeight(25);
     gridLayout->addWidget(label, 3, 0, Qt::AlignLeft);
+    inverseMask = new QCheckBox("Инверсная маска");
+    inverseMask->setFixedHeight(25);
+    inverseMask->setChecked(false);
+    gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
 
     bottomGroupBox->setLayout(gridLayout);
     bottomGroupBox->setMaximumHeight(100);
@@ -234,7 +252,6 @@ void imageHistogram::setupConnections()
     plot->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
 
-
 // Подключаем сигналы событий мыши от полотна графика к слотам для их обработки
     connect(plot, &QCustomPlot::mousePress, this, &imageHistogram::mousePress);
     connect(plot, &QCustomPlot::mouseMove, this, &imageHistogram::mouseMove);
@@ -242,7 +259,9 @@ void imageHistogram::setupConnections()
 // подключаем сигналы и слоты окна
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
-//    connect(button90routate, &QPushButton::clicked, this, &imageHistogram::routate90);
+    connect(buttonMaskSave, &QPushButton::clicked, this, &imageHistogram::maskSave);
+    connect(inverseMask,&QCheckBox::stateChanged,this, &imageHistogram::updateMask);
+// подключаем сигналы и слоты sliders
     connect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
     connect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
     connect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
@@ -289,7 +308,6 @@ void imageHistogram::getHistogramFromSliders()
 
 void imageHistogram::updatePreviewImage()
 {
-//    labelPreview->setPixmap(pixmap);
     QMatrix rm;    rm.rotate(h_data->rotation);
 
     switch (h_data->rgb_preview) {
@@ -299,6 +317,11 @@ void imageHistogram::updatePreviewImage()
         break; }
     case 1 : {
         QPixmap pixmap = previewRGB->transformed(rm); image_pixmap->setPixmap(pixmap); break; }
+    case 2 : {
+        QImage img = get_mask_image( slice );
+        QPixmap pixmap = QPixmap::fromImage(img);
+        pixmap = pixmap.transformed(rm); image_pixmap->setPixmap(pixmap);
+        break; }
     }  // switch
 
     image_pixmap->topLeft->setCoords(0,0);
@@ -371,6 +394,38 @@ QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool 
         }  // for int y
 
     return index_img;
+}
+
+QImage imageHistogram::get_mask_image(QVector<QVector<double> > &slice)
+{
+    if(slice.isEmpty()) {
+      qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
+      return QImage();
+    }
+    QSize slice_size(slice[0].count(), slice.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+    switch (inverseMask->isChecked()) {
+    case true :{
+        mask_img.fill(1);
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                    mask_img.setPixel(x, y, 0);
+            }  // for
+        break; }
+    case false : {
+        mask_img.fill(0);
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                    mask_img.setPixel(x, y, 1);
+            }  // for
+        break; }
+    }  // switch
+
+    return mask_img;
+
 }
 
 QRgb imageHistogram::get_rainbow_RGB(double Wavelength)
@@ -543,7 +598,7 @@ void imageHistogram::mouseMove(QMouseEvent *event)
 {
     if (histogramPlotPAN) {
         mousePress(event);
-        updatePreviewImage();  // true - colorized
+        updatePreviewImage();
         return;
     }  // if
 
@@ -576,7 +631,6 @@ void imageHistogram::mouseRelease(QMouseEvent *event)
 
 void imageHistogram::histogramPreview()
 {
-//    labelPreview->setVisible(previewImage->isChecked());
     previewPlot->setVisible(previewImage->isChecked());
 }
 
@@ -586,7 +640,36 @@ void imageHistogram::axisRescale()
     h_data->upper = h_data->max;
     calculateHistogram(false);
     setHistogramToBracked();
-    updatePreviewImage();  // true - colorized
+    updatePreviewImage();
+}
+
+void imageHistogram::maskSave()
+{
+    emit appendMask();
+    qDebug() << "imageHistogram::maskSave()";
+    return;
+    addMaskDialog dlg;
+    QString formula = getMaskFormula(), title = getMaskTitle();
+    dlg.setData(title, formula);
+    int dlg_result = dlg.exec();
+    if (dlg_result == QDialog::Accepted) {
+        QString title;
+        dlg.getData(title);
+
+        mask_appended = new J09::maskRecordType;
+        mask_appended->title = title;
+        mask_appended->formula = formula;
+        mask_appended->image = get_mask_image( slice );
+        mask_appended->invers = inverseMask->isChecked();
+
+        emit appendMask();
+        qDebug() << "imageHistogram::maskSave()";
+    }  // if
+}
+
+void imageHistogram::updateMask()
+{
+    updatePreviewImage();
 }
 
 void imageHistogram::routate90(bool clockwise)
@@ -612,6 +695,8 @@ void imageHistogram::contextMenuRequest(QPoint pos)
     menu->addSeparator();
     act = menu->addAction("Сохранить изображение индекса...", this, SLOT(saveIndexToPdfJpgPng()));
     act->setIcon(QIcon(":/icons/palette.png"));
+    act = menu->addAction("Сохранить гистограмму в Excel *.csv файл ...", this, SLOT(saveHistogramToCsv()));
+    act->setIcon(QIcon(":/icons/csv2.png"));
 
     menu->popup(plot->mapToGlobal(pos));
 
@@ -625,4 +710,37 @@ void imageHistogram::savePlotToPdfJpgPng()
 void imageHistogram::saveIndexToPdfJpgPng()
 {
 
+}
+
+void imageHistogram::saveHistogramToCsv()
+{
+    QFileInfo info(f_data_file_name);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить гистограмму в Excel *.csv файл"), writableLocation,
+        tr("CSV Files Excel (*.csv);;CSV Files (*.scv)"));
+    if (csv_file_name.isEmpty()) return;
+    QStringList csv_list;
+
+    csv_list.append("Гистограмма распределения яркостей индексного изображения");
+    csv_list.append(f_data_file_name);
+    csv_list.append(QString("%1;%2").arg(f_title).arg(f_formula));
+    csv_list.append(QString("Количество интервалов (bins);%1").arg(h_data->hcount));
+    csv_list.append(QString("Минимальное значение индекса;%1").arg(h_data->min).replace('.', ','));
+    csv_list.append(QString("Максимальное значение индекса;%1").arg(h_data->max).replace('.', ','));
+    csv_list.append(QString("значение интервала;количество точек в интервале"));
+    for(int i=0; i<h_data->vx.count(); i++)
+        csv_list.append(QString("%1;%2").arg(h_data->vx[i]).arg(h_data->vy[i]).replace('.', ','));
+
+    QFile file(csv_file_name);
+    file.open( QIODevice::Append | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
 }

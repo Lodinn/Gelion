@@ -44,6 +44,13 @@ namespace J09 {
       int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
       bool zobjects_prof_rainbow_show = true;  // заливка спектральных диапазонов
   };
+  struct maskRecordType {  // пакет данных об изображении - Маска
+      QString title;  // наименование
+      QString formula;  // общая формула алгоритма
+      QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
+      QImage image;  // маска
+      bool invers = false;  // инверсное изображение
+  };
 }
 QT_END_NAMESPACE
 
@@ -80,7 +87,7 @@ public slots:
 private:
   // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
-  QVector<QVector<QVector<quint8> > > mask;  // маска изображения, 0 - нет, больше нуля - маска
+  QVector<J09::maskRecordType *> mask;  // массив масочных изображений 0 - нет, 1 - маска
   int mask_index = -1;  // текущий номер маски
 
   QVector<double> wavelengths;
@@ -92,6 +99,7 @@ private:
   double default_brightness = 1.5;
   int current_slice = -1;
   QRgb get_rainbow_RGB(double Wavelength);
+  int current_mask_index = -1;
 public:
   QVector<J09::histogramType> histogram;  // статистика гистограммы
   double wl380 = 380.0;
@@ -118,6 +126,9 @@ public:
   double get_current_brightness();
   void set_current_brightness(double value);
   QPair<QString, QString> get_current_formula();
+  void append_mask(J09::maskRecordType *msk);
+  int setCurrentMaskIndex(int num);
+  J09::maskRecordType *getMask();
 
 signals:
 

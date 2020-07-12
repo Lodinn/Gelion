@@ -19,16 +19,17 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
+  setWindowTitle(QString("%1").arg(appName));
+  QApplication::setApplicationName(appName);
+
+  loadMainSettings();
+
   SetupUi();
 
   im_handler->moveToThread(worker_thread);
 
 //  installEventFilter(this);
 
-  setWindowTitle(QString("%1").arg(appName));
-  QApplication::setApplicationName(appName);
-
-  loadMainSettings();
   imgSpectral->rainbowCheckBox->setChecked(GLOBAL_SETTINGS.zobjects_prof_rainbow_show);
 
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
@@ -63,6 +64,7 @@ void MainWindow::set_action_enabled(bool enable)
     view->polylineAct->setEnabled(enable);
     view->polygonAct->setEnabled(enable);
     indexAct->setEnabled(enable);
+    index_quick_menu->setEnabled(enable);
 //    spectralAct->setEnabled(enable);
 //    histogramAct->setEnabled(enable);
 }
@@ -198,6 +200,21 @@ void MainWindow::createActions() {
     indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
     indexMenu->addAction(indexAct);   indexToolBar->addAction(indexAct);
     connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
+
+//    indexActExt = new QAction(indexIcon, tr("&Быстрый расчет индекса"), this);
+//    indexMenu->addAction(indexActExt);
+//    indexToolBar->addAction(indexActExt);
+    index_quick_menu = new QMenu(tr("&Быстрый выбор индекса"), this);
+    index_quick_menu->setIcon(indexIcon);
+    qDebug() << "indexList count = " << indexList.count();
+    foreach(J09::indexType item, indexList) {
+        QAction *action = index_quick_menu->addAction(item.name);
+        action->setData(item.formula);  predefined_index_list_acts.append(action);
+        connect(action, SIGNAL(triggered()), this, SLOT(predefined_index_menu()));
+    }  // foreach
+    indexMenu->addMenu(index_quick_menu);       indexToolBar->addAction(index_quick_menu->menuAction());
+    index_quick_menu->setEnabled(false);
+
     spectralAct = new QAction(QIcon(":/icons/full-spectrum.png"), tr("&Спектральный анализ"), this);
     spectralAct->setCheckable(true); spectralAct->setChecked(false);
     spectralAct->setEnabled(false);
@@ -343,10 +360,10 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/csv2.png"), "Сохранить все профили в Excel *.csv файл ...", this);
     action->setData(5);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = new QAction(QIcon(":/icons/open.png"), "Загрузить области интереса из файла ...", this);
+    action = new QAction(QIcon(":/icons/open.png"), "Загрузить области интереса из *.roi файла ...", this);
     action->setData(6);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные области интереса в файл ...", this);
+    action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные области интереса в *.roi файл ...", this);
     action->setData(7);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 // работа с изображениями - масками
@@ -405,14 +422,18 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 
 // СПЕКТРАЛЬНЫЙ АНАЛИЗ
-    imgSpectral->hide();
+    imgSpectral->hide();    imgSpectral->setObjectName("imgSpectral");
     addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
     connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 
 // АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
-    imgHistogram->hide();
+    imgHistogram->hide();   imgHistogram->setObjectName("imgHistogram");
     addDockWidget(Qt::BottomDockWidgetArea, imgHistogram);
     connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+//    connect(imgHistogram,SIGNAL(appendMask()),this,SLOT(appendMaskImage()));
+    bool success = connect(imgHistogram,&imageHistogram::appendMask,this,&MainWindow::open);
+    qDebug() << "bool success = " << success;
+//    this, &MainWindow::open
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
@@ -421,6 +442,11 @@ void MainWindow::createConstDockWidgets()
     dockMaskImage->move(rec.width() - 250,10+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+}
+
+void MainWindow::appendMaskImage()
+{
+    qDebug() << "MainWindow::appendMaskImage()";
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -1204,6 +1230,7 @@ void MainWindow::restoreTRUEdockWidgetsPosition()
         item->dockw->move(item->dockwpos - QPoint(76-68,43-12));
         item->dockw->setAllowedAreas(Qt::NoDockWidgetArea);
         item->plot->rescaleAxes();
+        item->plot->yAxis->setRangeLower(.0);
         item->plot->replot();
 
     }  // foreach
@@ -1215,6 +1242,7 @@ void MainWindow::restoreDockWidgetsPositionExt()
     foreach(zGraph *item, graphList) {
 
         item->plot->rescaleAxes();
+        item->plot->yAxis->setRangeLower(.0);
         item->plot->replot();
         QPoint item_pos = view->mapFromScene(item->pos().rx(), item->pos().ry());
         item_pos = this->mapToGlobal(item_pos);
@@ -1447,7 +1475,7 @@ void MainWindow::show_zgraph_list()
             if (zGraphList.count() == 0) return;
             QString csv_file_name = QFileDialog::getSaveFileName(
                 this, tr("Сохранить профили в Excel *.csv файл"), QCoreApplication::applicationDirPath(),
-                tr("CSV Files (Excel *.csv);;CSV Files (*.scv)"));
+                tr("CSV Files Excel (*.csv);;CSV Files (*.scv)"));
             if (csv_file_name.isEmpty()) return;
             QStringList csv_list;
             QString str = "длина волны, нм;";
@@ -1578,7 +1606,9 @@ void MainWindow::inputIndexDlgShow()
     if (dlg->exec() == QDialog::Accepted) {
         view->index_title_str = dlg->get_index_title();
         view->index_formula_str = dlg->get_formula();
-        QString input = dlg->get_formula();
+        calculateIndexAndStoreToIndexList(view->index_title_str, view->index_formula_str);
+
+        /*QString input = dlg->get_formula();
         if (input.isEmpty()) {
             qDebug() << "wrong index !!!";
             return;
@@ -1595,7 +1625,45 @@ void MainWindow::inputIndexDlgShow()
         if (dlg->namesList.indexOf(indexItem.name) == -1)
             indexList.append(indexItem);
 
-        emit index_calculate(for_eval);
+        emit index_calculate(for_eval); */
+    }  // if
+}
+
+void MainWindow::calculateIndexAndStoreToIndexList(QString title, QString formula)
+{
+    view->index_title_str = title;
+    view->index_formula_str = formula;
+
+    QString input = formula;
+    if (input.isEmpty()) {
+        qDebug() << "wrong index !!!";
+        return;
+    }  // if
+    QString for_eval = im_handler->get_regular_expression(input);
+    if (for_eval.isEmpty()) {
+        qDebug() << "wrong index !!!";
+        return;
+    }  // if
+    // update index list
+    J09::indexType indexItem;
+    indexItem.name = title;
+    indexItem.formula = formula;
+    QStringList str_list;
+    foreach(J09::indexType item, indexList) str_list.append(item.name);
+    if (str_list.indexOf(indexItem.name) == -1)
+        indexList.append(indexItem);
+
+    emit index_calculate(for_eval);
+}
+
+void MainWindow::predefined_index_menu()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        QString title = action->text();
+        QString formula = action->data().toString();
+        qDebug() << title << formula;
+        calculateIndexAndStoreToIndexList(title, formula);
     }  // if
 }
 
@@ -1664,7 +1732,7 @@ void MainWindow::updateHistogram()
     QPair<QString, QString> name = im_handler->current_image()->get_current_formula();
 
     imgHistogram->setPreviewPixmap(maiPixmap);
-    imgHistogram->updateData(name.first, name.second, slice_index,
+    imgHistogram->updateData(dataFileName, name.first, name.second, slice_index,
                              im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
     if (histogramAct->isChecked()) imgHistogram->show();
     else imgHistogram->hide();

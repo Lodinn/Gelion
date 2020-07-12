@@ -472,3 +472,21 @@ QPair<QString, QString> SpectralImage::get_current_formula()
 {
     return indexNameFormulaList.at(current_slice - depth);
 }
+
+void SpectralImage::append_mask(J09::maskRecordType *msk)
+{
+    mask.append(msk);
+    current_mask_index = mask.count() - 1;
+}
+
+int SpectralImage::setCurrentMaskIndex(int num)
+{
+    if (num < 0 && num > mask.count()) return -1;
+    current_mask_index = num;
+    return current_mask_index;
+}
+
+J09::maskRecordType *SpectralImage::getMask()
+{
+    return mask.at(current_mask_index);
+}

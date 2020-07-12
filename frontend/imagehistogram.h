@@ -11,7 +11,7 @@ class imageHistogram : public QDockWidget
     Q_OBJECT
 public:
     imageHistogram(QWidget * parent = nullptr);
-    void updateData(QString name, QString formula, QVector<QVector<double> > img,
+    void updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
                     J09::histogramType &hg);
     void setPreviewPixmap(QPixmap &mainRGB);
 private:
@@ -27,11 +27,12 @@ private:
     QSlider *sliderLeftColorEdge;
     QSlider *sliderRightColorEdge;
     QCheckBox *previewImage;
+    QCheckBox *inverseMask;
     QLabel *labelBrightness;
     QLabel *labelLeftBlue;
     QLabel *labelRightRed;
     QPushButton *buttonAxisRescale;
-//    QPushButton *button90routate;
+    QPushButton *buttonMaskSave;
     QVBoxLayout *vertLayout;
     QLabel *labelPreview;
     QHBoxLayout *horzLayout;
@@ -49,6 +50,7 @@ private:
     QVector<QVector<double> > slice;
     QSize main_size;
     QImage get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized);
+    QImage get_mask_image(QVector<QVector<double> > &slice);
     QRgb get_rainbow_RGB(double Wavelength);
     void setHistogramToBracked();
     QPixmap changeBrightnessPixmap(QImage &img, double brightness);
@@ -58,6 +60,10 @@ private:
     QCPItemPixmap *image_pixmap;
     void setupPreviewPlot();  // настройка параметров просмотра
     void updatePreviewData();  // загрузка параметров изображения
+    QString f_data_file_name, f_title, f_formula;
+    QString getMaskFormula();
+    QString getMaskTitle();
+    J09::maskRecordType *mask_appended;
 private slots:
     void brightnessChanged();
     void leftColorChanged();
@@ -67,11 +73,15 @@ private slots:
     void mouseRelease(QMouseEvent *event);
     void histogramPreview();
     void axisRescale();
+    void maskSave();
+    void updateMask();
     void routate90(bool clockwise);
     void contextMenuRequest(QPoint pos);
     void savePlotToPdfJpgPng();
     void saveIndexToPdfJpgPng();
-
+    void saveHistogramToCsv();
+signals:
+     void appendMask();
 
 };
 

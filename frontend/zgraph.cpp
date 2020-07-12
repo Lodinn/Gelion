@@ -127,6 +127,7 @@ void zGraph::savePlotToRoi()
 void zGraph::plotRescaleAxes()
 {
     plot->rescaleAxes();
+    plot->yAxis->setRangeLower(.0);
     plot->replot();
 }
 

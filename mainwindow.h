@@ -80,6 +80,7 @@ private:
   void addRecentFile();
   void saveGLOBALSettings();
   QString getGlobalIniFileName();
+  void calculateIndexAndStoreToIndexList(QString title, QString formula);
 
  protected:
   qreal qmainWindowScale =  .84;  // 0.84;
@@ -88,6 +89,7 @@ private:
   bool restoreSettingAtStartUp = false; // ---
 // global data settings
   QVector<J09::indexType> indexList;
+  QVector<QAction *> predefined_index_list_acts;
   J09::globalSettingsType GLOBAL_SETTINGS;  // ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
@@ -116,6 +118,8 @@ private:
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;
   QAction *indexAct;
+//  QAction *indexActExt;
+  QMenu *index_quick_menu;
   QAction *spectralAct;
   QAction *histogramAct;
 
@@ -172,9 +176,11 @@ private slots:
   void show_channel_list();
   void show_zgraph_list();
   void inputIndexDlgShow();
+  void predefined_index_menu();
   void settingsDlgShow();
   void change_brightness(int value);
   void spectralUpdateExt(zGraph *item);
+  void appendMaskImage();
 
 };
 
