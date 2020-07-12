@@ -1604,9 +1604,9 @@ void MainWindow::inputIndexDlgShow()
     QVector<double> wls = im_handler->current_image()->wls();
     dlg->setSpectralRange(wls);
     if (dlg->exec() == QDialog::Accepted) {
-        view->index_title_str = dlg->get_index_title();
-        view->index_formula_str = dlg->get_formula();
-        calculateIndexAndStoreToIndexList(view->index_title_str, view->index_formula_str);
+//        view->index_title_str = dlg->get_index_title();
+//        view->index_formula_str = dlg->get_formula();
+        calculateIndexAndStoreToIndexList(dlg->get_index_title(), dlg->get_formula());
 
         /*QString input = dlg->get_formula();
         if (input.isEmpty()) {

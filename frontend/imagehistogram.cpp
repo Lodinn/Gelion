@@ -521,7 +521,7 @@ void imageHistogram::setHistogramToBracked()
     bracket->right->setCoords(h_data->upper, bracketTextIndent*yrange.upper);
 
     x[0] = h_data->min;  x[1] = h_data->lower;
-    y[0] = 50000.;  y[1] = y[0];
+    y[0] = 150000.;  y[1] = y[0];
     packet_left->setData(x, y);
     x[0] = h_data->lower;  x[1] = h_data->upper;
     packet_center->setData(x, y);
@@ -690,13 +690,19 @@ void imageHistogram::contextMenuRequest(QPoint pos)
 {
     QMenu *menu = new QMenu(plot);
     menu->setAttribute(Qt::WA_DeleteOnClose);
-    QAction *act = menu->addAction("Сохранить изображение гистограммы...", this, SLOT(savePlotToPdfJpgPng()));
+    QAction *act = menu->addAction("Сохранить изображение гистограммы...", this, &imageHistogram::savePlotToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
-    menu->addSeparator();
-    act = menu->addAction("Сохранить изображение индекса...", this, SLOT(saveIndexToPdfJpgPng()));
-    act->setIcon(QIcon(":/icons/palette.png"));
-    act = menu->addAction("Сохранить гистограмму в Excel *.csv файл ...", this, SLOT(saveHistogramToCsv()));
+    act = menu->addAction("Сохранить гистограмму в Excel *.csv файл ...", this, &imageHistogram::saveHistogramToCsv);
     act->setIcon(QIcon(":/icons/csv2.png"));
+    menu->addSeparator();
+    act = menu->addAction("Сохранить изображение индекса...", this, &imageHistogram::saveIndexToPdfJpgPng);
+    act->setIcon(QIcon(":/icons/palette.png"));
+    act = menu->addAction("Сохранить изображение маски ...", this, &imageHistogram::saveHistogramToCsv);
+    act->setIcon(QIcon(":/icons/theater.png"));
+    act = menu->addAction("Сохранить изображение инвертированной маски ...", this, &imageHistogram::saveHistogramToCsv);
+    act->setIcon(QIcon(":/icons/theater.png"));
+    act = menu->addAction("Сохранить RGB изображение ...", this, &imageHistogram::saveHistogramToCsv);
+    act->setIcon(QIcon(":/icons/pdf.png"));
 
     menu->popup(plot->mapToGlobal(pos));
 
@@ -704,10 +710,40 @@ void imageHistogram::contextMenuRequest(QPoint pos)
 
 void imageHistogram::savePlotToPdfJpgPng()
 {
+    QFileInfo info(f_data_file_name);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение гистограммы"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    info.setFile(img_file_name);
+    if (info.suffix().toLower() == "png") plot->savePng(img_file_name);
+    if (info.suffix().toLower() == "pdf") plot->savePdf(img_file_name);
+    if (info.suffix().toLower() == "jpg") plot->saveJpg(img_file_name);
 
 }
 
 void imageHistogram::saveIndexToPdfJpgPng()
+{
+
+}
+
+void imageHistogram::saveMaskToPdfJpgPng()
+{
+
+}
+
+void imageHistogram::saveInvMaskToPdfJpgPng()
+{
+
+}
+
+void imageHistogram::saveRGBToPdfJpgPng()
 {
 
 }
@@ -721,8 +757,10 @@ void imageHistogram::saveHistogramToCsv()
     if (!dir.exists()) dir.mkpath(".");
     QString csv_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить гистограмму в Excel *.csv файл"), writableLocation,
-        tr("CSV Files Excel (*.csv);;CSV Files (*.scv)"));
-    if (csv_file_name.isEmpty()) return;
+        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
     QStringList csv_list;
 
     csv_list.append("Гистограмма распределения яркостей индексного изображения");

@@ -79,6 +79,9 @@ private slots:
     void contextMenuRequest(QPoint pos);
     void savePlotToPdfJpgPng();
     void saveIndexToPdfJpgPng();
+    void saveMaskToPdfJpgPng();
+    void saveInvMaskToPdfJpgPng();
+    void saveRGBToPdfJpgPng();
     void saveHistogramToCsv();
 signals:
      void appendMask();
