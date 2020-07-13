@@ -29,8 +29,9 @@ QString ImageHandler::get_regular_expression(QString input)
     QString sanitized = input.replace('[', '(').replace(']', ')').
             replace('r', 'R').replace('v', 'R');
     sanitized.replace(QRegularExpression("[^explognR^* /+\\-().\\d<>& ]"), "");
-    QString for_eval = sanitized.replace(QRegularExpression("R(\\d+)"), "getByWL(\\1)")
-            .replace("^", "**").replace("ln", "log");
+    //FIXME: expand to expressions
+    sanitized.replace(QRegularExpression("\\b(R\\d+)\\^([\\d|.]+)\\b"), "Math.pow(\\1, \\2)");
+    QString for_eval = sanitized.replace(QRegularExpression("R(\\d+)"), "getByWL(\\1)").replace("ln", "log");
     return for_eval;
 }
 
