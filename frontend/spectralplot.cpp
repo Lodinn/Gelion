@@ -46,8 +46,9 @@ SpectralPlot::SpectralPlot(QWidget *parent)
 //    sct.color = QColor(57,57,57);  sct.style = 3; plot_styles_cycle.append(sct); // grey style 5
 }
 
-void SpectralPlot::updateData(QList<zGraph *> list, bool rescale)
+void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool rescale)
 {
+    f_data_file_name = data_file_name;
     graph_list = list;
     // data
     plot->clearGraphs();
@@ -250,8 +251,8 @@ void SpectralPlot::setupUi()
     QCPTextElement *title = new QCPTextElement(plot,
                     "Спектральные профили областей интереса");
     plot->plotLayout()->addElement(0, 0, title);
-    plot->xAxis->setLabel("длина волны, нм");
-    plot->yAxis->setLabel("коэффициент отражения");
+    plot->xAxis->setLabel(QString("длина волны, нм ( %1 )").arg(QString(u8"\u03BB")));
+    plot->yAxis->setLabel("коэффициент отражения ( r )");
     plot->legend->setVisible(true);
     plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignLeft|Qt::AlignTop);
     QFont legendFont = QFont("Helvetica", 8);
@@ -296,12 +297,12 @@ void SpectralPlot::contextMenuRequest(QPoint pos)
 {
     QMenu *menu = new QMenu(plot);
     menu->setAttribute(Qt::WA_DeleteOnClose);
-    QAction *act = menu->addAction("Сохранить изображение ...", this, SLOT(savePlotToPdfJpgPng()));
+    QAction *act = menu->addAction("Сохранить изображение спектральных профилей...", this, &SpectralPlot::savePlotToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
     menu->addSeparator();
-    act = menu->addAction("Сохранить профили в Excel *.csv файл ...", this, SLOT(savePlotToCsv()));
+    act = menu->addAction("Сохранить спектральные профили в Excel *.csv файл ...", this, &SpectralPlot::savePlotToCsv);
     act->setIcon(QIcon(":/icons/csv2.png"));
-    act = menu->addAction("Сохранить области интереса в *.roi файл ...", this, SLOT(savePlotToRoi()));
+    act = menu->addAction("Сохранить области интереса в *.roi файл ...", this, &SpectralPlot::savePlotToRoi);
     act->setIcon(QIcon(":/icons/save.png"));
 
     menu->popup(plot->mapToGlobal(pos));
@@ -310,7 +311,17 @@ void SpectralPlot::contextMenuRequest(QPoint pos)
 
 void SpectralPlot::savePlotToPdfJpgPng()
 {
-
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение спектральных профилей"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") plot->savePng(img_file_name);
+    if (info.suffix().toLower() == "pdf") plot->savePdf(img_file_name);
+    if (info.suffix().toLower() == "jpg") plot->saveJpg(img_file_name);
 }
 
 void SpectralPlot::savePlotToCsv()
@@ -426,7 +437,7 @@ void SpectralPlot::MouseOverPlotHeight(QMouseEvent *event)
 {
     QCustomPlot *curPlot = plot;
     QString strNameX = QString(u8" \u03BB = ");
-    QString strNameY = "r = ";
+    QString strNameY = " r = ";
     DisplayCurveData(event, curPlot, strNameX, strNameY);
 }
 
@@ -520,9 +531,12 @@ void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QS
             double key = tracer_tolltip->position->key();
             double value = tracer_tolltip->position->value();
             QString key_str = QString(u8"%1 \u043D\u043C").arg(key);
-            QFont f = curPlot->font();  f.setPointSize(7);
+            QFont f = curPlot->font();  f.setPointSize(8);
             QToolTip::setFont(f);
             QToolTip::showText(event->globalPos(),
+                               QString(" %1\n%2%3\n%4%5").arg(plottable->name()).arg(strNameX)
+                               .arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());
+/*            QToolTip::showText(event->globalPos(),
             tr("<table>"
                "<tr>"
                 "<td>%L1</td>"
@@ -533,64 +547,10 @@ void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QS
                "<tr>"
                 "<td>%L4</td>" "<td>%L5</td>"
                "</tr>"
-               "</table>").arg(plottable->name()).arg(strNameX).arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());
+               "</table>").arg(plottable->name()).arg(strNameX).arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());   */
         }  // if (graph)
 
 /*        if (graph)                    https://www.qcustomplot.com/index.php/support/forum/183
-        {
-            double key = 0;
-            double value = 0;
-            bool ok = false;
-            double maxx = std::numeric_limits<double>::max();
-            double maxy = std::numeric_limits<double>::max();
-
-            QCPDataRange dataRange = graph->data()->dataRange();
-            QCPGraphDataContainer::const_iterator begin = graph->data()->at(dataRange.begin());
-            QCPGraphDataContainer::const_iterator end = graph->data()->at(dataRange.end());
-
-            int n = end-begin;
-            if (n>0)
-            {
-                double *dx = new double[n];
-                double *dy = new double[n];
-
-                int index =0;
-                for (QCPGraphDataContainer::const_iterator it=begin; it<end; it++)
-                {
-                    dx[index] = qAbs(x - it->key);
-                    dy[index] = qAbs(y - it->value);
-                    if ((dx[index] < maxx) && (dy[index] < maxy))
-                    {
-                        key = it->key;
-                        value = it->value;
-                        ok = true;
-                        maxx = dx[index];
-                        maxy = dy[index];
-                    }
-                    index++;
-                }
-                delete dy;
-                delete dx;
-
-                if (ok)
-                {
-                    QString key_str = QString(u8"%1 \u043D\u043C").arg(key);
-                    QFont f = curPlot->font();  f.setPointSize(7);
-                    QToolTip::setFont(f);
-                    QToolTip::showText(event->globalPos(),
-                    tr("<table>"
-                       "<tr>"
-                        "<td>%L1</td>"
-                       "</tr>"
-                       "<tr>"
-                        "<td>%L2</td>" "<td>%L3</td>"
-                       "</tr>"
-                       "<tr>"
-                        "<td>%L4</td>" "<td>%L5</td>"
-                       "</tr>"
-                       "</table>").arg(plottable->name()).arg(strNameX).arg(key_str).arg(strNameY).arg(value), curPlot, curPlot->rect());
-                }
-            }
         }  // if (graph)        */
     }
     else {
@@ -600,7 +560,18 @@ void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QS
         plot->replot();
     }
 }
-/*                    QToolTip::showText(event->globalPos(),
+
+QString SpectralPlot::getWritableLocation()
+{
+    QFileInfo info(f_data_file_name);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
+}
+/*
+                    QToolTip::showText(event->globalPos(),
                     tr("<table>"
                          "<tr>"
                            "<td>%L1:</td>" "<td>%L2</td>"

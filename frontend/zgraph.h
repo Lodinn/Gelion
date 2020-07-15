@@ -5,6 +5,7 @@
 #include "zgraphparamdlg.h"
 #include "ui_zgraphparamdlg.h"
 
+#include <ImageHandler.h>
 #include <QDockWidget>
 #include <QFont>
 #include <QGraphicsItem>
@@ -51,6 +52,7 @@ public:
 
     QDockWidget *dockw = nullptr;
     QCustomPlot *plot = nullptr;
+    ImageHandler *imgHand = nullptr;
     void setContextMenuConnection();
 
     QPoint dockwpos;
@@ -65,10 +67,13 @@ public:
     void getParamsFromDialog(zgraphParamDlg *dlg);
     double getRotationFromCoords(QPointF p1, QPointF p2);
     QVector<QPointF > profile;
+    QVector<QPointF > std_dev_upper, std_dev_lower;
     double sigma = .0;
     QVector<double > pup, plw;
     void calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw);
     int transparency = 50;
+//    void calculateStandardDeviation();
+//    void calculateMedianProfile();
 signals:
      void mouseMove();
      void mouseRelease();

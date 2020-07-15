@@ -12,12 +12,13 @@ class SpectralPlot : public QDockWidget
     Q_OBJECT
 public:
     SpectralPlot(QWidget * parent = nullptr);
-    void updateData(QList<zGraph *> list, bool rescale);
+    void updateData(QString data_file_name, QList<zGraph *> list, bool rescale);
     void updateDataOneProfile(zGraph *item, int num);
     int getGraphCount() { return plot->graphCount()- mRainbow; }
     QCheckBox *rainbowCheckBox;
 private:
     QCustomPlot *plot;
+    QString f_data_file_name;
     QList<zGraph *> graph_list;
     QVector<J09::plotStyle> plot_styles_cycle;
     bool eventFilter(QObject *object, QEvent *event);
@@ -40,6 +41,7 @@ private:
     void updateDataRainbow(bool r_show);
     void MouseOverPlotHeight(QMouseEvent *event);
     void DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QString strNameX, QString strNameY);
+    QString getWritableLocation();
 
 private slots:
     void selectionChanged();

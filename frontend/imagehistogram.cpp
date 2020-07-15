@@ -51,8 +51,8 @@ void imageHistogram::setPreviewPixmap(QPixmap &mainRGB)
 void imageHistogram::updatePreviewData() {
 
 // Load Options Image as Pixmap
-    image_pixmap->topLeft->setCoords(0,0);
-    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
+    image_pixmap->topLeft->setCoords(0,main_size.height());
+    image_pixmap->bottomRight->setCoords(main_size.width(),0);
     previewPlot->xAxis->setRange(0,main_size.width());
     previewPlot->yAxis->setRange(0,main_size.height());
 
@@ -318,7 +318,7 @@ void imageHistogram::updatePreviewImage()
     case 1 : {
         QPixmap pixmap = previewRGB->transformed(rm); image_pixmap->setPixmap(pixmap); break; }
     case 2 : {
-        QImage img = get_mask_image( slice );
+        QImage img = get_mask_image( slice, inverseMask->isChecked() );
         QPixmap pixmap = QPixmap::fromImage(img);
         pixmap = pixmap.transformed(rm); image_pixmap->setPixmap(pixmap);
         break; }
@@ -396,7 +396,7 @@ QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool 
     return index_img;
 }
 
-QImage imageHistogram::get_mask_image(QVector<QVector<double> > &slice)
+QImage imageHistogram::get_mask_image(QVector<QVector<double> > &slice, bool inversion)
 {
     if(slice.isEmpty()) {
       qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
@@ -405,7 +405,7 @@ QImage imageHistogram::get_mask_image(QVector<QVector<double> > &slice)
     QSize slice_size(slice[0].count(), slice.count());
     QImage mask_img(slice_size, QImage::Format_Mono);
 
-    switch (inverseMask->isChecked()) {
+    switch (inversion) {
     case true :{
         mask_img.fill(1);
         for(int y = 0; y < slice_size.height(); y++)
@@ -561,6 +561,7 @@ void imageHistogram::setupPreviewPlot()
     previewPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 // Add pixmap
     image_pixmap = new QCPItemPixmap(previewPlot);
+
     image_pixmap->setVisible(true);
     previewPlot->addLayer("image");
     image_pixmap->setLayer("image");
@@ -659,8 +660,9 @@ void imageHistogram::maskSave()
         mask_appended = new J09::maskRecordType;
         mask_appended->title = title;
         mask_appended->formula = formula;
-        mask_appended->image = get_mask_image( slice );
+
         mask_appended->invers = inverseMask->isChecked();
+        mask_appended->image = get_mask_image( slice, mask_appended->invers );
 
         emit appendMask();
         qDebug() << "imageHistogram::maskSave()";
@@ -697,64 +699,46 @@ void imageHistogram::contextMenuRequest(QPoint pos)
     menu->addSeparator();
     act = menu->addAction("Сохранить изображение индекса...", this, &imageHistogram::saveIndexToPdfJpgPng);
     act->setIcon(QIcon(":/icons/palette.png"));
-    act = menu->addAction("Сохранить изображение маски ...", this, &imageHistogram::saveHistogramToCsv);
+    act = menu->addAction("Сохранить изображение маски ...", this, &imageHistogram::saveMaskToPdfJpgPng);
     act->setIcon(QIcon(":/icons/theater.png"));
-    act = menu->addAction("Сохранить изображение инвертированной маски ...", this, &imageHistogram::saveHistogramToCsv);
+    act = menu->addAction("Сохранить изображение инвертированной маски ...", this, &imageHistogram::saveInvMaskToPdfJpgPng);
     act->setIcon(QIcon(":/icons/theater.png"));
-    act = menu->addAction("Сохранить RGB изображение ...", this, &imageHistogram::saveHistogramToCsv);
+    act = menu->addAction("Сохранить RGB изображение ...", this, &imageHistogram::saveRGBToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
 
     menu->popup(plot->mapToGlobal(pos));
 
 }
 
-void imageHistogram::savePlotToPdfJpgPng()
+QString imageHistogram::getWritableLocation()
 {
     QFileInfo info(f_data_file_name);
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     writableLocation += "/" + info.completeBaseName();
     QDir dir(writableLocation);
     if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
+}
+
+void imageHistogram::savePlotToPdfJpgPng()
+{
+    QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить изображение гистограммы"), writableLocation,
         tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
-    info.setFile(img_file_name);
+    QFileInfo info(img_file_name);
     if (info.suffix().toLower() == "png") plot->savePng(img_file_name);
     if (info.suffix().toLower() == "pdf") plot->savePdf(img_file_name);
     if (info.suffix().toLower() == "jpg") plot->saveJpg(img_file_name);
 
 }
 
-void imageHistogram::saveIndexToPdfJpgPng()
-{
-
-}
-
-void imageHistogram::saveMaskToPdfJpgPng()
-{
-
-}
-
-void imageHistogram::saveInvMaskToPdfJpgPng()
-{
-
-}
-
-void imageHistogram::saveRGBToPdfJpgPng()
-{
-
-}
-
 void imageHistogram::saveHistogramToCsv()
 {
-    QFileInfo info(f_data_file_name);
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    writableLocation += "/" + info.completeBaseName();
-    QDir dir(writableLocation);
-    if (!dir.exists()) dir.mkpath(".");
+    QString writableLocation = getWritableLocation();
     QString csv_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить гистограмму в Excel *.csv файл"), writableLocation,
         tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
@@ -781,4 +765,88 @@ void imageHistogram::saveHistogramToCsv()
     foreach(QString str, csv_list) stream << str << endl;
     stream.flush();
     file.close();
+}
+
+void imageHistogram::saveIndexToPdfJpgPng()
+{
+    QMatrix rm;    rm.rotate(h_data->rotation);
+    QImage img = get_index_rgb_ext( slice, h_data->colorized );
+    QPixmap pixmap = changeBrightnessPixmap( img, h_data->brightness );
+    pixmap = pixmap.transformed(rm);
+
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение индекса"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") pixmap.save(img_file_name, "PNG");
+    if (info.suffix().toLower() == "jpg") pixmap.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "bmp") pixmap.save(img_file_name, "BMP");
+
+}
+
+void imageHistogram::saveMaskToPdfJpgPng()
+{
+    QMatrix rm;    rm.rotate(h_data->rotation);
+    QImage img = get_mask_image( slice, false );
+    img = img.transformed(rm);
+
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение маски"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") img.save(img_file_name, "PNG");
+    if (info.suffix().toLower() == "jpg") img.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "bmp") img.save(img_file_name, "BMP");
+
+}
+
+void imageHistogram::saveInvMaskToPdfJpgPng()
+{
+    QMatrix rm;    rm.rotate(h_data->rotation);
+    QImage img = get_mask_image( slice, true );
+    img = img.transformed(rm);
+
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение инвертированной маски"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") img.save(img_file_name, "PNG");
+    if (info.suffix().toLower() == "jpg") img.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "bmp") img.save(img_file_name, "BMP");
+
+}
+
+void imageHistogram::saveRGBToPdfJpgPng()
+{
+    QMatrix rm;    rm.rotate(h_data->rotation);
+    QPixmap pixmap = previewRGB->transformed(rm);
+
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить RGB изображение"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") pixmap.save(img_file_name, "PNG");
+    if (info.suffix().toLower() == "jpg") pixmap.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "bmp") pixmap.save(img_file_name, "BMP");
+
 }

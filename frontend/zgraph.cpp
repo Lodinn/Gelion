@@ -151,7 +151,6 @@ QVariant zGraph::itemChange(QGraphicsItem::GraphicsItemChange change, const QVar
 
 void zGraph::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug() << "zGraph::mouseDoubleClickEvent";
     zgraphParamDlg *dlg = new zgraphParamDlg();
     dlg->move(event->screenPos());
     setParamsToDialog(dlg);
@@ -162,7 +161,6 @@ void zGraph::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
         }  // if
         getParamsFromDialog(dlg);
     }  // if
-    //    QGraphicsObject::mouseDoubleClickEvent(event);
 }
 
 zPoint::zPoint(const QPointF point) :  zGraph()

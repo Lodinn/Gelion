@@ -306,9 +306,10 @@ void MainWindow::spectralUpdateExt(zGraph *item)
 {
     if (!imgSpectral->isVisible()) return;
     auto zz_list = view->getZGraphItemsList();
-//    qDebug() << "item" << item;
+
     if (item == nullptr) {
-        imgSpectral->updateData(zz_list, true);  // обновление всех профилей
+        imgSpectral->updateData(dataFileName, zz_list, true);  // обновление всех профилей
+        imgSpectral->update();
         return;
     }  // if
 
@@ -600,7 +601,7 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
     if (item->checkState() == Qt::Checked) {
         zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true);
         spectralAct->setEnabled(true);
-        imgSpectral->updateData(zitems, true);
+        imgSpectral->updateData(dataFileName, zitems, true);
     }
     else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
         zgrap_item->dockw->setVisible(false);
@@ -721,7 +722,7 @@ void MainWindow::calculateVisibleZObject(bool rescale) {
         spectralAct->setChecked(false);
         return;
     }  // if
-    imgSpectral->updateData(z_list, rescale);
+    imgSpectral->updateData(dataFileName, z_list, rescale);
 }
 
 void MainWindow::listWidgetDeleteItem(zGraph *item)
@@ -827,7 +828,7 @@ void MainWindow::histogramSlot()
 void MainWindow::spectralSlot()
 {
     auto z_list = view->getZGraphItemsList();  // список рафических объектов на сцене
-    imgSpectral->updateData(z_list, true);
+    imgSpectral->updateData(dataFileName, z_list, true);
     imgSpectral->setVisible(!imgSpectral->isVisible());
 
 }
@@ -1525,7 +1526,7 @@ void MainWindow::show_zgraph_list()
             createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
             restoreDockWidgetsPositionExt();  // восстанавливает коррдинаты окон для загруженных ОИ
             auto graphList = view->getZGraphItemsList();
-            if (imgSpectral->isVisible()) imgSpectral->updateData(graphList, true);  // обновление всех профилей
+            if (imgSpectral->isVisible()) imgSpectral->updateData(dataFileName, graphList, true);  // обновление всех профилей
             if (graphList.count() > 0) spectralAct->setEnabled(true);
 
             return;

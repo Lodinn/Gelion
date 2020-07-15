@@ -44,5 +44,6 @@
         <file>icons/save.png</file>
         <file>icons/pdf.png</file>
         <file>icons/fit-to-height.png</file>
+        <file>icons/iconfinder_excel_272697.png</file>
     </qresource>
 </RCC>

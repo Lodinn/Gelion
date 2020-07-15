@@ -50,7 +50,7 @@ private:
     QVector<QVector<double> > slice;
     QSize main_size;
     QImage get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized);
-    QImage get_mask_image(QVector<QVector<double> > &slice);
+    QImage get_mask_image(QVector<QVector<double> > &slice, bool inversion);
     QRgb get_rainbow_RGB(double Wavelength);
     void setHistogramToBracked();
     QPixmap changeBrightnessPixmap(QImage &img, double brightness);
@@ -64,6 +64,7 @@ private:
     QString getMaskFormula();
     QString getMaskTitle();
     J09::maskRecordType *mask_appended;
+    QString getWritableLocation();
 private slots:
     void brightnessChanged();
     void leftColorChanged();
@@ -78,11 +79,11 @@ private slots:
     void routate90(bool clockwise);
     void contextMenuRequest(QPoint pos);
     void savePlotToPdfJpgPng();
+    void saveHistogramToCsv();
     void saveIndexToPdfJpgPng();
     void saveMaskToPdfJpgPng();
     void saveInvMaskToPdfJpgPng();
     void saveRGBToPdfJpgPng();
-    void saveHistogramToCsv();
 signals:
      void appendMask();
 
