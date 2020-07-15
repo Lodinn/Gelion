@@ -68,18 +68,24 @@ public:
     double getRotationFromCoords(QPointF p1, QPointF p2);
     QVector<QPointF > profile;
     QVector<QPointF > std_dev_upper, std_dev_lower;
-    double sigma = .0;
+    double sigma = .0;  // интегральное стандартное отклонение в процентах
+    double sigma2 = 2.;  // интегральное стандартное отклонение 2
     QVector<double > pup, plw;
     void calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw);
     int transparency = 50;
 //    void calculateStandardDeviation();
 //    void calculateMedianProfile();
+    QVector<double> keys, values;  // координаты медианного профиля
+    QVector<double> values_std_dev_upper, values_std_dev_lower;  // координаты стандартного отклонения верх, низ
+    void calculateProfileWithSnandartDeviation();  // рассчитать медианный профиль и стандартное отклонение
 signals:
      void mouseMove();
      void mouseRelease();
      void itemChange();
      void itemDelete(zGraph *);
      void changeParamsFromDialog(zGraph *);
+     void changeZObjectNative(zGraph *);
+
 private slots:
      void contextMenuRequest(QPoint pos);
      void savePlotToPdfJpgPng();
@@ -109,6 +115,10 @@ protected:
      void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
      QPointF getRectPoint2(QPointF p1, qreal w, qreal rot);
 private:
+     void calculateSnandartDeviation();
+     void calculateMedianProfileForRectEllipseTypes();
+     void calculateMedianProfileForPolyPolygonTypes();
+     void graphSetData();
 };
 
 class zPoint : public zGraph

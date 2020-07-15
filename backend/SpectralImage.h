@@ -43,6 +43,14 @@ namespace J09 {
       int zobject_dock_size_w = 420;  // размеры окна профиля, пиксели
       int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
       bool zobjects_prof_rainbow_show = true;  // заливка спектральных диапазонов
+      double zobject_plot_xAxis_lower = 390.;
+      double zobject_plot_xAxis_upper = 1010.;
+      double zobject_plot_yAxis_lower = 0.;
+      double zobject_plot_yAxis_upper = 1.4;
+      int std_dev_brush_color_red = 200;
+      int std_dev_brush_color_green = 200;
+      int std_dev_brush_color_blue = 200;
+      int std_dev_brush_color_transparency = 200;
   };
   struct maskRecordType {  // пакет данных об изображении - Маска
       QString title;  // наименование

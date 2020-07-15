@@ -499,24 +499,30 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
 
     item->dockw = dockw;
-    dockw->setFloating(true);  dockw->setObjectName("zGraph ");
-    dockw->resize(420,150);
-//    QRect desktop = QApplication::desktop()->screenGeometry();
-//    dockw->move(round(desktop.width()/5),round(desktop.height()/5));
+    item->imgHand = im_handler;
+    dockw->setFloating(true);  dockw->setObjectName("zGraph");
+    dockw->resize(GLOBAL_SETTINGS.zobject_dock_size_w,GLOBAL_SETTINGS.zobject_dock_size_h);
+
     wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
 
     wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
     wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
     wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
     wPlot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
-    wPlot->resize(420,150);  wPlot->addGraph();
+    wPlot->resize(GLOBAL_SETTINGS.zobject_dock_size_w,GLOBAL_SETTINGS.zobject_dock_size_h);
 
+    wPlot->addGraph();
     QCPGraph *graph_lower = wPlot->addGraph();
+    QCPGraph *graph_upper = wPlot->addGraph();
+
     graph_lower->setPen(Qt::NoPen);
     graph_lower->setSelectable(QCP::stNone);
-    QCPGraph *graph_upper = wPlot->addGraph();
+
     graph_upper->setPen(Qt::NoPen);
-    graph_upper->setBrush(QColor(200, 200, 200, item->transparency));
+    item->transparency = GLOBAL_SETTINGS.std_dev_brush_color_transparency;
+    QColor bc(GLOBAL_SETTINGS.std_dev_brush_color_red,GLOBAL_SETTINGS.std_dev_brush_color_green,
+              GLOBAL_SETTINGS.std_dev_brush_color_blue, item->transparency);
+    graph_upper->setBrush(bc);
     graph_upper->setSelectable(QCP::stNone);
     graph_upper->setChannelFillGraph(graph_lower);
 
@@ -524,8 +530,8 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     wPlot->xAxis->setLabel("длина волны, нм");
     wPlot->yAxis->setLabel("коэффициент отражения");
 // set axes ranges, so we see all data:
-    wPlot->xAxis->setRange(390, 1010);
-    wPlot->yAxis->setRange(0, 1.2);
+    wPlot->xAxis->setRange(GLOBAL_SETTINGS.zobject_plot_xAxis_lower,GLOBAL_SETTINGS.zobject_plot_xAxis_upper);
+    wPlot->yAxis->setRange(GLOBAL_SETTINGS.zobject_plot_yAxis_lower,GLOBAL_SETTINGS.zobject_plot_yAxis_upper);
     item->plot = wPlot;
     item->setContextMenuConnection();
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
@@ -539,7 +545,9 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
     zGraphListWidget->insertItem(0, lwItem);
+
     connect(item, SIGNAL(changeParamsFromDialog(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
+    connect(item, SIGNAL(changeZObjectNative(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 }
 
 void MainWindow::setZGraphDockToggled(zGraph *item)

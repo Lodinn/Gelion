@@ -96,7 +96,6 @@ public:
   void point_picked(QPointF);
   void removeFromzGraphListWidget(zGraph *item);
   void changeZObject(zGraph *item);
-
 // FIXME: keeping two separate index lists here and in mainwindow. Subclass
 // instead and connect to plot directly?
 //  void roi_position_updated(QPair<int, QPointF> new_position);
