@@ -304,6 +304,7 @@ void MainWindow::createMainConnections()
 
 void MainWindow::spectralUpdateExt(zGraph *item)
 {
+    item->data_file_name = dataFileName;
     if (!imgSpectral->isVisible()) return;
     auto zz_list = view->getZGraphItemsList();
 

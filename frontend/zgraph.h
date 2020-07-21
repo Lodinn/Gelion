@@ -85,12 +85,14 @@ public:
     void setInversCm(bool b);
     bool getInversCm();
     int count_of_point = 1;  // количество точек внутри объекта, по умолчанию 1
+    QString data_file_name;
 protected:
     void getSettingsBase(QStringList &strlist, QString zname, int num);
     void getSettingsDeviation(QStringList &strlist, QString zname, int num);
     void setSettingsBase(QSettings *settings);
     void setSettingsDeviation(QSettings *settings);
     QVector<double> getVectorFromStr(QString str);
+    QString getWritableLocation();
 signals:
      void mouseMove();
      void mouseRelease();

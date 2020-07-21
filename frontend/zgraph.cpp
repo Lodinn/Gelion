@@ -314,6 +314,16 @@ QVector<double> zGraph::getVectorFromStr(QString str)
     return v;
 }
 
+QString zGraph::getWritableLocation()
+{
+    QFileInfo info(data_file_name);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
+}
+
 void zGraph::calculateStandartDeviation()
 {
     int d = keys.count();
@@ -466,7 +476,7 @@ void zGraph::contextMenuRequest(QPoint pos)
 {
     QMenu *menu = new QMenu(plot);
     menu->setAttribute(Qt::WA_DeleteOnClose);
-    QAction *act = menu->addAction("Сохранить изображение ...", this, SLOT(savePlotToPdfJpgPng()));
+    QAction *act = menu->addAction("Сохранить изображение профиля ...", this, SLOT(savePlotToPdfJpgPng()));
     act->setIcon(QIcon(":/icons/pdf.png"));
     menu->addSeparator();
     act = menu->addAction("Сохранить профиль в Excel *.csv файл ...", this, SLOT(savePlotToCsv()));
@@ -483,17 +493,87 @@ void zGraph::contextMenuRequest(QPoint pos)
 
 void zGraph::savePlotToPdfJpgPng()
 {
-    qDebug("pdf");
+    QString writableLocation = getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        dockw, tr("Сохранить изображение профиля"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") plot->savePng(img_file_name);
+    if (info.suffix().toLower() == "pdf") plot->savePdf(img_file_name);
+    if (info.suffix().toLower() == "jpg") plot->saveJpg(img_file_name);
 }
 
 void zGraph::savePlotToCsv()
 {
-    qDebug("csv");
+    QString writableLocation = getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        dockw, tr("Сохранить профиль в Excel *.csv файл"), writableLocation,
+        tr("CSV Файлы Excel (*.csv);;CSV Файлы Excel (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(csv_file_name);
+    if (info.suffix().toLower() == "csv") {
+        QStringList csv_list;
+        csv_list.append(data_file_name);
+        QString str = "количество точек;";
+        str.append(QString("%1;").arg(this->count_of_point));
+        csv_list.append(str);
+        str = "ср.кв.отклонение, %;";
+        str.append(QString("%1;").arg(this->sigma, 0, 'f', 1).replace('.', ','));
+        csv_list.append(str);
+        str = "длина волны, нм;";
+        str.append(this->getTitle());
+        csv_list.append(str);
+
+        int count = this->w_len.count();
+        for (int i=0; i<count; i++) {
+            QString str = QString(tr("%1;").arg(this->keys[i]));
+            str.append(QString(tr("%1;").arg(this->values[i])));
+            str = str.replace('.', ',');
+            csv_list.append(str);
+        }  // for
+        QFile file(csv_file_name);
+        file.remove();
+        file.open( QIODevice::Append | QIODevice::Text );
+        QTextStream stream(&file);
+        stream.setCodec("UTF-8");
+        stream.setGenerateByteOrderMark(true);
+        foreach(QString str, csv_list) stream << str << endl;
+        stream.flush();
+        file.close();
+    }  // if
 }
 
 void zGraph::savePlotToRoi()
 {
-    qDebug("roi");
+    QString writableLocation = getWritableLocation();
+    QString roi_file_name = QFileDialog::getSaveFileName(
+        dockw, tr("Сохранить область интереса в *.roi файл"), writableLocation,
+        tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
+    if (roi_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(roi_file_name);
+    if (info.suffix().toLower() == "roi") {
+        QSettings settings( roi_file_name, QSettings::IniFormat );
+        QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+        settings.setIniCodec( codec );
+        settings.clear();
+        int num = 0;
+        QStringList strlist = this->getSettings(num);
+        foreach(QString str, strlist) {
+            int index = str.indexOf(this->setsep);
+            if (index != -1) {
+                QString mid_Key = str.mid(0,index);
+                QString mid_Value = str.mid(index+1);
+                settings.setValue(mid_Key, mid_Value);
+            }  // if
+        }  // for
+    }  // if
 }
 
 void zGraph::plotRescaleAxes()

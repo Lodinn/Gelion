@@ -356,8 +356,8 @@ void SpectralPlot::savePlotToCsv()
         csv_list.append(str);
         str = "ср.кв.отклонение, %;";
         foreach(zGraph *item, graph_list)
-            if (item->isVisible()) str.append(QString("%1;").arg(item->sigma, 0, 'f', 1));
-        csv_list.append(str.replace('.', ','));
+            if (item->isVisible()) str.append(QString("%1;").arg(item->sigma, 0, 'f', 1).replace('.', ','));
+        csv_list.append(str);
         str = "длина волны, нм;";
         foreach(zGraph *item, graph_list)
             if (item->isVisible()) str.append(item->getTitle() + ";");
@@ -372,6 +372,7 @@ void SpectralPlot::savePlotToCsv()
             csv_list.append(str);
         }  // for
         QFile file(csv_file_name);
+        file.remove();
         file.open( QIODevice::Append | QIODevice::Text );
         QTextStream stream(&file);
         stream.setCodec("UTF-8");
