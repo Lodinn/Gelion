@@ -328,10 +328,15 @@ void zGraph::calculateStandardDeviationVectors(double zfactor)
 {
     int d = keys.count();
     sigma = .0;
-    if (d <= 1) return; // div/0 for std otherwise
+    if (d <= 1) { // div/0 for std
+      for(int i = 0; i < d; i++) {
+        values_std_dev_lower[i] = values[i];
+        values_std_dev_upper[i] = values[i];
+      }
+      return;
+    }
     QVector<double> std_dev(d, 0.);
 
-    sigma = 0.;
     int sigma_count = 0;
     for(int i = 0; i < d; i++) {
       for(int j = 0; j < buff.count(); j++) {
