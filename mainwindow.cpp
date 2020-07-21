@@ -955,10 +955,10 @@ void MainWindow::restoreSettings()
             + "/" + info.completeBaseName() + ".ini";
     QFileInfo infoINI(iniFileName);
     if (!infoINI.exists()) return;
-    QSettings settings( iniFileName, QSettings::IniFormat );
+    QSettings *settings = new QSettings( iniFileName, QSettings::IniFormat );
     QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
-    settings.setIniCodec( codec );
-    int ver = settings.value("version").toInt();
+    settings->setIniCodec( codec );
+    int ver = settings->value("version").toInt();
     switch (ver) {
     case 1 : { restoreSettingsVersionOne(settings); break; }
     case 2 : { restoreSettingsVersionTwo(settings); break ; }
@@ -1036,11 +1036,11 @@ QString MainWindow::getMainSettingsFileName()
     return writableLocation + "/" + info.completeBaseName() + ".conf";
 }
 
-void MainWindow::restoreSettingsVersionOne(QSettings &settings)
+void MainWindow::restoreSettingsVersionOne(QSettings *settings)
 {
-    view->GlobalScale = settings.value("scale", 1.0).toDouble();
-    view->GlobalRotate = settings.value("rotation", 0.0).toDouble();
-    view->GlobalChannelNum = settings.value("channelNum", 0).toInt();
+    view->GlobalScale = settings->value("scale", 1.0).toDouble();
+    view->GlobalRotate = settings->value("rotation", 0.0).toDouble();
+    view->GlobalChannelNum = settings->value("channelNum", 0).toInt();
     uint32_t depth = im_handler->current_image()->get_bands_count();
     if (view->GlobalChannelNum < depth) {
         QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
@@ -1051,19 +1051,19 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
         itemClickedIndexList(lwItem);
         indexListWidget->setCurrentItem(lwItem);  indexListWidget->scrollToItem(lwItem);
     }  // if
-    view->GlobalChannelStep = settings.value("channelStep", 1).toInt();
+    view->GlobalChannelStep = settings->value("channelStep", 1).toInt();
     show_channel_list_update();
 
-    int horizontal = settings.value("horizontal", 0).toInt();
-    int vertical = settings.value("vertical", 0).toInt();
+    int horizontal = settings->value("horizontal", 0).toInt();
+    int vertical = settings->value("vertical", 0).toInt();
     view->resetMatrix();  view->resetTransform();
     view->scale(1/view->GlobalScale, 1/view->GlobalScale);
     view->rotate(-view->GlobalRotate);
     view->horizontalScrollBar()->setValue(horizontal);
     view->verticalScrollBar()->setValue(vertical);
-    auto graphlist = settings.value("dockZGraphList", true).toBool();
-    auto channellist = settings.value("dockChannelList", true).toBool();
-    auto indexlist = settings.value("dockIndexList", true).toBool();
+    auto graphlist = settings->value("dockZGraphList", true).toBool();
+    auto channellist = settings->value("dockChannelList", true).toBool();
+    auto indexlist = settings->value("dockIndexList", true).toBool();
     dockZGraphList->setVisible(graphlist);
     dockChannelList->setVisible(channellist);
     dockIndexList->setVisible(indexlist);
@@ -1071,27 +1071,27 @@ void MainWindow::restoreSettingsVersionOne(QSettings &settings)
     view->channelListAct->setChecked(dockChannelList->isVisible());
     view->indexListAct->setChecked(dockIndexList->isVisible());
     view->PAN = false;
-    QStringList groups = settings.childGroups();
+    QStringList groups = settings->childGroups();
 
     createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
 
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray(), 1);
+    restoreGeometry(settings->value("geometry").toByteArray());
+    restoreState(settings->value("windowState").toByteArray(), 1);
     restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
 }
 
-void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &settings)
+void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *settings)
 {
     foreach(QString str, groups) {
         if (str.indexOf("Point") != -1) {
-            settings.beginGroup(str);
-            QString pos = settings.value("pos").toString();
+            settings->beginGroup(str);
+            QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
             zPoint *point = new zPoint( pXY );
-            QString title = settings.value("title").toString();
+            QString title = settings->value("title").toString();
             point->setTitle(title);
             point->aicon = QIcon(":/images/pin_grey.png");
-            bool objectvisible = settings.value("objectvisible", true).toBool();
+            bool objectvisible = settings->value("objectvisible", true).toBool();
             point->setVisible(objectvisible);
 // create dynamic DockWidget
             view->scene()->addItem(point);          // view->scene()->addItem(point);
@@ -1099,30 +1099,31 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             emit view->insertZGraphItem(point);
 // &&& sochi 2020
 //            view->show_profile_for_Z(point);
-            point->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+
+            point->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
             emit view->changeZObject(point);
 // &&& sochi 2020
             emit view->setZGraphDockToggled(point);
-            point->dockw->setVisible(settings.value("dockvisible", true).toBool());
-            QString dockwpos = settings.value("dockwpos").toString();
+            point->dockw->setVisible(settings->value("dockvisible", true).toBool());
+            QString dockwpos = settings->value("dockwpos").toString();
             point->dockwpos = getPoint__fromStr(dockwpos);
-            settings.endGroup();
+            settings->endGroup();
 // create dynamic DockWidget
             continue;
         }  // Point
         if (str.indexOf("Rect") != -1) {
-            settings.beginGroup(str);
-            QString pos = settings.value("pos").toString();
+            settings->beginGroup(str);
+            QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
             zRect *rect = new zRect(pXY,view->GlobalScale,view->GlobalRotate);
-            QString title = settings.value("title").toString();
+            QString title = settings->value("title").toString();
             rect->setTitle(title);
             rect->aicon = QIcon(":/images/vector_square.png");
-            bool objectvisible = settings.value("objectvisible", true).toBool();
+            bool objectvisible = settings->value("objectvisible", true).toBool();
             rect->setVisible(objectvisible);
-            double rotation = settings.value("rotation").toDouble();
+            double rotation = settings->value("rotation").toDouble();
             rect->setRotation(rotation);
-            QString sizestr = settings.value("size").toString();
+            QString sizestr = settings->value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
             rect->frectSize.setWidth(fsize.rx());
             rect->frectSize.setHeight(fsize.ry());
@@ -1132,30 +1133,30 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             emit view->insertZGraphItem(rect);
             // &&& sochi 2020
             //            view->show_profile_for_Z(rect);
-            rect->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            rect->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
             emit view->changeZObject(rect);
             // &&& sochi 2020
             emit view->setZGraphDockToggled(rect);
-            rect->dockw->setVisible(settings.value("dockvisible", true).toBool());
-            QString dockwpos = settings.value("dockwpos").toString();
+            rect->dockw->setVisible(settings->value("dockvisible", true).toBool());
+            QString dockwpos = settings->value("dockwpos").toString();
             rect->dockwpos = getPoint__fromStr(dockwpos);
-            settings.endGroup();
+            settings->endGroup();
 // create dynamic DockWidget
             continue;
         }  // Rect
         if (str.indexOf("Ellipse") != -1) {
-            settings.beginGroup(str);
-            QString pos = settings.value("pos").toString();
+            settings->beginGroup(str);
+            QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
             zEllipse *ellipse = new zEllipse(pXY,view->GlobalScale,view->GlobalRotate);
-            QString title = settings.value("title").toString();
+            QString title = settings->value("title").toString();
             ellipse->setTitle(title);
             ellipse->aicon = QIcon(":/images/vector_ellipse.png");
-            bool objectvisible = settings.value("objectvisible", true).toBool();
+            bool objectvisible = settings->value("objectvisible", true).toBool();
             ellipse->setVisible(objectvisible);
-            double rotation = settings.value("rotation").toDouble();
+            double rotation = settings->value("rotation").toDouble();
             ellipse->setRotation(rotation);
-            QString sizestr = settings.value("size").toString();
+            QString sizestr = settings->value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
             ellipse->frectSize.setWidth(fsize.rx());
             ellipse->frectSize.setHeight(fsize.ry());
@@ -1165,30 +1166,30 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             emit view->insertZGraphItem(ellipse);
             // &&& sochi 2020
             //            view->show_profile_for_Z(ellipse);
-            ellipse->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            ellipse->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
             emit view->changeZObject(ellipse);
             // &&& sochi 2020
             emit view->setZGraphDockToggled(ellipse);
-            ellipse->dockw->setVisible(settings.value("dockvisible", true).toBool());
-            QString dockwpos = settings.value("dockwpos").toString();
+            ellipse->dockw->setVisible(settings->value("dockvisible", true).toBool());
+            QString dockwpos = settings->value("dockwpos").toString();
             ellipse->dockwpos = getPoint__fromStr(dockwpos);
-            settings.endGroup();
+            settings->endGroup();
 // create dynamic DockWidget
             continue;
         }  // Ellipse
         if (str.indexOf("Polyline") != -1) {
-            settings.beginGroup(str);
-            QString pos = settings.value("pos").toString();
+            settings->beginGroup(str);
+            QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
             zPolyline *polyline = new zPolyline( view->GlobalScale,view->GlobalRotate );
-            QString title = settings.value("title").toString();
+            QString title = settings->value("title").toString();
             polyline->setTitle(title);
             polyline->setPos(pXY);
             polyline->aicon = QIcon(":/images/polyline-64.png");
-            bool objectvisible = settings.value("objectvisible", true).toBool();
+            bool objectvisible = settings->value("objectvisible", true).toBool();
             polyline->setVisible(objectvisible);
-            QString xstr = settings.value("x").toString();
-            QString ystr = settings.value("y").toString();
+            QString xstr = settings->value("x").toString();
+            QString ystr = settings->value("y").toString();
             auto x = getVectorFromStr(xstr);
             auto y = getVectorFromStr(ystr);
             for (int i=0; i<x.length();i++)
@@ -1199,30 +1200,30 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             emit view->insertZGraphItem(polyline);
             // &&& sochi 2020
             //            view->show_profile_for_Z(polyline);
-            polyline->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            polyline->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
             emit view->changeZObject(polyline);
             // &&& sochi 2020
             emit view->setZGraphDockToggled(polyline);
-            polyline->dockw->setVisible(settings.value("dockvisible", true).toBool());
-            QString dockwpos = settings.value("dockwpos").toString();
+            polyline->dockw->setVisible(settings->value("dockvisible", true).toBool());
+            QString dockwpos = settings->value("dockwpos").toString();
             polyline->dockwpos = getPoint__fromStr(dockwpos);
-            settings.endGroup();
+            settings->endGroup();
 // create dynamic DockWidget
             continue;
         }  // Polyline
         if (str.indexOf("Polygon") != -1) {
-            settings.beginGroup(str);
-            QString pos = settings.value("pos").toString();
+            settings->beginGroup(str);
+            QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
             zPolygon *polygon = new zPolygon( view->GlobalScale,view->GlobalRotate );
-            QString title = settings.value("title").toString();
+            QString title = settings->value("title").toString();
             polygon->setTitle(title);
             polygon->setPos(pXY);
             polygon->aicon = QIcon(":/images/vector-polygon.png");
-            bool objectvisible = settings.value("objectvisible", true).toBool();
+            bool objectvisible = settings->value("objectvisible", true).toBool();
             polygon->setVisible(objectvisible);
-            QString xstr = settings.value("x").toString();
-            QString ystr = settings.value("y").toString();
+            QString xstr = settings->value("x").toString();
+            QString ystr = settings->value("y").toString();
             auto x = getVectorFromStr(xstr);
             auto y = getVectorFromStr(ystr);
             for (int i=0; i<x.length();i++)
@@ -1233,14 +1234,14 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             emit view->insertZGraphItem(polygon);
             // &&& sochi 2020
             //            view->show_profile_for_Z(polygon);
-            polygon->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            polygon->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
             emit view->changeZObject(polygon);
             // &&& sochi 2020
             emit view->setZGraphDockToggled(polygon);
-            polygon->dockw->setVisible(settings.value("dockvisible", true).toBool());
-            QString dockwpos = settings.value("dockwpos").toString();
+            polygon->dockw->setVisible(settings->value("dockvisible", true).toBool());
+            QString dockwpos = settings->value("dockwpos").toString();
             polygon->dockwpos = getPoint__fromStr(dockwpos);
-            settings.endGroup();
+            settings->endGroup();
 // create dynamic DockWidget
             continue;
         }  // Polygon
@@ -1283,7 +1284,7 @@ void MainWindow::restoreDockWidgetsPositionExt()
     }  // foreach
 }
 
-void MainWindow::restoreSettingsVersionTwo(QSettings &settings)
+void MainWindow::restoreSettingsVersionTwo(QSettings *settings)
 {
     Q_UNUSED(settings)
 }
@@ -1501,17 +1502,18 @@ void MainWindow::show_zgraph_list()
             if (zGraphList.count() == 0) return;
             QString csv_file_name = QFileDialog::getSaveFileName(
                 this, tr("Сохранить профили в Excel *.csv файл"), QCoreApplication::applicationDirPath(),
-                tr("CSV Files Excel (*.csv);;CSV Files (*.scv)"));
+                tr("CSV Файлы Excel (*.csv);;CSV Файлы Excel (*.scv)"));
             if (csv_file_name.isEmpty()) return;
+
             QStringList csv_list;
             QString str = "длина волны, нм;";
+            int count = zGraphList[0]->w_len.count();
             foreach(zGraph *item, zGraphList) str.append(item->getTitle() + ";");
             csv_list.append(str);
-            int count = zGraphList[0]->profile.count();
             for (int i=0; i<count; i++) {
-                QString str = QString(tr("%1;").arg(zGraphList[0]->profile[i].rx()));
+                QString str = QString(tr("%1;").arg(zGraphList[0]->keys[i]));
                 foreach(zGraph *item, zGraphList)
-                    str.append(QString(tr("%1;").arg(item->profile[i].ry())));
+                    str.append(QString(tr("%1;").arg(item->values[i])));
                 str = str.replace('.', ',');
                 csv_list.append(str);
             }  // for i
@@ -1543,12 +1545,14 @@ void MainWindow::show_zgraph_list()
                 tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
             if (fname.isEmpty()) return;
 
-            QSettings settings( fname, QSettings::IniFormat );
+//            QSettings settings( fname, QSettings::IniFormat );
+            QSettings *settings = new QSettings( fname, QSettings::IniFormat );
             QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
-            settings.setIniCodec( codec );
-            QStringList groups = settings.childGroups();
+            settings->setIniCodec( codec );
+            QStringList groups = settings->childGroups();
 
             createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
+
             restoreDockWidgetsPositionExt();  // восстанавливает коррдинаты окон для загруженных ОИ
             auto graphList = view->getZGraphItemsList();
             if (imgSpectral->isVisible()) imgSpectral->updateData(dataFileName, graphList, true);  // обновление всех профилей

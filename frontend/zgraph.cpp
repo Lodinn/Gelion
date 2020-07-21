@@ -47,31 +47,36 @@ void zGraph::setContextMenuConnection()
     connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
 }
 
-void zGraph::setSettingsFromFile(QSettings &settings, QString &str)
+void zGraph::setSettingsFromFile(QSettings *settings)
 {
     switch (this->type()) {
     case zPoint::Type : {
-        setSettingsBase(settings, str);
+        setSettingsBase(settings);
+        graphSetData();
         return;
     } // case zPoint::Type
     case zRect::Type : {
-        setSettingsBase(settings, str);
-        setSettingsDeviation(settings, str);
+        setSettingsBase(settings);
+        setSettingsDeviation(settings);
+        graphSetData();
         return;
     }  // case zRect::Type
     case zEllipse::Type : {
-        setSettingsBase(settings, str);
-        setSettingsDeviation(settings, str);
+        setSettingsBase(settings);
+        setSettingsDeviation(settings);
+        graphSetData();
         return;
     }  // case zEllipse::Type
     case zPolyline::Type : {
-        setSettingsBase(settings, str);
-        setSettingsDeviation(settings, str);
+        setSettingsBase(settings);
+        setSettingsDeviation(settings);
+        graphSetData();
         return;
     }  // case zPolyline::Type
     case zPolygon::Type : {
-        setSettingsBase(settings, str);
-        setSettingsDeviation(settings, str);
+        setSettingsBase(settings);
+        setSettingsDeviation(settings);
+        graphSetData();
         return;
     }  // case zPolygon::Type
     }  // switch
@@ -154,12 +159,8 @@ int zGraph::calculateProfileWithSnandartDeviation()
                 int i = w_len.indexOf(x);
                 keys[i] = w_len[i];   values[i] = k_ref[i]; }  // foreach
         // inverse cm
-        this->plot->graph(0)->setData(keys, values, true);
-        this->plot->xAxis->rescale(true);
-        this->plot->replot();
-
         count_of_point = 1;
-        dockw->setWindowTitle(this->getTitleExt());
+        graphSetData();
         buff.clear();
         return 0;
     }  // case zPoint::Type
@@ -171,7 +172,6 @@ int zGraph::calculateProfileWithSnandartDeviation()
         calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        dockw->setWindowTitle(this->getTitleExt());
         buff.clear();
         return 0;
     }  // case zRect::Type
@@ -183,7 +183,6 @@ int zGraph::calculateProfileWithSnandartDeviation()
         calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        dockw->setWindowTitle(this->getTitleExt());
         buff.clear();
         return 0;
     }  // case zEllipse::Type
@@ -195,7 +194,6 @@ int zGraph::calculateProfileWithSnandartDeviation()
         calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        dockw->setWindowTitle(this->getTitleExt());
         buff.clear();
         return 0;
     }  // case zPolyline::Type
@@ -207,7 +205,6 @@ int zGraph::calculateProfileWithSnandartDeviation()
         calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        dockw->setWindowTitle(this->getTitleExt());
         buff.clear();
         return 0;
     }  // case zPolygon::Type
@@ -290,31 +287,23 @@ void zGraph::getSettingsDeviation(QStringList &strlist, QString zname, int num)
         strlist.append(QString("%1%2/values_std_dev_lower%3%4").arg(zname).arg(num).arg(setsep).arg(str));
 }
 
-void zGraph::setSettingsBase(QSettings &settings, QString &str)
+void zGraph::setSettingsBase(QSettings *settings)
 {
-    settings.beginGroup(str);
+    invers_cm = settings->value("invers_cm").toBool();
 
-    invers_cm = settings.value("invers_cm").toBool();
-
-    w_len = getVectorFromStr(settings.value("w_len").toString());
-    k_ref = getVectorFromStr(settings.value("k_ref").toString());
-    keys = getVectorFromStr(settings.value("keys").toString());
-    values = getVectorFromStr(settings.value("values").toString());
-
-    settings.endGroup();
+    w_len = getVectorFromStr(settings->value("w_len").toString());
+    k_ref = getVectorFromStr(settings->value("k_ref").toString());
+    keys = getVectorFromStr(settings->value("keys").toString());
+    values = getVectorFromStr(settings->value("values").toString());
 }
 
-void zGraph::setSettingsDeviation(QSettings &settings, QString &str)
+void zGraph::setSettingsDeviation(QSettings *settings)
 {
-    settings.beginGroup(str);
+    sigma = settings->value("sigma").toDouble();
+    count_of_point = settings->value("count_of_point").toInt();
 
-    sigma = settings.value("sigma").toDouble();
-    count_of_point = settings.value("count_of_point").toInt();
-
-    values_std_dev_upper = getVectorFromStr(settings.value("values_std_dev_upper").toString());
-    values_std_dev_lower = getVectorFromStr(settings.value("values_std_dev_lower").toString());
-
-    settings.endGroup();
+    values_std_dev_upper = getVectorFromStr(settings->value("values_std_dev_upper").toString());
+    values_std_dev_lower = getVectorFromStr(settings->value("values_std_dev_lower").toString());
 }
 
 QVector<double> zGraph::getVectorFromStr(QString str)
@@ -459,9 +448,17 @@ void zGraph::calculateMedianProfileForPolyPolygonTypes()
 
 void zGraph::graphSetData()
 {
+    dockw->setWindowTitle(this->getTitleExt());
+    if (this->type() == zPoint::Type) {
+        this->plot->graph(0)->setData(keys, values, true);
+        this->plot->xAxis->rescale(true);
+        this->plot->replot();
+        return;
+    }  // if
     this->plot->graph(0)->setData(this->keys, this->values, true);
     this->plot->graph(1)->setData(this->keys, this->values_std_dev_lower, true);
     this->plot->graph(2)->setData(this->keys, this->values_std_dev_upper, true);
+    this->plot->xAxis->rescale(true);
     this->plot->replot();
 }
 
@@ -589,7 +586,7 @@ QStringList zPoint::getSettings(int num)
 {
 
     QStringList strlist;
-    // rectangle7/title#Прямоугольник 1
+
     strlist.append(QString("Point%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Point%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Point%1/pos%2%3,%4").arg(num).arg(setsep)
@@ -748,7 +745,7 @@ void zPolygon::addPoint(QPoint point)
 QStringList zPolygon::getSettings(int num)
 {
     QStringList strlist;
-    // polygon7/title#Полигон 1
+
     strlist.append(QString("Polygon%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Polygon%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Polygon%1/pos%2%3,%4").arg(num).arg(setsep)
@@ -943,7 +940,7 @@ void zRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWi
 QStringList zRect::getSettings(int num)
 {
     QStringList strlist;
-    // rectangle7/title#Прямоугольник 1
+
     strlist.append(QString("Rectangle%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Rectangle%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     QPointF point = getRectPoint2(pos(), frectSize.width(), rotation());
@@ -1092,7 +1089,7 @@ void zEllipse::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
 QStringList zEllipse::getSettings(int num)
 {
     QStringList strlist;
-    // rectangle7/title#Прямоугольник 1
+
     strlist.append(QString("Ellipse%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Ellipse%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     QPointF point = getRectPoint2(pos(), frectSize.width(), rotation());
@@ -1257,7 +1254,7 @@ void zPolyline::addPoint(QPoint point)
 QStringList zPolyline::getSettings(int num)
 {
     QStringList strlist;
-    // polygon7/title#Полигон 1
+
     strlist.append(QString("Polyline%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
     strlist.append(QString("Polyline%1/title%2%3").arg(num).arg(setsep).arg(getTitle()));
     strlist.append(QString("Polyline%1/pos%2%3,%4").arg(num).arg(setsep)

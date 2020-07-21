@@ -72,11 +72,11 @@ private:
   void loadMainSettings();
   void saveMainSettings();
   QString getMainSettingsFileName();
-  void restoreSettingsVersionOne(QSettings &settings);
-  void createZGraphItemFromGroups(QStringList &groups, QSettings &settings);  // создать объекты из текстового списка
+  void restoreSettingsVersionOne(QSettings *settings);
+  void createZGraphItemFromGroups(QStringList groups, QSettings *settings);  // создать объекты из текстового списка
   void restoreTRUEdockWidgetsPosition();  // restoreGeometry !!! путает последовательность окон профилей
   void restoreDockWidgetsPositionExt();  // // восстанавливает коррдинаты окон для загруженных ОИ
-  void restoreSettingsVersionTwo(QSettings &settings);
+  void restoreSettingsVersionTwo(QSettings *settings);
   void addRecentFile();
   void saveGLOBALSettings();
   QString getGlobalIniFileName();

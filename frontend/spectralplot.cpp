@@ -64,9 +64,6 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
     sYmin = .0;  sYmax = INT_MIN;
     foreach(zGraph *item, list) {
         if (!item->isVisible()) continue;
-//        int n = item->profile.count();
-//        QVector<double> x(n), y(n);
-//        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
         sXmin = std::min(sXmin, *std::min_element(item->keys.begin(), item->keys.end()));
         sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
         sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
@@ -84,7 +81,6 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
         plot->graph()->setScatterStyle(QCPScatterStyle(static_cast<QCPScatterStyle::ScatterShape>(style)));
     }  // foreach
 
-//    if (rescale) spectralAnalisysPlot->rescaleAxes();
     if (rescale) spectralSetAllRange();
 
     // spectral colors
@@ -342,12 +338,80 @@ void SpectralPlot::savePlotToPdfJpgPng()
 
 void SpectralPlot::savePlotToCsv()
 {
+    if (graph_list.count() == 0) return;
+    QString writableLocation = getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить спектральные профили в Excel *.csv файл"), writableLocation,
+        tr("CSV Файлы Excel (*.csv);;CSV Файлы Excel (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(csv_file_name);
+    if (info.suffix().toLower() == "csv") {
+        QStringList csv_list;
+        csv_list.append(f_data_file_name);
+        QString str = "количество точек;";
+        foreach(zGraph *item, graph_list)
+            if (item->isVisible()) str.append(QString("%1;").arg(item->count_of_point));
+        csv_list.append(str);
+        str = "ср.кв.отклонение, %;";
+        foreach(zGraph *item, graph_list)
+            if (item->isVisible()) str.append(QString("%1;").arg(item->sigma, 0, 'f', 1));
+        csv_list.append(str.replace('.', ','));
+        str = "длина волны, нм;";
+        foreach(zGraph *item, graph_list)
+            if (item->isVisible()) str.append(item->getTitle() + ";");
+        csv_list.append(str);
 
+        int count = graph_list[0]->w_len.count();
+        for (int i=0; i<count; i++) {
+            QString str = QString(tr("%1;").arg(graph_list[0]->keys[i]));
+            foreach(zGraph *item, graph_list)
+                if (item->isVisible()) str.append(QString(tr("%1;").arg(item->values[i])));
+            str = str.replace('.', ',');
+            csv_list.append(str);
+        }  // for
+        QFile file(csv_file_name);
+        file.open( QIODevice::Append | QIODevice::Text );
+        QTextStream stream(&file);
+        stream.setCodec("UTF-8");
+        stream.setGenerateByteOrderMark(true);
+        foreach(QString str, csv_list) stream << str << endl;
+        stream.flush();
+        file.close();
+    }  // if
 }
 
 void SpectralPlot::savePlotToRoi()
 {
-
+    if (graph_list.count() == 0) return;
+    QString writableLocation = getWritableLocation();
+    QString roi_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить области интереса в *.roi файл"), writableLocation,
+        tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
+    if (roi_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QFileInfo info(roi_file_name);
+    if (info.suffix().toLower() == "roi") {
+        QSettings settings( roi_file_name, QSettings::IniFormat );
+        QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+        settings.setIniCodec( codec );
+        settings.clear();
+        int num = 0;
+        foreach(zGraph *item, graph_list) {
+            if (!item->isVisible()) continue;
+            QStringList strlist = item->getSettings(num);
+            foreach(QString str, strlist) {
+                int index = str.indexOf(item->setsep);
+                if (index == -1) continue;
+                QString mid_Key = str.mid(0,index);
+                QString mid_Value = str.mid(index+1);
+                settings.setValue(mid_Key, mid_Value);
+            }  // for
+            num++;
+        }  // for
+    }  // if
 }
 
 void SpectralPlot::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)

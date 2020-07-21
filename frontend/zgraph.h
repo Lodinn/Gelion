@@ -61,7 +61,7 @@ public:
     virtual bool pointIn(QPointF point) = 0;
     virtual QPolygonF getTitlePolygon() = 0;
     virtual QStringList getSettings(int num) = 0;
-    void setSettingsFromFile(QSettings &settings, QString &str);
+    void setSettingsFromFile(QSettings *settings);
     char setsep = '#';
     QIcon aicon;
     QString typeString = "";
@@ -88,8 +88,8 @@ public:
 protected:
     void getSettingsBase(QStringList &strlist, QString zname, int num);
     void getSettingsDeviation(QStringList &strlist, QString zname, int num);
-    void setSettingsBase(QSettings &settings, QString &str);
-    void setSettingsDeviation(QSettings &settings, QString &str);
+    void setSettingsBase(QSettings *settings);
+    void setSettingsDeviation(QSettings *settings);
     QVector<double> getVectorFromStr(QString str);
 signals:
      void mouseMove();
