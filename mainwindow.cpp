@@ -1518,7 +1518,8 @@ void MainWindow::show_zgraph_list()
                 csv_list.append(str);
             }  // for i
             QFile file(csv_file_name);
-            file.open( QIODevice::Append | QIODevice::Text );
+            file.remove();
+            file.open( QIODevice::WriteOnly | QIODevice::Text );
             QTextStream stream(&file);
             stream.setCodec("UTF-8");
             stream.setGenerateByteOrderMark(true);

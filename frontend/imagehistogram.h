@@ -84,6 +84,9 @@ private slots:
     void saveMaskToPdfJpgPng();
     void saveInvMaskToPdfJpgPng();
     void saveRGBToPdfJpgPng();
+    void saveIndexToCsv();
+    void saveMaskToCsv();
+    void saveInvMaskToCsv();
 signals:
      void appendMask();
 

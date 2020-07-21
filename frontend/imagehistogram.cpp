@@ -705,6 +705,14 @@ void imageHistogram::contextMenuRequest(QPoint pos)
     act->setIcon(QIcon(":/icons/theater.png"));
     act = menu->addAction("Сохранить RGB изображение ...", this, &imageHistogram::saveRGBToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
+    menu->addSeparator();
+    act = menu->addAction("Сохранить индекс в Excel *.csv файл ...", this, &imageHistogram::saveIndexToCsv);
+    act->setIcon(QIcon(":/icons/palette.png"));
+    act = menu->addAction("Сохранить маску в Excel *.csv файл ...", this, &imageHistogram::saveMaskToCsv);
+    act->setIcon(QIcon(":/icons/theater.png"));
+    act = menu->addAction("Сохранить инвертированную маску в Excel *.csv файл ...", this, &imageHistogram::saveInvMaskToCsv);
+    act->setIcon(QIcon(":/icons/theater.png"));
+
 
     menu->popup(plot->mapToGlobal(pos));
 
@@ -758,7 +766,8 @@ void imageHistogram::saveHistogramToCsv()
         csv_list.append(QString("%1;%2").arg(h_data->vx[i]).arg(h_data->vy[i]).replace('.', ','));
 
     QFile file(csv_file_name);
-    file.open( QIODevice::Append | QIODevice::Text );
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
     QTextStream stream(&file);
     stream.setCodec("UTF-8");
     stream.setGenerateByteOrderMark(true);
@@ -849,4 +858,105 @@ void imageHistogram::saveRGBToPdfJpgPng()
     if (info.suffix().toLower() == "jpg") pixmap.save(img_file_name, "JPG");
     if (info.suffix().toLower() == "bmp") pixmap.save(img_file_name, "BMP");
 
+}
+
+void imageHistogram::saveIndexToCsv()
+{
+    QString writableLocation = getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить индекс в Excel *.csv файл"), writableLocation,
+        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QStringList csv_list;
+
+    QSize slice_size(slice[0].count(), slice.count());
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++)
+            if (x == slice_size.width() - 1) str.append(QString("%1").arg(slice[y][x]));
+            else str.append(QString("%1;").arg(slice[y][x]));
+        csv_list.append(str.replace('.', ','));
+    }  // for
+
+    QFile file(csv_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+}
+
+void imageHistogram::saveMaskToCsv()
+{
+    QString writableLocation = getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить маску в Excel *.csv файл"), writableLocation,
+        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QStringList csv_list;
+
+    QSize slice_size(slice[0].count(), slice.count());
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++) {
+            if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                str.append("1");
+            else
+                str.append("0");
+            if (x < slice_size.width() - 1) str.append(";");
+        }  // for
+        csv_list.append(str.replace('.', ','));
+    }  // for
+
+    QFile file(csv_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+}
+
+void imageHistogram::saveInvMaskToCsv()
+{
+    QString writableLocation = getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить инвертированную маску в Excel *.csv файл"), writableLocation,
+        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QStringList csv_list;
+
+    QSize slice_size(slice[0].count(), slice.count());
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++) {
+            if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                str.append("0");
+            else
+                str.append("1");
+            if (x < slice_size.width() - 1) str.append(";");
+        }  // for
+        csv_list.append(str.replace('.', ','));
+    }  // for
+
+    QFile file(csv_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
 }
