@@ -40,17 +40,19 @@ namespace J09 {
       bool restore_project_settings = false;  // восстанавливать настройки проекта
       int resent_files_count = 3;  // количество последних файлов
       bool save_not_checked_roi = true;  // сохранять в настройках неотмеченные области интереса
-      int zobject_dock_size_w = 420;  // размеры окна профиля, пиксели
+      int zobject_dock_size_w = 450;  // размеры окна профиля, пиксели
       int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
       bool zobjects_prof_rainbow_show = true;  // заливка спектральных диапазонов
-      double zobject_plot_xAxis_lower = 390.;
-      double zobject_plot_xAxis_upper = 1010.;
-      double zobject_plot_yAxis_lower = 0.;
-      double zobject_plot_yAxis_upper = 1.4;
+      double zobject_plot_xAxis_lower = 390.;  // спектральный диапазон, меньшее
+      double zobject_plot_xAxis_upper = 1010.;  // спектральный диапазон, большее
+      double zobject_plot_yAxis_lower = 0.;  // коэффициент отражения, меньшее
+      double zobject_plot_yAxis_upper = 1.5;  // коэффициент отражения, большее
       int std_dev_brush_color_red = 200;
       int std_dev_brush_color_green = 200;
       int std_dev_brush_color_blue = 200;
       int std_dev_brush_color_transparency = 200;
+      double main_rgb_rotate_start = 90.;
+      double main_rgb_scale_start = 3.;
   };
   struct maskRecordType {  // пакет данных об изображении - Маска
       QString title;  // наименование

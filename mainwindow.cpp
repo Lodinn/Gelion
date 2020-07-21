@@ -206,7 +206,7 @@ void MainWindow::createActions() {
 //    indexToolBar->addAction(indexActExt);
     index_quick_menu = new QMenu(tr("&Быстрый выбор индекса"), this);
     index_quick_menu->setIcon(indexIcon);
-    qDebug() << "indexList count = " << indexList.count();
+
     foreach(J09::indexType item, indexList) {
         QAction *action = index_quick_menu->addAction(item.name);
         action->setData(item.formula);  predefined_index_list_acts.append(action);
@@ -334,7 +334,8 @@ void MainWindow::createConstDockWidgets()
     dockZGraphList->setFloating(true);  dockZGraphList->setObjectName("dockZGraphList");
     dockZGraphList->setFixedSize(220,scrHeignt4-36);
     dockZGraphList->setWidget(zGraphListWidget);
-    dockZGraphList->move(rec.width() - 250,10+0*scrHeignt4);
+    int upperIndent = 30;
+    dockZGraphList->move(rec.width() - 250,upperIndent+0*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockZGraphList);
     connect(dockZGraphList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     connect(zGraphListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(listWidgetClicked(QListWidgetItem*)));
@@ -388,7 +389,7 @@ void MainWindow::createConstDockWidgets()
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
     dockIndexList->setFixedSize(220,scrHeignt4-36);
     dockIndexList->setWidget(indexListWidget);
-    dockIndexList->move(rec.width() - 250,10+1*scrHeignt4);
+    dockIndexList->move(rec.width() - 250,upperIndent+1*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
@@ -404,7 +405,7 @@ void MainWindow::createConstDockWidgets()
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
     dockChannelList->setFixedSize(220,scrHeignt4-36);
     dockChannelList->setWidget(chListWidget);
-    dockChannelList->move(rec.width() - 250,10+2*scrHeignt4);
+    dockChannelList->move(rec.width() - 250,upperIndent+2*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
     connect(chListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedChannelList(QListWidgetItem*)));
     connect(dockChannelList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
@@ -433,14 +434,14 @@ void MainWindow::createConstDockWidgets()
     connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 //    connect(imgHistogram,SIGNAL(appendMask()),this,SLOT(appendMaskImage()));
     bool success = connect(imgHistogram,&imageHistogram::appendMask,this,&MainWindow::open);
-    qDebug() << "bool success = " << success;
+
 //    this, &MainWindow::open
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
     dockMaskImage->setFixedSize(220,scrHeignt4-36);
     dockMaskImage->setWidget(maskListWidget);
-    dockMaskImage->move(rec.width() - 250,10+3*scrHeignt4);
+    dockMaskImage->move(rec.width() - 250,upperIndent+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 }
@@ -482,7 +483,7 @@ void MainWindow::show_profile(QPointF point, int id) {
     wPlot->yAxis->setLabel("коэффициент отражения");
     // set axes ranges, so we see all data:
     wPlot->xAxis->setRange(390, 1010);
-    wPlot->yAxis->setRange(0, 1.5);
+    wPlot->yAxis->setRange(0, 2.6);
   } else if (id < plots.count()) {
     wPlot = plots[id];
   } else {
@@ -497,27 +498,27 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 {
     spectralAct->setEnabled(true);
     QDockWidget *dockw = new QDockWidget(item->getTitle(), this);
+    dockw->setWindowTitle(QString("%1 [точек-%2 || ср.кв.отклонение-%3%]").arg(item->getTitle())
+                          .arg(item->count_of_point).arg(item->sigma, 0, 'f', 0));
 
+    item->setInversCm(false);
     item->dockw = dockw;
     item->imgHand = im_handler;
     dockw->setFloating(true);  dockw->setObjectName("zGraph");
+
     dockw->resize(GLOBAL_SETTINGS.zobject_dock_size_w,GLOBAL_SETTINGS.zobject_dock_size_h);
 
-    wPlot = new QCustomPlot();  dockw->setWidget(wPlot);
+    wPlot = new QCustomPlot();  dockw->setWidget(wPlot);    item->plot = wPlot;
 
-    wPlot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
-    wPlot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
-    wPlot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
-    wPlot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
     wPlot->resize(GLOBAL_SETTINGS.zobject_dock_size_w,GLOBAL_SETTINGS.zobject_dock_size_h);
 
-    wPlot->addGraph();
-    QCPGraph *graph_lower = wPlot->addGraph();
-    QCPGraph *graph_upper = wPlot->addGraph();
+    item->setupPlotShowOptions();  // настройка отображения плавающего окна
 
+    QCPGraph *graph_lower = wPlot->addGraph();
     graph_lower->setPen(Qt::NoPen);
     graph_lower->setSelectable(QCP::stNone);
 
+    QCPGraph *graph_upper = wPlot->addGraph();
     graph_upper->setPen(Qt::NoPen);
     item->transparency = GLOBAL_SETTINGS.std_dev_brush_color_transparency;
     QColor bc(GLOBAL_SETTINGS.std_dev_brush_color_red,GLOBAL_SETTINGS.std_dev_brush_color_green,
@@ -526,13 +527,10 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     graph_upper->setSelectable(QCP::stNone);
     graph_upper->setChannelFillGraph(graph_lower);
 
-// give the axes some labels:
-    wPlot->xAxis->setLabel("длина волны, нм");
-    wPlot->yAxis->setLabel("коэффициент отражения");
 // set axes ranges, so we see all data:
     wPlot->xAxis->setRange(GLOBAL_SETTINGS.zobject_plot_xAxis_lower,GLOBAL_SETTINGS.zobject_plot_xAxis_upper);
     wPlot->yAxis->setRange(GLOBAL_SETTINGS.zobject_plot_yAxis_lower,GLOBAL_SETTINGS.zobject_plot_yAxis_upper);
-    item->plot = wPlot;
+
     item->setContextMenuConnection();
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
     dockw->hide();  dockw->setAllowedAreas(nullptr);  // NoToolBarArea - !!! не прикрепляется к главному окну
@@ -547,7 +545,6 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     zGraphListWidget->insertItem(0, lwItem);
 
     connect(item, SIGNAL(changeParamsFromDialog(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
-    connect(item, SIGNAL(changeZObjectNative(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 }
 
 void MainWindow::setZGraphDockToggled(zGraph *item)
@@ -690,6 +687,12 @@ void MainWindow::open() {
 void MainWindow::add_envi_hdr_pixmap() {
   view->mainPixmap->setOpacity(1.0);
   view->resetMatrix();  view->resetTransform();
+// &&& sochi 2020
+  view->GlobalScale = 1. / GLOBAL_SETTINGS.main_rgb_scale_start;
+  view->GlobalRotate = - GLOBAL_SETTINGS.main_rgb_rotate_start;
+  view->scale(1/view->GlobalScale, 1/view->GlobalScale);
+  view->rotate(-view->GlobalRotate);
+// &&& sochi 2020
 // dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
   if (!dataFileName.isEmpty()) saveSettings();  // ****************************
   dataFileName = im_handler->current_image()->get_file_name();
@@ -1094,7 +1097,11 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             view->scene()->addItem(point);          // view->scene()->addItem(point);
             point->updateBoundingRect();
             emit view->insertZGraphItem(point);
-            view->show_profile_for_Z(point);
+// &&& sochi 2020
+//            view->show_profile_for_Z(point);
+            point->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            emit view->changeZObject(point);
+// &&& sochi 2020
             emit view->setZGraphDockToggled(point);
             point->dockw->setVisible(settings.value("dockvisible", true).toBool());
             QString dockwpos = settings.value("dockwpos").toString();
@@ -1107,8 +1114,6 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             settings.beginGroup(str);
             QString pos = settings.value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-//            QVector<double> v = getVectorFromStr(pos);
-//            QPointF pXY(v.at(0), v.at(1));
             zRect *rect = new zRect(pXY,view->GlobalScale,view->GlobalRotate);
             QString title = settings.value("title").toString();
             rect->setTitle(title);
@@ -1116,7 +1121,6 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             bool objectvisible = settings.value("objectvisible", true).toBool();
             rect->setVisible(objectvisible);
             double rotation = settings.value("rotation").toDouble();
-//            qreal rotation = rect->getRotationFromCoords( QPointF(v.at(0),v.at(1)), QPointF(v.at(2),v.at(3)) );
             rect->setRotation(rotation);
             QString sizestr = settings.value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
@@ -1126,7 +1130,11 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             view->scene()->addItem(rect);          // view->scene()->addItem(rect);
             rect->updateBoundingRect();
             emit view->insertZGraphItem(rect);
-            view->show_profile_for_Z(rect);
+            // &&& sochi 2020
+            //            view->show_profile_for_Z(rect);
+            rect->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            emit view->changeZObject(rect);
+            // &&& sochi 2020
             emit view->setZGraphDockToggled(rect);
             rect->dockw->setVisible(settings.value("dockvisible", true).toBool());
             QString dockwpos = settings.value("dockwpos").toString();
@@ -1139,8 +1147,6 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             settings.beginGroup(str);
             QString pos = settings.value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-//            QVector<double> v = getVectorFromStr(pos);
-//            QPointF pXY(v.at(0), v.at(1));
             zEllipse *ellipse = new zEllipse(pXY,view->GlobalScale,view->GlobalRotate);
             QString title = settings.value("title").toString();
             ellipse->setTitle(title);
@@ -1148,7 +1154,6 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             bool objectvisible = settings.value("objectvisible", true).toBool();
             ellipse->setVisible(objectvisible);
             double rotation = settings.value("rotation").toDouble();
-//            qreal rotation = ellipse->getRotationFromCoords( QPointF(v.at(0),v.at(1)), QPointF(v.at(2),v.at(3)) );
             ellipse->setRotation(rotation);
             QString sizestr = settings.value("size").toString();
             QPointF fsize = getPointFromStr(sizestr);
@@ -1158,7 +1163,11 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             view->scene()->addItem(ellipse);          // view->scene()->addItem(ellipse);
             ellipse->updateBoundingRect();
             emit view->insertZGraphItem(ellipse);
-            view->show_profile_for_Z(ellipse);
+            // &&& sochi 2020
+            //            view->show_profile_for_Z(ellipse);
+            ellipse->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            emit view->changeZObject(ellipse);
+            // &&& sochi 2020
             emit view->setZGraphDockToggled(ellipse);
             ellipse->dockw->setVisible(settings.value("dockvisible", true).toBool());
             QString dockwpos = settings.value("dockwpos").toString();
@@ -1188,7 +1197,11 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             view->scene()->addItem(polyline);          // view->scene()->addItem(polyline);
             polyline->updateBoundingRect();
             emit view->insertZGraphItem(polyline);
-            view->show_profile_for_Z(polyline);
+            // &&& sochi 2020
+            //            view->show_profile_for_Z(polyline);
+            polyline->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            emit view->changeZObject(polyline);
+            // &&& sochi 2020
             emit view->setZGraphDockToggled(polyline);
             polyline->dockw->setVisible(settings.value("dockvisible", true).toBool());
             QString dockwpos = settings.value("dockwpos").toString();
@@ -1218,7 +1231,11 @@ void MainWindow::createZGraphItemFromGroups(QStringList &groups, QSettings &sett
             view->scene()->addItem(polygon);          // view->scene()->addItem(polygon);
             polygon->updateBoundingRect();
             emit view->insertZGraphItem(polygon);
-            view->show_profile_for_Z(polygon);
+            // &&& sochi 2020
+            //            view->show_profile_for_Z(polygon);
+            polygon->setSettingsFromFile(settings, str);  // ввод всех профилей без расчета !!!
+            emit view->changeZObject(polygon);
+            // &&& sochi 2020
             emit view->setZGraphDockToggled(polygon);
             polygon->dockw->setVisible(settings.value("dockvisible", true).toBool());
             QString dockwpos = settings.value("dockwpos").toString();
@@ -1698,12 +1715,16 @@ void MainWindow::add_index_pixmap(int num)
 // num - номер максимального slice, этот номер на 1 меньше чем нужный current_slice
     view->GlobalChannelNum = num + 1;  histogramAct->setEnabled(true);
 // ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
-//  depth в indexImages находится RGB, и оно отсутствуем в img SpectralImage
+//  depth в indexImages находится RGB, и оно отсутствует в img SpectralImage
     QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
     im_handler->current_image()->append_additional_image(img,
                                  view->index_title_str,view->index_formula_str);
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
-    QListWidgetItem *lwItem = new QListWidgetItem();
+// &&& sochi 2020
+    im_handler->current_image()->histogram[view->GlobalChannelNum-1]
+            .rotation = - GLOBAL_SETTINGS.main_rgb_rotate_start;
+// &&& sochi 2020
+            QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
     QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();

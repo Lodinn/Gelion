@@ -46,6 +46,7 @@ public:
     QRectF boundingRect() const Q_DECL_OVERRIDE;
     void setTitle(QString title);
     QString getTitle() const;
+    QString getTitleExt() const;
     void setFont(QString family, int pointSize, int weight, bool italic);
     virtual QRectF getTitleRectangle() const = 0;
     virtual void updateBoundingRect() = 0;
@@ -60,31 +61,42 @@ public:
     virtual bool pointIn(QPointF point) = 0;
     virtual QPolygonF getTitlePolygon() = 0;
     virtual QStringList getSettings(int num) = 0;
+    void setSettingsFromFile(QSettings &settings, QString &str);
     char setsep = '#';
     QIcon aicon;
     QString typeString = "";
     void setParamsToDialog(zgraphParamDlg *dlg);
     void getParamsFromDialog(zgraphParamDlg *dlg);
     double getRotationFromCoords(QPointF p1, QPointF p2);
+
     QVector<QPointF > profile;
     QVector<QPointF > std_dev_upper, std_dev_lower;
-    double sigma = .0;  // интегральное стандартное отклонение в процентах
-    double sigma2 = 2.;  // интегральное стандартное отклонение 2
     QVector<double > pup, plw;
+
     void calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw);
     int transparency = 50;
-//    void calculateStandardDeviation();
-//    void calculateMedianProfile();
-    QVector<double> keys, values;  // координаты медианного профиля
+    double sigma = .0;  // интегральное стандартное отклонение в процентах
+    double sigma2 = 2.;  // интегральное стандартное отклонение 2
+    QVector<double> w_len, k_ref;  // координаты медианного профиля (исходные)
+    QVector<double> keys, values;  // координаты медианного профиля (адаптированные)
     QVector<double> values_std_dev_upper, values_std_dev_lower;  // координаты стандартного отклонения верх, низ
-    void calculateProfileWithSnandartDeviation();  // рассчитать медианный профиль и стандартное отклонение
+    int calculateProfileWithSnandartDeviation();  // рассчитать медианный профиль и стандартное отклонение
+    void setupPlotShowOptions();  // настройка отображения плавающего окна
+    void setInversCm(bool b);
+    bool getInversCm();
+    int count_of_point = 1;  // количество точек внутри объекта, по умолчанию 1
+protected:
+    void getSettingsBase(QStringList &strlist, QString zname, int num);
+    void getSettingsDeviation(QStringList &strlist, QString zname, int num);
+    void setSettingsBase(QSettings &settings, QString &str);
+    void setSettingsDeviation(QSettings &settings, QString &str);
+    QVector<double> getVectorFromStr(QString str);
 signals:
      void mouseMove();
      void mouseRelease();
      void itemChange();
      void itemDelete(zGraph *);
      void changeParamsFromDialog(zGraph *);
-     void changeZObjectNative(zGraph *);
 
 private slots:
      void contextMenuRequest(QPoint pos);
@@ -94,6 +106,7 @@ private slots:
      void plotRescaleAxes();
 protected:
      int fRectIndent = 12;
+     bool invers_cm = false;
      QPointF fcenterPoint;
      QRectF fbrect;
      QFont ffont = QFont("Helvetica", fRectIndent*2/3, -1, true);
@@ -115,10 +128,11 @@ protected:
      void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
      QPointF getRectPoint2(QPointF p1, qreal w, qreal rot);
 private:
-     void calculateSnandartDeviation();
+     void calculateStandartDeviation();
      void calculateMedianProfileForRectEllipseTypes();
      void calculateMedianProfileForPolyPolygonTypes();
      void graphSetData();
+     QVector<QVector<double> > buff;
 };
 
 class zPoint : public zGraph
@@ -135,6 +149,7 @@ public:
     virtual bool pointIn(QPointF point);
     virtual QPolygonF getTitlePolygon();
     virtual QStringList getSettings(int num);
+
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) Q_DECL_OVERRIDE;
 };
 

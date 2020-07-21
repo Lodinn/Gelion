@@ -50,6 +50,13 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
 {
     f_data_file_name = data_file_name;
     graph_list = list;
+    if (list.count() == 0) return;
+    zGraph *item = list[0];
+    if (item->getInversCm())
+        plot->xAxis->setLabel(QString("волновое число, см-1 ( %1 )").arg("v"));
+    else
+        plot->xAxis->setLabel(QString("длина волны, нм ( %1 )").arg(QString(u8"\u03BB")));
+
     // data
     plot->clearGraphs();
 
@@ -57,15 +64,15 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
     sYmin = .0;  sYmax = INT_MIN;
     foreach(zGraph *item, list) {
         if (!item->isVisible()) continue;
-        int n = item->profile.count();
-        QVector<double> x(n), y(n);
-        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
-        sXmin = std::min(sXmin, *std::min_element(x.begin(), x.end()));
-        sXmax = std::max(sXmax, *std::max_element(x.begin(), x.end()));
-        sYmax = std::max(sYmax, *std::max_element(y.begin(), y.end()));
+//        int n = item->profile.count();
+//        QVector<double> x(n), y(n);
+//        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
+        sXmin = std::min(sXmin, *std::min_element(item->keys.begin(), item->keys.end()));
+        sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
+        sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
         plot->addGraph();
         plot->graph()->setName(item->getTitle());
-        plot->graph()->setData(x, y);
+        plot->graph()->setData(item->keys, item->values);
          QPen graphPen;
 
         int num = list.indexOf(item) % plot_styles_cycle.count();
@@ -92,12 +99,21 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
 void SpectralPlot::updateDataOneProfile(zGraph *item, int num)
 {
     if (num > plot->graphCount() - 1) return;
-    int n = item->profile.count();
-    QVector<double> x(n), y(n);
-    for (int i=0; i<n; i++) {
-        x[i] = item->profile[i].rx();
-        y[i] = item->profile[i].ry(); }
-    plot->graph(num)->setData(x, y);
+    if (item->getInversCm())
+        plot->xAxis->setLabel(QString("волновое число, см-1 ( %1 )").arg("v"));
+    else
+        plot->xAxis->setLabel(QString("длина волны, нм ( %1 )").arg(QString(u8"\u03BB")));
+
+// &&& sochi 2020
+//    int n = item->profile.count();
+//    QVector<double> x(n), y(n);
+//    for (int i=0; i<n; i++) {
+//        x[i] = item->profile[i].rx();
+//        y[i] = item->profile[i].ry(); }
+
+    plot->graph(num)->setData(item->keys, item->values);
+//    plot->xAxis->rescale(true);
+//    plot->xAxis2->rescale(true);
     plot->replot();
 }
 
@@ -447,12 +463,12 @@ void SpectralPlot::spectralSetAllRange()
     sYmin = .0;  sYmax = INT_MIN;
     foreach(zGraph *item, graph_list) {
         if (!item->isVisible()) continue;
-        int n = item->profile.count();
-        QVector<double> x(n), y(n);
-        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
-        sXmin = std::min(sXmin, *std::min_element(x.begin(), x.end()));
-        sXmax = std::max(sXmax, *std::max_element(x.begin(), x.end()));
-        sYmax = std::max(sYmax, *std::max_element(y.begin(), y.end()));
+//        int n = item->profile.count();
+//        QVector<double> x(n), y(n);
+//        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
+        sXmin = std::min(sXmin, *std::min_element(item->keys.begin(), item->keys.end()));
+        sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
+        sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
     }  // foreach
 
     plot->xAxis->setRange(sXmin, sXmax);

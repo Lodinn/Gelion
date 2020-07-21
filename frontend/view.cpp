@@ -343,7 +343,11 @@ void gQGraphicsView::clearZGraphItemsList()
 
 void gQGraphicsView::show_profile_for_Z(zGraph *item)
 {
-    switch (item->type()) {
+// &&& sochi 2020
+    qDebug() << "show_profile_for_Z";
+    if (item->calculateProfileWithSnandartDeviation() == 0) emit changeZObject(item);
+// &&& sochi 2020
+    /*switch (item->type()) {
     case zPoint::Type : {
         int d = imgHand->current_image()->get_bands_count();
         QVector<double> x(d), y(d);
@@ -369,7 +373,7 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
         emit changeZObject(nullptr); return; }  // case zPolyline::Type
     case zPolygon::Type : { multiPointsReplotPoly(item);
         emit changeZObject(nullptr); return; }  // case zPolygon::Type
-    }  // switch
+    }  // switch*/
 }
 
 void gQGraphicsView::multiPointsReplotRect(zGraph *item) {

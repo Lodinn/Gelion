@@ -27,6 +27,15 @@ QString zGraph::getTitle() const
     return data(0).toString();
 }
 
+QString zGraph::getTitleExt() const
+{
+    if (this->type()== zPoint::Type)
+        return this->getTitle();
+    else
+        return QString("%1 [точек-%2 || ср.кв.отклонение-%3%]").arg(this->getTitle())
+                                  .arg(count_of_point).arg(sigma, 0, 'f', 1);
+}
+
 void zGraph::setFont(QString family, int pointSize, int weight, bool italic)
 {
     ffont = QFont(family, pointSize, weight, italic);
@@ -36,6 +45,36 @@ void zGraph::setContextMenuConnection()
 {
     plot->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(plot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
+}
+
+void zGraph::setSettingsFromFile(QSettings &settings, QString &str)
+{
+    switch (this->type()) {
+    case zPoint::Type : {
+        setSettingsBase(settings, str);
+        return;
+    } // case zPoint::Type
+    case zRect::Type : {
+        setSettingsBase(settings, str);
+        setSettingsDeviation(settings, str);
+        return;
+    }  // case zRect::Type
+    case zEllipse::Type : {
+        setSettingsBase(settings, str);
+        setSettingsDeviation(settings, str);
+        return;
+    }  // case zEllipse::Type
+    case zPolyline::Type : {
+        setSettingsBase(settings, str);
+        setSettingsDeviation(settings, str);
+        return;
+    }  // case zPolyline::Type
+    case zPolygon::Type : {
+        setSettingsBase(settings, str);
+        setSettingsDeviation(settings, str);
+        return;
+    }  // case zPolygon::Type
+    }  // switch
 }
 
 void zGraph::setParamsToDialog(zgraphParamDlg *dlg)
@@ -90,103 +129,225 @@ void zGraph::calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVe
     if (d != 0) sigma = qSqrt(sigma / d);
 }
 
-void zGraph::calculateProfileWithSnandartDeviation()
+int zGraph::calculateProfileWithSnandartDeviation()
 {
     int d = imgHand->current_image()->get_bands_count();
+    w_len.resize(d);    k_ref.resize(d);  // координаты медианного профиля (исходные)
     keys.resize(d);     values.resize(d);   sigma = .0;
 
     switch (this->type()) {
     case zPoint::Type : {
         QVector<QPointF> v = imgHand->current_image()->get_profile(this->pos().toPoint());
-        if (v.isEmpty()) { qDebug() << "wrong profile size";  return; }
-        if (v.length() != d) { qDebug() << "wrong profile size";  return; }
+        if (v.isEmpty()) { qDebug() << "wrong profile size";  return -2; }
+        if (v.length() != d) { qDebug() << "wrong profile size";  return -2; }
         foreach(QPointF p, v) {
             int i = v.indexOf(p);
-            keys[i] = v[i].rx();   values[i] = v[i].ry(); }  // foreach
-          //
+            w_len[i] = v[i].rx();   k_ref[i] = v[i].ry(); }  // foreach
+        if (invers_cm)
+            foreach(double x, w_len) {
+                int i = w_len.count() - 1 - w_len.indexOf(x);
+                int j = w_len.indexOf(x);
+                keys[j] = 1e7 / w_len[i];     // волновое число см -1
+                values[j] = k_ref[i]; }  // foreach
+        else
+            foreach(double x, w_len) {
+                int i = w_len.indexOf(x);
+                keys[i] = w_len[i];   values[i] = k_ref[i]; }  // foreach
+        // inverse cm
         this->plot->graph(0)->setData(keys, values, true);
+        this->plot->xAxis->rescale(true);
         this->plot->replot();
-        emit changeZObjectNative(this);
-        return;
+
+        count_of_point = 1;
+        dockw->setWindowTitle(this->getTitleExt());
+        buff.clear();
+        return 0;
     }  // case zPoint::Type
     case zRect::Type : {
         values_std_dev_upper.resize(d);     values_std_dev_lower.resize(d);
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForRectEllipseTypes();
-        calculateSnandartDeviation();  // рассчет стандартного отклонения
+        calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        emit changeZObjectNative(this);
-        return;
+        dockw->setWindowTitle(this->getTitleExt());
+        buff.clear();
+        return 0;
     }  // case zRect::Type
     case zEllipse::Type : {
         values_std_dev_upper.resize(d);     values_std_dev_lower.resize(d);
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForRectEllipseTypes();
-        calculateSnandartDeviation();  // рассчет стандартного отклонения
+        calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        emit changeZObjectNative(this);
-        return;
+        dockw->setWindowTitle(this->getTitleExt());
+        buff.clear();
+        return 0;
     }  // case zEllipse::Type
     case zPolyline::Type : {
         values_std_dev_upper.resize(d);     values_std_dev_lower.resize(d);
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForPolyPolygonTypes();
-        calculateSnandartDeviation();  // рассчет стандартного отклонения
+        calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        emit changeZObjectNative(this);
-        return;
+        dockw->setWindowTitle(this->getTitleExt());
+        buff.clear();
+        return 0;
     }  // case zPolyline::Type
     case zPolygon::Type : {
         values_std_dev_upper.resize(d);     values_std_dev_lower.resize(d);
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForPolyPolygonTypes();
-        calculateSnandartDeviation();  // рассчет стандартного отклонения
+        calculateStandartDeviation();  // рассчет стандартного отклонения
         graphSetData();
 
-        emit changeZObjectNative(this);
-        return;
+        dockw->setWindowTitle(this->getTitleExt());
+        buff.clear();
+        return 0;
     }  // case zPolygon::Type
     }  // switch
+
+    return -1;
 }
 
-void zGraph::calculateSnandartDeviation()
+void zGraph::setupPlotShowOptions()
+{
+    plot->setInteraction(QCP::iRangeZoom,true);   // Включаем взаимодействие удаления/приближения
+    plot->setInteraction(QCP::iRangeDrag, true);  // Включаем взаимодействие перетаскивания графика
+    plot->axisRect()->setRangeDrag(Qt::Vertical);   // перетаскивание только по горизонтальной оси
+    plot->axisRect()->setRangeZoom(Qt::Vertical);   // удаления/приближения только по горизонтальной оси
+// give the axes some labels:
+    if (invers_cm) plot->xAxis->setLabel("волновое число, см-1");
+    else plot->xAxis->setLabel("длина волны, нм");
+    plot->yAxis->setLabel("коэффициент отражения");
+    plot->addGraph();
+
+}
+
+void zGraph::setInversCm(bool b)
+{
+    invers_cm = b;
+}
+
+bool zGraph::getInversCm()
+{
+    return invers_cm;
+}
+
+void zGraph::getSettingsBase(QStringList &strlist, QString zname, int num)
+{
+    int d = w_len.count() - 1;
+    strlist.append(QString("%1%2/invers_cm%3%4").arg(zname).arg(num).arg(setsep).arg(invers_cm));
+
+    QString str("");            // координаты медианного профиля (исходные)
+    foreach(double a, w_len) {
+        str.append(QString::number(a, 'f', 2));
+        if (w_len.indexOf(a) < d) str.append(",");
+    }  // for
+    strlist.append(QString("%1%2/w_len%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+    str = "";            // координаты медианного профиля (исходные)
+    foreach(double a, k_ref) {
+        str.append(QString::number(a, 'f', 6));
+        if (k_ref.indexOf(a) < d) str.append(",");
+    }  // for
+    strlist.append(QString("%1%2/k_ref%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+    str.clear();           // координаты медианного профиля (адаптированные)
+    foreach(double a, keys) {
+        str.append(QString::number(a, 'f', 2));
+        if (keys.indexOf(a) < d) str.append(",");
+    }  // for
+    strlist.append(QString("%1%2/keys%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+    str.clear();            // координаты медианного профиля (адаптированные)
+    foreach(double a, values) {
+        str.append(QString::number(a, 'f', 6));
+        if (values.indexOf(a) < d) str.append(",");
+    }  // for
+    strlist.append(QString("%1%2/values%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+}
+
+void zGraph::getSettingsDeviation(QStringList &strlist, QString zname, int num)
+{
+    int d = w_len.count() - 1;
+    strlist.append(QString("%1%2/sigma%3%4").arg(zname).arg(num).arg(setsep).arg(sigma, 0, 'f', 3));
+    strlist.append(QString("%1%2/count_of_point%3%4").arg(zname).arg(num).arg(setsep).arg(count_of_point));
+    QString str("");              // координаты стандартного отклонения верх, низ
+    foreach(double a, values_std_dev_upper) {
+        str.append(QString::number(a, 'f', 6));
+        if (values_std_dev_upper.indexOf(a) < d) str.append(",");
+    }  // for
+    strlist.append(QString("%1%2/values_std_dev_upper%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+    str.clear();                  // координаты стандартного отклонения верх, низ
+        foreach(double a, values_std_dev_lower) {
+            str.append(QString::number(a, 'f', 6));
+            if (values_std_dev_lower.indexOf(a) < d) str.append(",");
+        }  // for
+        strlist.append(QString("%1%2/values_std_dev_lower%3%4").arg(zname).arg(num).arg(setsep).arg(str));
+}
+
+void zGraph::setSettingsBase(QSettings &settings, QString &str)
+{
+    settings.beginGroup(str);
+
+    invers_cm = settings.value("invers_cm").toBool();
+
+    w_len = getVectorFromStr(settings.value("w_len").toString());
+    k_ref = getVectorFromStr(settings.value("k_ref").toString());
+    keys = getVectorFromStr(settings.value("keys").toString());
+    values = getVectorFromStr(settings.value("values").toString());
+
+    settings.endGroup();
+}
+
+void zGraph::setSettingsDeviation(QSettings &settings, QString &str)
+{
+    settings.beginGroup(str);
+
+    sigma = settings.value("sigma").toDouble();
+    count_of_point = settings.value("count_of_point").toInt();
+
+    values_std_dev_upper = getVectorFromStr(settings.value("values_std_dev_upper").toString());
+    values_std_dev_lower = getVectorFromStr(settings.value("values_std_dev_lower").toString());
+
+    settings.endGroup();
+}
+
+QVector<double> zGraph::getVectorFromStr(QString str)
+{
+    QStringList strlist = str.split(",");
+    QVector<double> v;
+    foreach(QString s, strlist) v.append(s.toDouble());
+    return v;
+}
+
+void zGraph::calculateStandartDeviation()
 {
     int d = keys.count();
     QVector<double> std_dev(d);  std_dev.fill(.0);
-    int count = 0;
-    QRectF rect = this->boundingRect();
-    for (int i=rect.left(); i<rect.left()+rect.width()+1; i++)
-        for (int j=rect.top(); j<rect.top()+rect.height()+1; j++) {
-            if (this->pointIn(QPointF(i,j))) {
-                QLineF line = QLineF(0,0,i,j);
-                qreal len = line.length();
-                qreal a0 = qAtan2(j,i);
-                qreal a1 =  qDegreesToRadians(this->rotation());
-                qreal a2 = a0 + a1;
-                int px = this->pos().x() + len * qCos(a2);
-                int py = this->pos().y() + len * qSin(a2);
-                QVector<QPointF> v = imgHand->current_image()->get_profile(QPoint(px, py));
 
-                if (v.isEmpty()) { qDebug() << "wrong profile size";  continue; }
-                if (v.length() != d) { qDebug() << "wrong profile size";  continue; }
+    if (invers_cm)
+        for(int i=0; i<buff.count(); i++)
+            for(int j=0; j<d; j++) {
+                int k = d - 1 - j;
+                double a = values[j] - buff[i][k];
+                std_dev[j] += a * a;
+            }  // for
+    else
+        for(int i=0; i<buff.count(); i++)
+            for(int j=0; j<d; j++) {
+                double a = values[j] - buff[i][j];
+                std_dev[j] += a * a;
+            }  // for
 
-               for (int k=0; k<d; k++) {
-                   double a = values[k] - v[k].ry();
-                   std_dev[k] += a * a;
-               }  // for
-                count++;
-            }  // if
-        }  // for
-    int sigma_count = .0;
+    sigma = .0;
+    int sigma_count = 0;
     for (int i=0; i<d; ++i) {
-        double d = std::sqrt(std_dev[i] / count) * sigma2;  // два сигма
+        double d = std::sqrt(std_dev[i] / buff.count()) * sigma2;  // два сигма
         values_std_dev_lower[i] = values[i] - d;
         values_std_dev_upper[i] = values[i] + d;
         if (values[i] > .00001) {
@@ -194,12 +355,14 @@ void zGraph::calculateSnandartDeviation()
         }  // if
     }  // for
     if (sigma_count > 0) sigma = 100. * sigma / sigma_count;  // интегральное стандартное отклонение в процентах
+
 }
 
 void zGraph::calculateMedianProfileForRectEllipseTypes()
 {
-    int d = keys.count();
-    int count = 0;
+    int d = w_len.count();
+    buff.clear();
+
     QRectF rect = this->boundingRect();
 // расчет медианного профиля values
     for (int i=rect.left(); i<rect.left()+rect.width()+1; i++)
@@ -215,27 +378,43 @@ void zGraph::calculateMedianProfileForRectEllipseTypes()
                 QVector<QPointF> v = imgHand->current_image()->get_profile(QPoint(px, py));
 
                 if (v.isEmpty()) { qDebug() << "wrong profile size";  continue; }
-                if (v.length() != d) { qDebug() << "wrong profile size";  continue; }
+                if (v.count() != d) { qDebug() << "wrong profile size";  continue; }
 
-                if (count == 0) for (int k = 0; k < d; i++) keys[k] = v[k].rx();
-                for (int k = 0; k < d; k++) values[k] += v[k].ry();
-                count++;
+                if (buff.count() == 0) for (int k=0; k<d; k++) w_len[k] = v[k].rx();
+                for (int k=0; k<d; k++) k_ref[k] += v[k].ry();
+                QVector<double> vy(d);
+                for (int k=0; k<d; k++) vy[k] = v[k].ry();
+                buff.append(vy);
             }  // if
         }  // for
-    if (count == 0) {
+    count_of_point = buff.count();
+
+    if (buff.count() == 0) {
         for(int i=0; i<d; i++) keys[i] = i;
         values.fill(.0);
         values_std_dev_upper.fill(.0);  values_std_dev_lower.fill(.0);
         return;
     }  // if
 
-    for (int i=0; i<d; ++i) values[i] = values[i] / count;
+    for (int i=0; i<d; ++i) k_ref[i] = k_ref[i] / buff.count();
+
+    if (invers_cm)
+        foreach(double x, w_len) {
+            int i = w_len.count() - 1 - w_len.indexOf(x);
+            int j = w_len.indexOf(x);
+            keys[j] = 1e7 / w_len[i];     // волновое число см -1
+            values[j] = k_ref[i]; }  // foreach
+    else
+        foreach(double x, w_len) {
+            int i = w_len.indexOf(x);
+            keys[i] = w_len[i];   values[i] = k_ref[i]; }  // foreach
+    // inverse cm
 }
 
 void zGraph::calculateMedianProfileForPolyPolygonTypes()
 {
     int d = keys.count();
-    int count = 0;
+    buff.clear();
     QRectF rect = this->boundingRect();
 // расчет медианного профиля values
     for (int i=rect.left(); i<rect.left()+rect.width()+1; i++)
@@ -246,28 +425,43 @@ void zGraph::calculateMedianProfileForPolyPolygonTypes()
                 QVector<QPointF> v = imgHand->current_image()->get_profile(QPoint(px, py));
 
                 if (v.isEmpty()) { qDebug() << "wrong profile size";  continue; }
-                if (v.length() != d) { qDebug() << "wrong profile size";  continue; }
+                if (v.count() != d) { qDebug() << "wrong profile size";  continue; }
 
-                if (count == 0) for (int k = 0; k < d; i++) keys[k] = v[k].rx();
-                for (int k = 0; k < d; k++) values[k] += v[k].ry();
-                count++;
+                if (buff.count() == 0) for (int k=0; k<d; k++) w_len[k] = v[k].rx();
+                for (int k=0; k<d; k++) k_ref[k] += v[k].ry();
+                QVector<double> vy(d);
+                for (int k=0; k<d; k++) vy[k] = v[k].ry();
+                buff.append(vy);
             }  // if
         }  // for
-    if (count == 0) {
+    count_of_point = buff.count();
+    if (buff.count() == 0) {
         for(int i=0; i<d; i++) keys[i] = i;
         values.fill(.0);
         values_std_dev_upper.fill(.0);  values_std_dev_lower.fill(.0);
         return;
     }  // if
 
-    for (int i=0; i<d; ++i) values[i] = values[i] / count;
+    for (int i=0; i<d; ++i) k_ref[i] = k_ref[i] / buff.count();
+
+    if (invers_cm)
+        foreach(double x, w_len) {
+            int i = w_len.count() - 1 - w_len.indexOf(x);
+            int j = w_len.indexOf(x);
+            keys[j] = 1e7 / w_len[i];     // волновое число см -1
+            values[j] = k_ref[i]; }  // foreach
+    else
+        foreach(double x, w_len) {
+            int i = w_len.indexOf(x);
+            keys[i] = w_len[i];   values[i] = k_ref[i]; }  // foreach
+    // inverse cm
 }
 
 void zGraph::graphSetData()
 {
-    this->plot->graph(0)->setData(keys, values, true);
-    this->plot->graph(1)->setData(keys, values_std_dev_lower, true);
-    this->plot->graph(2)->setData(keys, values_std_dev_upper, true);
+    this->plot->graph(0)->setData(this->keys, this->values, true);
+    this->plot->graph(1)->setData(this->keys, this->values_std_dev_lower, true);
+    this->plot->graph(2)->setData(this->keys, this->values_std_dev_upper, true);
     this->plot->replot();
 }
 
@@ -393,6 +587,7 @@ QPolygonF zPoint::getTitlePolygon()
 
 QStringList zPoint::getSettings(int num)
 {
+
     QStringList strlist;
     // rectangle7/title#Прямоугольник 1
     strlist.append(QString("Point%1/objectvisible%2%3").arg(num).arg(setsep).arg(this->isVisible()));
@@ -403,6 +598,9 @@ QStringList zPoint::getSettings(int num)
     QPoint dwpos = dockw->geometry().topLeft();
     strlist.append(QString("Point%1/dockwpos%2%3,%4").arg(num).arg(setsep)
                    .arg(dwpos.x()).arg(dwpos.y()));
+// &&& sochi 2020
+    getSettingsBase(strlist, "Point", num);
+
     return strlist;
 }
 
@@ -570,6 +768,10 @@ QStringList zPolygon::getSettings(int num)
     QPoint dwpos = dockw->geometry().topLeft();
     strlist.append(QString("Polygon%1/dockwpos%2%3,%4").arg(num).arg(setsep)
                    .arg(dwpos.x()).arg(dwpos.y()));
+    // &&& sochi 2020
+    getSettingsBase(strlist, "Polygon", num);
+    getSettingsDeviation(strlist, "Polygon", num);
+
     return strlist;
 }
 
@@ -756,6 +958,10 @@ QStringList zRect::getSettings(int num)
     QPoint dwpos = dockw->geometry().topLeft();
     strlist.append(QString("Rectangle%1/dockwpos%2%3,%4").arg(num).arg(setsep)
                    .arg(dwpos.x()).arg(dwpos.y()));
+    // &&& sochi 2020
+    getSettingsBase(strlist, "Rectangle", num);
+    getSettingsDeviation(strlist, "Rectangle", num);
+
     return strlist;
 }
 
@@ -901,6 +1107,10 @@ QStringList zEllipse::getSettings(int num)
     QPoint dwpos = dockw->geometry().topLeft();
     strlist.append(QString("Ellipse%1/dockwpos%2%3,%4").arg(num).arg(setsep)
                    .arg(dwpos.x()).arg(dwpos.y()));
+    // &&& sochi 2020
+    getSettingsBase(strlist, "Ellipse", num);
+    getSettingsDeviation(strlist, "Ellipse", num);
+
     return strlist;
 }
 
@@ -1067,6 +1277,10 @@ QStringList zPolyline::getSettings(int num)
     QPoint dwpos = dockw->geometry().topLeft();
     strlist.append(QString("Polyline%1/dockwpos%2%3,%4").arg(num).arg(setsep)
                    .arg(dwpos.x()).arg(dwpos.y()));
+    // &&& sochi 2020
+    getSettingsBase(strlist, "Polyline", num);
+    getSettingsDeviation(strlist, "Polyline", num);
+
     return strlist;
 }
 
