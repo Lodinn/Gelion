@@ -169,7 +169,7 @@ int zGraph::calculateProfileWithSnandartDeviation()
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForRectEllipseTypes();
-        calculateStandartDeviation();  // рассчет стандартного отклонения
+        calculateStandardDeviationVectors();  // рассчет стандартного отклонения
         graphSetData();
 
         buff.clear();
@@ -180,7 +180,7 @@ int zGraph::calculateProfileWithSnandartDeviation()
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForRectEllipseTypes();
-        calculateStandartDeviation();  // рассчет стандартного отклонения
+        calculateStandardDeviationVectors();  // рассчет стандартного отклонения
         graphSetData();
 
         buff.clear();
@@ -191,7 +191,7 @@ int zGraph::calculateProfileWithSnandartDeviation()
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForPolyPolygonTypes();
-        calculateStandartDeviation();  // рассчет стандартного отклонения
+        calculateStandardDeviationVectors();  // рассчет стандартного отклонения
         graphSetData();
 
         buff.clear();
@@ -202,7 +202,7 @@ int zGraph::calculateProfileWithSnandartDeviation()
         values.fill(.0);    values_std_dev_upper.fill(INT_MIN);  values_std_dev_lower.fill(INT_MAX);
 
         calculateMedianProfileForPolyPolygonTypes();
-        calculateStandartDeviation();  // рассчет стандартного отклонения
+        calculateStandardDeviationVectors();  // рассчет стандартного отклонения
         graphSetData();
 
         buff.clear();
@@ -324,37 +324,30 @@ QString zGraph::getWritableLocation()
     return writableLocation;
 }
 
-void zGraph::calculateStandartDeviation()
+void zGraph::calculateStandardDeviationVectors(double zfactor)
 {
     int d = keys.count();
-    QVector<double> std_dev(d);  std_dev.fill(.0);
-
-    if (invers_cm)
-        for(int i=0; i<buff.count(); i++)
-            for(int j=0; j<d; j++) {
-                int k = d - 1 - j;
-                double a = values[j] - buff[i][k];
-                std_dev[j] += a * a;
-            }  // for
-    else
-        for(int i=0; i<buff.count(); i++)
-            for(int j=0; j<d; j++) {
-                double a = values[j] - buff[i][j];
-                std_dev[j] += a * a;
-            }  // for
-
     sigma = .0;
-    int sigma_count = 0;
-    for (int i=0; i<d; ++i) {
-        double d = std::sqrt(std_dev[i] / buff.count()) * sigma2;  // два сигма
-        values_std_dev_lower[i] = values[i] - d;
-        values_std_dev_upper[i] = values[i] + d;
-        if (values[i] > .00001) {
-            sigma += d / values[i];  sigma_count++;
-        }  // if
-    }  // for
-    if (sigma_count > 0) sigma = 100. * sigma / sigma_count;  // интегральное стандартное отклонение в процентах
+    if (d <= 1) return; // div/0 for std otherwise
+    QVector<double> std_dev(d, 0.);
 
+    sigma = 0.;
+    int sigma_count = 0;
+    for(int i = 0; i < d; i++) {
+      for(int j = 0; j < buff.count(); j++) {
+        double a = invers_cm ? buff[j][d - i - 1] - values[i] :
+                               buff[j][i]         - values[i]; // value - mean
+        std_dev[i] += a * a;
+      }
+      std_dev[i] = sqrt(std_dev[i] / (d - 1)); // With Bessel's correction
+      values_std_dev_lower[i] = values[i] - zfactor * std_dev[i] / sqrt(d);
+      values_std_dev_upper[i] = values[i] + zfactor * std_dev[i] / sqrt(d);
+      if (values[i] > 1e-5) {
+        sigma += std_dev[i] / values[i];
+        sigma_count++;
+      }
+    }
+    if (sigma_count > 0) sigma = 100. * sigma / sigma_count;
 }
 
 void zGraph::calculateMedianProfileForRectEllipseTypes()

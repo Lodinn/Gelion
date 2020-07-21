@@ -130,7 +130,7 @@ protected:
      void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
      QPointF getRectPoint2(QPointF p1, qreal w, qreal rot);
 private:
-     void calculateStandartDeviation();
+     void calculateStandardDeviationVectors(double zfactor = 1.96); // 95% CI
      void calculateMedianProfileForRectEllipseTypes();
      void calculateMedianProfileForPolyPolygonTypes();
      void graphSetData();
