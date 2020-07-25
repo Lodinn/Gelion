@@ -58,19 +58,22 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
         plot->xAxis->setLabel(QString("длина волны, нм ( %1 )").arg(QString(u8"\u03BB")));
 
     // data
-    plot->clearGraphs();
+    plot->clearGraphs();        createRainbow();       updateRainbow();
+    plot->xAxis->setRange(390, 1010); plot->yAxis->setRange(0, 1.5);
+    return;
 
-    sXmin = INT_MAX;  sXmax = INT_MIN;
+    /*sXmin = INT_MAX;  sXmax = INT_MIN;
     sYmin = .0;  sYmax = INT_MIN;
     foreach(zGraph *item, list) {
         if (!item->isVisible()) continue;
         sXmin = std::min(sXmin, *std::min_element(item->keys.begin(), item->keys.end()));
         sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
         sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
+        sYmax = std::max(sYmax, *std::max_element(item->values_std_dev_upper.begin(), item->values_std_dev_upper.end()));
         plot->addGraph();
         plot->graph()->setName(item->getTitle());
         plot->graph()->setData(item->keys, item->values);
-         QPen graphPen;
+        QPen graphPen;
 
         int num = list.indexOf(item) % plot_styles_cycle.count();
         graphPen.setColor(plot_styles_cycle[num].color);
@@ -81,12 +84,19 @@ void SpectralPlot::updateData(QString data_file_name, QList<zGraph *> list, bool
         plot->graph()->setScatterStyle(QCPScatterStyle(static_cast<QCPScatterStyle::ScatterShape>(style)));
     }  // foreach
 
-    if (rescale) spectralSetAllRange();
+    if (rainbowCheckBox->isChecked()) rainbowTransparency = 50;
+    else rainbowTransparency = 0;
+    drawRainbowSpectralRanges();
+    spectralSetAllRange();          */
 
-    // spectral colors
-    int count = getGraphCount();
-    if (rainbowCheckBox->isChecked()) setRainbowSpectralRanges();
-    mRainbow = getGraphCount() - count;
+//    if (rescale) spectralSetAllRange();
+
+//    // spectral colors
+//    int count = getGraphCount();
+//    if (rainbowCheckBox->isChecked()) setRainbowSpectralRanges();
+//    mRainbow = getGraphCount() - count;
+
+//    setStdVevProfiles();
 
     plot->replot();
 
@@ -101,15 +111,14 @@ void SpectralPlot::updateDataOneProfile(zGraph *item, int num)
         plot->xAxis->setLabel(QString("длина волны, нм ( %1 )").arg(QString(u8"\u03BB")));
 
 // &&& sochi 2020
-//    int n = item->profile.count();
-//    QVector<double> x(n), y(n);
-//    for (int i=0; i<n; i++) {
-//        x[i] = item->profile[i].rx();
-//        y[i] = item->profile[i].ry(); }
-
     plot->graph(num)->setData(item->keys, item->values);
-//    plot->xAxis->rescale(true);
-//    plot->xAxis2->rescale(true);
+
+    qDebug() << "item->graph_lower" << item->values_std_dev_lower;
+    qDebug() << "item->graph_upper" << item->values_std_dev_upper;
+
+//    item->graph_lower->setData(item->keys, item->values_std_dev_lower);
+//    item->graph_upper->setData(item->keys, item->values_std_dev_upper);
+
     plot->replot();
 }
 
@@ -118,7 +127,7 @@ void SpectralPlot::setRainbowSpectralRanges() {
 
     int legeng_min = plot->legend->itemCount();
 
-    QVector<double> x(2), y(2, 10);
+    QVector<double> x(2), y(2, 50);
 
     x[0] = 700.;  x[1] = 635.;
     plot->addGraph();
@@ -209,6 +218,7 @@ void SpectralPlot::setupUi()
     setAllowedAreas(nullptr);  setFloating(true);
 
     installEventFilter(this);
+    setupRainbowCoordinates();
 
     resize(900,600);  move(500,50);
     bottomGroupBox = new QGroupBox("");
@@ -297,12 +307,15 @@ void SpectralPlot::setupConnections()
     connect(plot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(graphClicked(QCPAbstractPlottable*,int)));
 
     // connect rainbowCheckBox
-    connect(rainbowCheckBox, SIGNAL(clicked(bool)), this, SLOT(rainbowShow(bool)));
+    connect(rainbowCheckBox, &QCheckBox::clicked, this, &SpectralPlot::updateRainbow);
 }
 
 void SpectralPlot::rainbowShow(bool checked)
 {
-    updateDataRainbow(checked);
+   if (checked) rainbowTransparency = 50;
+    else rainbowTransparency = 0;
+    updateRainbowSpectralRanges();
+    plot->replot();
 }
 
 void SpectralPlot::contextMenuRequest(QPoint pos)
@@ -473,6 +486,54 @@ void SpectralPlot::updateDataRainbow(bool r_show)
     plot->replot();
 }
 
+void SpectralPlot::drawRainbowSpectralRanges()
+{
+    rainbowNum = plot->legend->itemCount();
+
+    QVector<double> x(2), y(2, 50);
+
+    x[0] = 700.;  x[1] = 635.;
+    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(255, 0, 0, rainbowTransparency)));
+    x[0] = 560.;  x[1] = 520.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(0, 255, 0, rainbowTransparency)));
+    // blue
+    x[0] = 490.;  x[1] = 450.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(0, 0, 255, rainbowTransparency)));
+    // violet
+    x[0] = 450.;  x[1] = 380.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(255, 0, 255, rainbowTransparency)));
+
+    x[0] = 590.;  x[1] = 560.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(255, 255, 0, rainbowTransparency)));
+    x[0] = 520.;  x[1] = 490.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(0, 255, 255, rainbowTransparency)));
+    x[0] = 635.;  x[1] = 590.;    plot->addGraph();
+    plot->graph()->setData(x, y);
+    plot->graph()->setBrush(QBrush(QColor(255, 128, 0, rainbowTransparency)));
+
+    int legeng_max = plot->legend->itemCount();
+
+    for(int i = legeng_max - 1; i >= rainbowNum; i--) {
+        plot->legend->removeItem(i);
+    }  // for
+}
+
+void SpectralPlot::updateRainbowSpectralRanges()
+{
+    for(int num=rainbowNum; num<plot->legend->itemCount(); num++) {
+        QColor color = plot->graph(num)->brush().color();
+//        color.setAlpha(rainbowTransparency);
+        plot->graph(num)->setBrush(QBrush(QColor(color.red(),color.green(),color.blue(),rainbowTransparency)));
+    }  // for
+}
+
 void SpectralPlot::mousePress(QMouseEvent *event)
 {
     // if an axis is selected, only allow the direction of that axis to be dragged
@@ -528,12 +589,10 @@ void SpectralPlot::spectralSetAllRange()
     sYmin = .0;  sYmax = INT_MIN;
     foreach(zGraph *item, graph_list) {
         if (!item->isVisible()) continue;
-//        int n = item->profile.count();
-//        QVector<double> x(n), y(n);
-//        for (int i=0; i<n; i++) { x[i] = item->profile[i].rx(); y[i] = item->profile[i].ry(); }
         sXmin = std::min(sXmin, *std::min_element(item->keys.begin(), item->keys.end()));
         sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
         sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
+        sYmax = std::max(sYmax, *std::max_element(item->values_std_dev_upper.begin(), item->values_std_dev_upper.end()));
     }  // foreach
 
     plot->xAxis->setRange(sXmin, sXmax);
@@ -596,6 +655,9 @@ void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QS
     QCPAbstractPlottable *plottable = curPlot->plottableAt(event->localPos());
     if(plottable)
     {
+        if (plottable->name().indexOf("lw") != -1) return;
+        if (plottable->name().indexOf("up") != -1) return;
+
         double x = curPlot->xAxis->pixelToCoord(event->localPos().x());
         double y = curPlot->yAxis->pixelToCoord(event->localPos().y());
 
@@ -651,14 +713,92 @@ QString SpectralPlot::getWritableLocation()
     if (!dir.exists()) dir.mkpath(".");
     return writableLocation;
 }
+
+void SpectralPlot::setStdVevProfiles()
+{
+    int legeng_min = plot->legend->itemCount();
+    foreach(zGraph *item, graph_list) {
+        if (!item->isVisible()) continue;
+        sYmax = std::max(sYmax, *std::max_element(item->values_std_dev_upper.begin(), item->values_std_dev_upper.end()));
+
+        QCPGraph *graph_lower = plot->addGraph();  graph_lower->setName(item->getTitle() + " lw");
+        graph_lower->setPen(Qt::NoPen);
+        graph_lower->setSelectable(QCP::stNone);
+
+        QCPGraph *graph_upper = plot->addGraph();  graph_upper->setName(item->getTitle() + " up");
+        graph_upper->setPen(Qt::NoPen);
+
+        item->transparency = 50;  QColor bc(200,200,200,item->transparency);
+        graph_upper->setBrush(bc);
+        graph_upper->setSelectable(QCP::stNone);
+        graph_upper->setChannelFillGraph(graph_lower);
+
+        graph_lower->setData(item->keys, item->values_std_dev_lower);
+        graph_upper->setData(item->keys, item->values_std_dev_upper);
+
+        item->graph_lower = graph_lower;
+        item->graph_upper = graph_upper;
+
+    }  // foreach
+
+    int legeng_max = plot->legend->itemCount();
+
+    for(int i = legeng_max - 1; i >= legeng_min; i--) plot->legend->removeItem(i);
+
+    plot->yAxis->setRange(sYmin, sYmax);
+    plot->yAxis2->setRange(sYmin, sYmax);
+
+}
+
+void SpectralPlot::setupRainbowCoordinates()
+{
+    x_rainbow.append(QPointF(700., 635));
+    x_rainbow.append(QPointF(560., 520));
+    x_rainbow.append(QPointF(490., 450.));
+    x_rainbow.append(QPointF(450., 380.));
+    x_rainbow.append(QPointF(590., 560.));
+    x_rainbow.append(QPointF(520., 490));
+    x_rainbow.append(QPointF(635., 590.));
+    rgb_rainbow.append(QColor(255, 0, 0, rainbowTransparency));
+    rgb_rainbow.append(QColor(0, 255, 0, rainbowTransparency));
+    rgb_rainbow.append(QColor(0, 0, 255, rainbowTransparency));
+    rgb_rainbow.append(QColor(255, 0, 255, rainbowTransparency));
+    rgb_rainbow.append(QColor(255, 255, 0, rainbowTransparency));
+    rgb_rainbow.append(QColor(0, 255, 255, rainbowTransparency));
+    rgb_rainbow.append(QColor(255, 128, 0, rainbowTransparency));
+}
+
+void SpectralPlot::createRainbow()
+{
+    QVector<double> y(2, rainbowUp);
+    foreach(QPointF p, x_rainbow) {
+        int num = x_rainbow.indexOf(p);
+        QVector<double> x(2);
+        x[0] = p.rx();  x[1] = p.ry();
+        QCPGraph *graph = plot->addGraph();  graph->setData(x, y);
+        graph->setBrush(QBrush(rgb_rainbow[num]));
+        graph->setName("rainbow");
+    }  // foreach
+}
+
+void SpectralPlot::updateRainbow()
+{
+    for(int i=0; i<plot->graphCount(); i++) {
+        QCPGraph *graph = plot->graph(i);
+        if (graph->name() != "rainbow") continue;
+        QColor color = graph->brush().color();
+        if (rainbowCheckBox->isChecked()) color.setAlpha(rainbowTransparency);
+        else color.setAlpha(0);
+        graph->setBrush(QBrush(color));
+    }  // for
+    plot->replot();
+}
+
+
 /*
-                    QToolTip::showText(event->globalPos(),
-                    tr("<table>"
-                         "<tr>"
-                           "<td>%L1:</td>" "<td>%L2</td>"
-                         "</tr>"
-                         "<tr>"
-                           "<td>%L3:</td>" "<td>%L4</td>"
-                         "</tr>"
-                      "</table>").arg(strNameX).arg(key).arg(strNameY).arg(value), curPlot, curPlot->rect());
+   QToolTip::showText(event->globalPos(), tr("<table>"
+   "<tr>"  "<td>%L1:</td>" "<td>%L2</td>"  "</tr>"
+   "<tr>"  "<td>%L3:</td>" "<td>%L4</td>"  "</tr>"
+   "</table>").arg(strNameX).arg(key).arg(strNameY).arg(value),
+   curPlot, curPlot->rect());
 */

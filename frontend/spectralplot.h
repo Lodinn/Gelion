@@ -30,18 +30,29 @@ private:
     QTextEdit *textEdit;
     QPushButton *axisResizeButton;
     QStatusBar *statusBar;
+
     QVBoxLayout *dockLayout;
     void spectralSetAllRange();
     double sXmin, sXmax;
     double sYmin, sYmax;
     int tracerIndex;
-    void setRainbowSpectralRanges();
     QStringList getGraphClickedStrings(int dataIndex, QString name, double keyValue, double dataValue);
     int mRainbow;
     void updateDataRainbow(bool r_show);
+    void drawRainbowSpectralRanges();
+    void updateRainbowSpectralRanges();
     void MouseOverPlotHeight(QMouseEvent *event);
     void DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QString strNameX, QString strNameY);
     QString getWritableLocation();
+    void setRainbowSpectralRanges();
+    void setStdVevProfiles();  // профили стандартного отклонения
+    int rainbowTransparency = 50;
+    int rainbowNum;
+    QVector<QPointF> x_rainbow;  // координаты заливки спектральных диапазонов
+    QVector<QColor> rgb_rainbow;  // цвет заливки спектральных диапазонов
+    double rainbowUp = 25.;
+    void setupRainbowCoordinates();
+    void createRainbow();
 
 private slots:
     void selectionChanged();
@@ -54,6 +65,8 @@ private slots:
     void savePlotToPdfJpgPng();
     void savePlotToCsv();
     void savePlotToRoi();
+    void updateRainbow();
+
 };
 
 #endif // IMAGESPECTRAL_H

@@ -46,6 +46,7 @@ public:
     QRectF boundingRect() const Q_DECL_OVERRIDE;
     void setTitle(QString title);
     QString getTitle() const;
+    void defineNewObjTitle(QList<zGraph *> list);
     QString getTitleExt() const;
     void setFont(QString family, int pointSize, int weight, bool italic);
     virtual QRectF getTitleRectangle() const = 0;
@@ -54,6 +55,7 @@ public:
     QDockWidget *dockw = nullptr;
     QCustomPlot *plot = nullptr;
     ImageHandler *imgHand = nullptr;
+    QCPGraph *graph_lower = nullptr, *graph_upper = nullptr;
     void setContextMenuConnection();
 
     QPoint dockwpos;
@@ -129,6 +131,7 @@ protected:
      QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
      void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
      QPointF getRectPoint2(QPointF p1, qreal w, qreal rot);
+     QString typeNameDef = "zGraph";
 private:
      void calculateStandardDeviationVectors(double zfactor = 1.96); // 95% CI
      void calculateMedianProfileForRectEllipseTypes();

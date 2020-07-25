@@ -345,7 +345,10 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
 {
 // &&& sochi 2020
     qDebug() << "show_profile_for_Z";
-    if (item->calculateProfileWithSnandartDeviation() == 0) emit changeZObject(item);
+    if (item->calculateProfileWithSnandartDeviation() == 0) {
+        if (item->type()== zPoint::Type) emit changeZObject(item);
+        else emit changeZObject(nullptr);
+    }  // if
 // &&& sochi 2020
     /*switch (item->type()) {
     case zPoint::Type : {
@@ -686,7 +689,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         qreal x2 = p.rx();  qreal y2 = p.ry();
         tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
         tmpRect = new zRect(p,GlobalScale,GlobalRotate);
-        tmpRect->setTitle("Прямоугольник 1");
+        tmpRect->defineNewObjTitle(getZGraphItemsList());   // tmpRect->setTitle("Прямоугольник 1"); //hfd
         tmpRect->aicon = rectAct->icon();
         tmpRect->updateBoundingRect();
         scene()->addItem(tmpRect);
@@ -715,7 +718,8 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             qreal x2 = p.rx();  qreal y2 = p.ry();
             tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
             tmpEllipse = new zEllipse(p,GlobalScale,GlobalRotate);
-            tmpEllipse->setTitle("Эллипс 1");  tmpEllipse->aicon = QIcon(":/images/vector_ellipse.png");
+            tmpEllipse->defineNewObjTitle(getZGraphItemsList());   // tmpEllipse->setTitle("Эллипс 1");
+            tmpEllipse->aicon = QIcon(":/images/vector_ellipse.png"); //hfd
             tmpEllipse->updateBoundingRect();
             scene()->addItem(tmpEllipse);
             connect(tmpEllipse, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
@@ -779,7 +783,8 @@ void gQGraphicsView::createPolygon(QPoint pos)
 {
     zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
     connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
-    zp->setTitle("Полигон 1");  zp->aicon = QIcon(":/images/vector-polygon.png");
+    zp->defineNewObjTitle(getZGraphItemsList());   // zp->setTitle("Полигон 1");
+    zp->aicon = QIcon(":/images/vector-polygon.png"); //hfd
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
         zp->fpolygon.append(point.toPoint());
@@ -798,7 +803,8 @@ void gQGraphicsView::createPolyline(QPoint pos)
 {
     zPolyline *zp = new zPolyline(GlobalScale,GlobalRotate);
     connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
-    zp->setTitle("Полилиния 1");  zp->aicon = QIcon(":/images/polyline-64.png");
+    zp->defineNewObjTitle(getZGraphItemsList());   // zp->setTitle("Полилиния 1");
+    zp->aicon = QIcon(":/images/polyline-64.png"); //hfd
     foreach (QGraphicsLineItem *item, tmpLines) {
         QPointF point = item->line().p1();
         zp->fpolygon.append(point.toPoint());
@@ -951,7 +957,8 @@ void gQGraphicsView::insPoint(QPoint pos)
     QPointF point = mapToScene(pos);
     zPoint *zpoint = new zPoint(point);
     connect(zpoint, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
-    zpoint->setTitle("Точка 1");  zpoint->aicon = QIcon(":/images/pin_grey.png");
+    zpoint->defineNewObjTitle(getZGraphItemsList());   // zpoint->setTitle("Точка 1");
+    zpoint->aicon = QIcon(":/images/pin_grey.png"); //hfd
     zpoint->updateBoundingRect();
     scene()->addItem(zpoint);
     emit insertZGraphItem(zpoint);

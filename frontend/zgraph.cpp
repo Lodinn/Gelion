@@ -27,6 +27,20 @@ QString zGraph::getTitle() const
     return data(0).toString();
 }
 
+void zGraph::defineNewObjTitle(QList<zGraph *> list)
+{
+     //hfd
+    QStringList strlist;    QString name = typeString;
+    foreach(zGraph *item, list) strlist.append(item->getTitle());
+    for(int num=1; num<100; num++) {
+        QString str = QString(typeNameDef).arg(num);
+        if (strlist.indexOf(str) == -1) {
+            name = str;  break;
+        }  // if
+    }  // for
+    setTitle(name);
+}
+
 QString zGraph::getTitleExt() const
 {
     if (this->type()== zPoint::Type)
@@ -620,6 +634,7 @@ zPoint::zPoint(const QPointF point) :  zGraph()
     setFlag(QGraphicsItem::ItemIsSelectable);
     setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
     typeString = "Точка";
+    typeNameDef = "Точка %1";
 }
 
 QRectF zPoint::getTitleRectangle() const
@@ -712,6 +727,7 @@ zPolygon::zPolygon(qreal scale, qreal rotate) :  zGraph()
     setFlag(QGraphicsItem::ItemIsSelectable);
     setData(1,scale);  setData(2,rotate);
     typeString = "Полигон";
+    typeNameDef = "Полигон %1";
 }
 
 QRectF zPolygon::getTitleRectangle() const
@@ -905,6 +921,7 @@ zRect::zRect(const QPointF point, qreal scale, qreal rotate)
     setPos(point);
     setData(1,scale);  setData(2,rotate);
     typeString = "Прямоугольник";
+    typeNameDef = "Прямоугольник %1";
 }
 
 QRectF zRect::getTitleRectangle() const
@@ -1055,6 +1072,7 @@ zEllipse::zEllipse(const QPointF point, qreal scale, qreal rotate)
     setPos(point);
     setData(1,scale);  setData(2,rotate);
     typeString = "Эллипс";
+    typeNameDef = "Эллипс %1";
 }
 
 QRectF zEllipse::getTitleRectangle() const
@@ -1202,6 +1220,7 @@ zPolyline::zPolyline(qreal scale, qreal rotate)
     setFlag(QGraphicsItem::ItemIsSelectable);
     setData(1,scale);  setData(2,rotate);
     typeString = "Полилиния";
+    typeNameDef = "Полилиния %1";
 }
 
 QRectF zPolyline::getTitleRectangle() const
