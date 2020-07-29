@@ -166,21 +166,19 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(labelLeftBlue, 0, 1, Qt::AlignLeft);
     gridLayout->addWidget(labelRightRed, 0, 2, Qt::AlignLeft);
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
-    buttonAxisRescale->setFixedHeight(25);
+    buttonAxisRescale->setMinimumHeight(25);
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
     buttonMaskSave = new QPushButton("Добавить в список Маски ...");
-    buttonMaskSave->setFixedHeight(25);
+    buttonMaskSave->setMinimumHeight(25);
     gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
-    QLabel *label = new QLabel(" Используйте Клавиши 'W' 'S' 'A' ");
-    label->setFixedHeight(25);
-    gridLayout->addWidget(label, 3, 0, Qt::AlignLeft);
+
     inverseMask = new QCheckBox("Инверсная маска");
-    inverseMask->setFixedHeight(25);
+    inverseMask->setMinimumHeight(25);
     inverseMask->setChecked(false);
     gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
 
     bottomGroupBox->setLayout(gridLayout);
-    bottomGroupBox->setMaximumHeight(100);
+    bottomGroupBox->setMaximumHeight(120);
 
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
@@ -190,6 +188,9 @@ void imageHistogram::setupUi()
 
     vertLayout->addWidget(plot);
     vertLayout->addWidget(bottomGroupBox);
+    QLabel *label = new QLabel(" Используйте Клавиши 'W' 'S' 'A' ");
+    label->setMaximumHeight(20);
+    vertLayout->addWidget(label);
 
 //    labelPreview = new QLabel;
     previewPlot = new QCustomPlot();

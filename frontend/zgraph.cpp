@@ -103,6 +103,17 @@ void zGraph::setParamsToDialog(zgraphParamDlg *dlg)
     dlg->ui->labelTypeTitle->setText(this->typeString);  // тип объекта
     dlg->ui->checkBoxWdock->setChecked(this->dockw->isVisible());  // видимость графика профиля
     dlg->ui->checkBoxZGraphVisible->setChecked(this->isVisible());  // видимость объекта
+    if ( this->type()== zPoint::Type ) {
+        dlg->ui->labelPointCountText->setVisible(false);  // количество точек
+        dlg->ui->labelCLText->setVisible(false); // относительное отклонение
+    }
+    else {
+        dlg->ui->labelPointCountText->setVisible(true);  // количество точек
+        dlg->ui->labelCLText->setVisible(true); // относительное отклонение
+        dlg->ui->labelPointCountText->setText(QString("%1").arg(this->count_of_point));  // количество точек
+        dlg->ui->labelCLText->setText(QString("%1 %").arg(this->sigma, 0, 'f', 1));  // относительное отклонение
+    }  // if
+
 }
 
 void zGraph::getParamsFromDialog(zgraphParamDlg *dlg)
@@ -118,7 +129,8 @@ void zGraph::getParamsFromDialog(zgraphParamDlg *dlg)
     listwidget->setFont(font);
     listwidget->setText(this->getTitle());
     this->updateBoundingRect();
-    emit changeParamsFromDialog(nullptr);
+//    emit changeParamsFromDialog(nullptr);
+    emit changeParamsFromDialog(this);
 }
 
 QPointF zGraph::getRectPoint2(QPointF p1, qreal w, qreal rot)

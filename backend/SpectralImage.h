@@ -43,6 +43,7 @@ namespace J09 {
       int zobject_dock_size_w = 450;  // размеры окна профиля, пиксели
       int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
       bool zobjects_prof_rainbow_show = true;  // заливка спектральных диапазонов
+      bool zobjects_prof_deviation_show = true;  // заливка стандартного отклонения
       double zobject_plot_xAxis_lower = 390.;  // спектральный диапазон, меньшее
       double zobject_plot_xAxis_upper = 1010.;  // спектральный диапазон, большее
       double zobject_plot_yAxis_lower = 0.;  // коэффициент отражения, меньшее

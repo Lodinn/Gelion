@@ -12,14 +12,19 @@ class SpectralPlot : public QDockWidget
     Q_OBJECT
 public:
     SpectralPlot(QWidget * parent = nullptr);
-    void updateData(QString data_file_name, QList<zGraph *> list, bool rescale);
-    void updateDataOneProfile(zGraph *item, int num);
+    void updateData(QString data_file_name, QList<zGraph *> list);
+    void updateDataExt(QString data_file_name, QList<zGraph *> list, zGraph *item);
+    void updateDataOneProfile(zGraph *item);
     int getGraphCount() { return plot->graphCount()- mRainbow; }
     QCheckBox *rainbowCheckBox;
+    QCheckBox *deviationCheckBox = new QCheckBox("Среднеквадратическое отклонение (95% CI)");
+    J09::globalSettingsType *gsettings;
+    void setDefaultState();  // настройки окна по умолчанию
 private:
     QCustomPlot *plot;
     QString f_data_file_name;
     QList<zGraph *> graph_list;
+    QList<zGraph *> get_visible_graph_list(QList<zGraph *> list);
     QVector<J09::plotStyle> plot_styles_cycle;
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
@@ -32,7 +37,7 @@ private:
     QStatusBar *statusBar;
 
     QVBoxLayout *dockLayout;
-    void spectralSetAllRange();
+
     double sXmin, sXmax;
     double sYmin, sYmax;
     int tracerIndex;
@@ -47,13 +52,22 @@ private:
     void setRainbowSpectralRanges();
     void setStdVevProfiles();  // профили стандартного отклонения
     int rainbowTransparency = 50;
+    int deviationTransparency = 50;
+    double rainbowUp = 25.;
     int rainbowNum;
     QVector<QPointF> x_rainbow;  // координаты заливки спектральных диапазонов
     QVector<QColor> rgb_rainbow;  // цвет заливки спектральных диапазонов
-    double rainbowUp = 25.;
     void setupRainbowCoordinates();
     void createRainbow();
-
+    void createMainGraphs();
+    void updateRanges();
+    void createAdditinalGraphs();
+    void updateRainbow();
+    QString rainbowUniqueStr = "rainbow$%^&*()";
+    QString devLowerUniqueStr = "devLower$%^&*()";
+    QString devUpperUniqueStr = "devUpper$%^&*()";
+    void updateDataExtBasic();
+    void updateAdditinalGraphs();
 private slots:
     void selectionChanged();
     void mousePress(QMouseEvent *event);
@@ -65,8 +79,9 @@ private slots:
     void savePlotToPdfJpgPng();
     void savePlotToCsv();
     void savePlotToRoi();
-    void updateRainbow();
-
+    void updateRainbowSlot();
+    void updateMainGraphRanges();
+    void updateAdditinalGraphsSlot();
 };
 
 #endif // IMAGESPECTRAL_H

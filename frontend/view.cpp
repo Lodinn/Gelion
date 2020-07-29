@@ -347,7 +347,8 @@ void gQGraphicsView::show_profile_for_Z(zGraph *item)
     qDebug() << "show_profile_for_Z";
     if (item->calculateProfileWithSnandartDeviation() == 0) {
         if (item->type()== zPoint::Type) emit changeZObject(item);
-        else emit changeZObject(nullptr);
+        else emit this->changeZObject(item);
+//        else emit this->changeZObject(nullptr);
     }  // if
 // &&& sochi 2020
     /*switch (item->type()) {

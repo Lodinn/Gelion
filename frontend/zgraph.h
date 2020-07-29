@@ -55,7 +55,6 @@ public:
     QDockWidget *dockw = nullptr;
     QCustomPlot *plot = nullptr;
     ImageHandler *imgHand = nullptr;
-    QCPGraph *graph_lower = nullptr, *graph_upper = nullptr;
     void setContextMenuConnection();
 
     QPoint dockwpos;
@@ -74,6 +73,7 @@ public:
     QVector<QPointF > profile;
     QVector<QPointF > std_dev_upper, std_dev_lower;
     QVector<double > pup, plw;
+    int std_dev_num;
 
     void calculateProfileWithSigma(QVector<double> x, QVector<double> y, QVector<double> yup, QVector<double> ylw);
     int transparency = 50;

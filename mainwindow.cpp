@@ -29,9 +29,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   im_handler->moveToThread(worker_thread);
 
 //  installEventFilter(this);
-
-  imgSpectral->rainbowCheckBox->setChecked(GLOBAL_SETTINGS.zobjects_prof_rainbow_show);
-
 //    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
 //    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
 
@@ -51,7 +48,6 @@ void MainWindow::closeEvent(QCloseEvent *event) {
       saveSettings();
       im_handler->save_settings_all_images(save_file_names);
   }  // if
-  GLOBAL_SETTINGS.zobjects_prof_rainbow_show = imgSpectral->rainbowCheckBox->isChecked();
   saveMainSettings();
 }
 
@@ -304,22 +300,27 @@ void MainWindow::createMainConnections()
 
 void MainWindow::spectralUpdateExt(zGraph *item)
 {
-    item->data_file_name = dataFileName;
+    if (item != nullptr) item->data_file_name = dataFileName;
     if (!imgSpectral->isVisible()) return;
     auto zz_list = view->getZGraphItemsList();
+    qDebug() << "fffffff";
+    imgSpectral->updateDataExt(dataFileName, zz_list, item);
+    qDebug() << "gggggggg";
 
-    if (item == nullptr) {
-        imgSpectral->updateData(dataFileName, zz_list, true);  // обновление всех профилей
-        imgSpectral->update();
-        return;
-    }  // if
+//    if (item == nullptr) {
+//        imgSpectral->updateData(dataFileName, zz_list, true);  // обновление всех профилей
+//        imgSpectral->update();
+//        return;
+//    }  // if
 
-    QList<zGraph *> z_list;  foreach(zGraph *z, zz_list) if (z->isVisible()) z_list.append(z);
-    int num = -1;
-    foreach(zGraph *z, z_list)
-        if (z == item) { num = z_list.indexOf(z); break; }
-    if (num == -1) return;
-    imgSpectral->updateDataOneProfile(item, num);
+//    QList<zGraph *> z_list;  foreach(zGraph *z, zz_list) if (z->isVisible()) z_list.append(z);
+//    int num = 0;
+//    foreach(zGraph *z, z_list) {
+//        if (!z->isVisible()) continue;
+//        if (z == item) { num = z_list.indexOf(z); break; }
+//    }  // if
+//    if (num == -1) return;
+//    imgSpectral->updateDataOneProfile(item);
 
 }
 
@@ -428,6 +429,7 @@ void MainWindow::createConstDockWidgets()
     imgSpectral->hide();    imgSpectral->setObjectName("imgSpectral");
     addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
     connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+    imgSpectral->gsettings = &GLOBAL_SETTINGS;  imgSpectral->setDefaultState();
 
 // АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
     imgHistogram->hide();   imgHistogram->setObjectName("imgHistogram");
@@ -505,6 +507,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     item->setInversCm(false);
     item->dockw = dockw;
     item->imgHand = im_handler;
+    item->data_file_name = dataFileName;
     dockw->setFloating(true);  dockw->setObjectName("zGraph");
 
     dockw->resize(GLOBAL_SETTINGS.zobject_dock_size_w,GLOBAL_SETTINGS.zobject_dock_size_h);
@@ -607,13 +610,14 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
     if (item->checkState() == Qt::Checked) {
         zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true);
         spectralAct->setEnabled(true);
-        imgSpectral->updateData(dataFileName, zitems, true);
+        imgSpectral->updateDataExt(dataFileName, zitems, nullptr);
     }
     else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
         zgrap_item->dockw->setVisible(false);
 
         calculateVisibleZObject(false);  // проверим есть ли видимые объекты
-    }
+
+    }  // if
 }
 
 void MainWindow::zGparhEditDialog(zGraph *item)
@@ -734,7 +738,7 @@ void MainWindow::calculateVisibleZObject(bool rescale) {
         spectralAct->setChecked(false);
         return;
     }  // if
-    imgSpectral->updateData(dataFileName, z_list, rescale);
+    imgSpectral->updateDataExt(dataFileName, z_list, nullptr);
 }
 
 void MainWindow::listWidgetDeleteItem(zGraph *item)
@@ -840,7 +844,7 @@ void MainWindow::histogramSlot()
 void MainWindow::spectralSlot()
 {
     auto z_list = view->getZGraphItemsList();  // список рафических объектов на сцене
-    imgSpectral->updateData(dataFileName, z_list, true);
+    imgSpectral->updateDataExt(dataFileName, z_list, nullptr);
     imgSpectral->setVisible(!imgSpectral->isVisible());
 
 }
@@ -990,6 +994,7 @@ void MainWindow::loadMainSettings()
     GLOBAL_SETTINGS.zobject_dock_size_w = settings.value( "zobject_dock_size_w", 420).toInt();
     GLOBAL_SETTINGS.zobject_dock_size_h = settings.value( "zobject_dock_size_h", 150).toInt();
     GLOBAL_SETTINGS.zobjects_prof_rainbow_show = settings.value( "zobjects_prof_rainbow_show", true).toBool();
+    GLOBAL_SETTINGS.zobjects_prof_deviation_show = settings.value( "zobjects_prof_deviation_show", true).toBool();
     settings.endGroup();
 
 // СПИСОК СПЕКТРАЛЬНЫХ ИНДЕКСОВ
@@ -1022,6 +1027,7 @@ void MainWindow::saveMainSettings()
     settings.setValue( "zobject_dock_size_w", GLOBAL_SETTINGS.zobject_dock_size_w );
     settings.setValue( "zobject_dock_size_h", GLOBAL_SETTINGS.zobject_dock_size_h );
     settings.setValue( "zobjects_prof_rainbow_show", GLOBAL_SETTINGS.zobjects_prof_rainbow_show );
+    settings.setValue( "zobjects_prof_deviation_show", GLOBAL_SETTINGS.zobjects_prof_deviation_show );
     settings.endGroup();
 
     settings.beginGroup( "Indexes" );
@@ -1102,7 +1108,8 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
 //            view->show_profile_for_Z(point);
 
             point->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
-            emit view->changeZObject(point);
+//            emit view->changeZObject(point);
+            point->data_file_name = dataFileName;
 // &&& sochi 2020
             emit view->setZGraphDockToggled(point);
             point->dockw->setVisible(settings->value("dockvisible", true).toBool());
@@ -1135,7 +1142,8 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             // &&& sochi 2020
             //            view->show_profile_for_Z(rect);
             rect->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
-            emit view->changeZObject(rect);
+//            emit view->changeZObject(rect);
+            rect->data_file_name = dataFileName;
             // &&& sochi 2020
             emit view->setZGraphDockToggled(rect);
             rect->dockw->setVisible(settings->value("dockvisible", true).toBool());
@@ -1168,7 +1176,8 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             // &&& sochi 2020
             //            view->show_profile_for_Z(ellipse);
             ellipse->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
-            emit view->changeZObject(ellipse);
+//            emit view->changeZObject(ellipse);
+            ellipse->data_file_name = dataFileName;
             // &&& sochi 2020
             emit view->setZGraphDockToggled(ellipse);
             ellipse->dockw->setVisible(settings->value("dockvisible", true).toBool());
@@ -1202,7 +1211,8 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             // &&& sochi 2020
             //            view->show_profile_for_Z(polyline);
             polyline->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
-            emit view->changeZObject(polyline);
+//            emit view->changeZObject(polyline);
+            polyline->data_file_name = dataFileName;
             // &&& sochi 2020
             emit view->setZGraphDockToggled(polyline);
             polyline->dockw->setVisible(settings->value("dockvisible", true).toBool());
@@ -1234,9 +1244,10 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             polygon->updateBoundingRect();
             emit view->insertZGraphItem(polygon);
             // &&& sochi 2020
-            //            view->show_profile_for_Z(polygon);
+//                        view->show_profile_for_Z(polygon);
             polygon->setSettingsFromFile(settings);  // ввод всех профилей без расчета !!!
-            emit view->changeZObject(polygon);
+//            emit view->changeZObject(polygon);
+            polygon->data_file_name = dataFileName;
             // &&& sochi 2020
             emit view->setZGraphDockToggled(polygon);
             polygon->dockw->setVisible(settings->value("dockvisible", true).toBool());
@@ -1247,7 +1258,7 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             continue;
         }  // Polygon
     }  // foreach
-
+    emit view->changeZObject(nullptr);
 }
 
 void MainWindow::restoreTRUEdockWidgetsPosition()
@@ -1557,7 +1568,7 @@ void MainWindow::show_zgraph_list()
 
             restoreDockWidgetsPositionExt();  // восстанавливает коррдинаты окон для загруженных ОИ
             auto graphList = view->getZGraphItemsList();
-            if (imgSpectral->isVisible()) imgSpectral->updateData(dataFileName, graphList, true);  // обновление всех профилей
+            if (imgSpectral->isVisible()) imgSpectral->updateDataExt(dataFileName, graphList, nullptr);  // обновление всех профилей
             if (graphList.count() > 0) spectralAct->setEnabled(true);
 
             return;
