@@ -36,21 +36,17 @@ QString ImageHandler::get_regular_expression(QString input)
 }
 
 int ImageHandler::get_band_by_wave_length(double wavelength) {
-  int result = - 1;
   SpectralImage* image = current_image();
   QVector<double> wls = image->wls();
-// проверка попадания на максимальную длину волны и минимальное число каналов
-  if (wls.length() == 1)  return 0;
-  double d = wls[wls.length()-1] - wls[wls.length()-2];
-  if (qAbs(wavelength - wls[wls.length()-1]) < d * .5) return wls.length() - 1;
+  int result = wls.length() - 1;
   for (int ch = 0; ch < wls.length() - 1; ch++) {
-    if ((wavelength >= wls[ch]) && (wavelength < wls[ch+1])) {
-      if (wavelength - wls[ch] < wls[ch+1] - wavelength) result = ch;
-      else result = ch + 1;
+    if ((wavelength >= wls[ch]) &&
+        (wavelength < wls[ch+1])) {
+      result = wavelength - wls[ch] < wls[ch+1] - wavelength ? ch : ch + 1;
       return result;
     }  // if
   }  // for
-  return result;
+  return result; //if nothing was found, return the last channel
 }
 
 QPixmap ImageHandler::changeBrightnessPixmap(QImage &img, qreal brightness)
