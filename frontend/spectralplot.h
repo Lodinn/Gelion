@@ -16,10 +16,11 @@ public:
     void updateDataExt(QString data_file_name, QList<zGraph *> list, zGraph *item);
     void updateDataOneProfile(zGraph *item);
     int getGraphCount() { return plot->graphCount()- mRainbow; }
-    QCheckBox *rainbowCheckBox;
-    QCheckBox *deviationCheckBox = new QCheckBox("Среднеквадратическое отклонение (95% CI)");
+    QCheckBox *rainbowCheckBox = new QCheckBox("Заливка спектральных диапазонов");
+    QCheckBox *deviationCheckBox = new QCheckBox("Дисперсия ( 95% Ci )");
     J09::globalSettingsType *gsettings;
     void setDefaultState();  // настройки окна по умолчанию
+    ImageHandler *imgHand;
 private:
     QCustomPlot *plot;
     QString f_data_file_name;

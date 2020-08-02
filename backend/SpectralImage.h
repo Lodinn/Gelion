@@ -9,6 +9,11 @@
 
 QT_BEGIN_NAMESPACE
 namespace J09 {
+  struct RGB_CANNELS {
+    double red = 641.0;
+    double green = 550.0;
+    double blue = 460.0;
+  };  // RGB_CANNELS
   struct histogramType {
     double min = INT_MAX;
     double max = INT_MIN;
@@ -69,11 +74,14 @@ class SpectralImage : public QObject {
   Q_OBJECT
 public:
   explicit SpectralImage(QObject *parent = nullptr);
+  enum dataType { dtBase, dtRGB };
+  dataType datatype = dataType::dtBase;
   QString get_file_name() { return fname; }
   QVector<QVector<QVector<double> > > get_raster() { return img; }
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
   double getBrightness(uint32_t num) { return indexBrightness.at(num); }
+  QString get_y_axis_title_for_plot(bool short_title);  // наименование единиц измерения
 public slots:
 
   QVector<QVector<double> > get_band(uint16_t band);
@@ -96,6 +104,7 @@ public slots:
   void append_slice(QVector<QVector<double> > slice);
 
 private:
+
   // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
   QVector<J09::maskRecordType *> mask;  // массив масочных изображений 0 - нет, 1 - маска

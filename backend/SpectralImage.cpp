@@ -309,6 +309,23 @@ void SpectralImage::calculateHistogram(bool full, uint16_t num)
 
 }
 
+QString SpectralImage::get_y_axis_title_for_plot(bool short_title)
+{
+    QString result("?????");
+    if (short_title)
+        switch (datatype) {
+        case dataType::dtBase : result = "к-т отражения";  break;
+        case dataType::dtRGB : result = "яркость";  break;
+        }  // switch
+    else
+        switch (datatype) {
+        case dataType::dtBase : result = "коэффициент отражения ( r )";  break;
+        case dataType::dtRGB : result = "яркость ( r )";  break;
+        }  // switch
+
+    return result;
+}
+
 void SpectralImage::append_additional_image(QImage image, QString index_name, QString index_formula)
 {
     indexImages.append(image);

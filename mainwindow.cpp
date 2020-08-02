@@ -303,9 +303,8 @@ void MainWindow::spectralUpdateExt(zGraph *item)
     if (item != nullptr) item->data_file_name = dataFileName;
     if (!imgSpectral->isVisible()) return;
     auto zz_list = view->getZGraphItemsList();
-    qDebug() << "fffffff";
+
     imgSpectral->updateDataExt(dataFileName, zz_list, item);
-    qDebug() << "gggggggg";
 
 //    if (item == nullptr) {
 //        imgSpectral->updateData(dataFileName, zz_list, true);  // обновление всех профилей
@@ -430,6 +429,7 @@ void MainWindow::createConstDockWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
     connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     imgSpectral->gsettings = &GLOBAL_SETTINGS;  imgSpectral->setDefaultState();
+    imgSpectral->imgHand = im_handler;
 
 // АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
     imgHistogram->hide();   imgHistogram->setObjectName("imgHistogram");
@@ -669,12 +669,27 @@ void MainWindow::toggleViewAction(bool b)
     spectralAct->setChecked(imgSpectral->isVisible());
 }
 
-// connect(view->openAct, &QAction::triggered, this, &MainWindow::open);
 void MainWindow::open() {
   QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
-      tr("ENVI HDR Files (*.hdr);;ENVI HDR Files (*.hdr)"));
+      tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg);;Файлы PNG (*.png)"));
   if (fname.isEmpty()) return;
+  if(!QFileInfo::exists(fname)) {  // Файл не найден
+      QMessageBox msgBox;
+      msgBox.setWindowIcon(icon256);
+      msgBox.setWindowTitle("Ошибка");
+      msgBox.setIcon(QMessageBox::Information);
+      msgBox.setText(QString("Файл %1 не найден !").arg(fname));
+      msgBox.exec();
+      return;
+  }  // if
+
+// jpg added
+  QFileInfo info(fname);
+  if ( info.suffix().toLower() == "jpg" || info.suffix().toLower() == "png" )  // выбран файл jpg или png
+      fname = im_handler->getHDRfileNameConvertedFromJPG(fname);
+// jpg added
+
   QStringList fnames = im_handler->get_image_file_names();
   int num = fnames.indexOf(fname);
   if (num != -1) {
@@ -995,6 +1010,10 @@ void MainWindow::loadMainSettings()
     GLOBAL_SETTINGS.zobject_dock_size_h = settings.value( "zobject_dock_size_h", 150).toInt();
     GLOBAL_SETTINGS.zobjects_prof_rainbow_show = settings.value( "zobjects_prof_rainbow_show", true).toBool();
     GLOBAL_SETTINGS.zobjects_prof_deviation_show = settings.value( "zobjects_prof_deviation_show", true).toBool();
+
+    GLOBAL_SETTINGS.main_rgb_rotate_start = settings.value( "main_rgb_rotate_start", 90.).toDouble();
+    GLOBAL_SETTINGS.main_rgb_scale_start = settings.value( "main_rgb_scale_start", 2.).toDouble();
+
     settings.endGroup();
 
 // СПИСОК СПЕКТРАЛЬНЫХ ИНДЕКСОВ
@@ -1028,6 +1047,9 @@ void MainWindow::saveMainSettings()
     settings.setValue( "zobject_dock_size_h", GLOBAL_SETTINGS.zobject_dock_size_h );
     settings.setValue( "zobjects_prof_rainbow_show", GLOBAL_SETTINGS.zobjects_prof_rainbow_show );
     settings.setValue( "zobjects_prof_deviation_show", GLOBAL_SETTINGS.zobjects_prof_deviation_show );
+    settings.setValue( "main_rgb_rotate_start", GLOBAL_SETTINGS.main_rgb_rotate_start );
+    settings.setValue( "main_rgb_scale_start", GLOBAL_SETTINGS.main_rgb_scale_start );
+
     settings.endGroup();
 
     settings.beginGroup( "Indexes" );
@@ -1715,7 +1737,10 @@ void MainWindow::settingsDlgShow()
     settingsDialog *dlg = new settingsDialog(this);
     dlg->setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
     dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
-    if (dlg->exec() == QDialog::Accepted) {}
+    dlg->setGlobalSettings(GLOBAL_SETTINGS);
+    if (dlg->exec() == QDialog::Accepted) {
+        dlg->getGlobalSettings(GLOBAL_SETTINGS);
+    }  // if
 }
 
 void MainWindow::change_brightness(int value)

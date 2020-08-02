@@ -15,7 +15,7 @@ public:
                     J09::histogramType &hg);
     void setPreviewPixmap(QPixmap &mainRGB);
 private:
-    void  calculateHistogram(bool full);
+    void calculateHistogram(bool full);
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
     void setupConnections();
@@ -27,7 +27,7 @@ private:
     QSlider *sliderLeftColorEdge;
     QSlider *sliderRightColorEdge;
     QCheckBox *previewImage;
-    QCheckBox *inverseMask;
+//    QCheckBox *inverseMask;
     QLabel *labelBrightness;
     QLabel *labelLeftBlue;
     QLabel *labelRightRed;
@@ -35,6 +35,10 @@ private:
     QPushButton *buttonMaskSave;
     QVBoxLayout *vertLayout;
     QLabel *labelPreview;
+    QLabel *labelPreviewStatus = new QLabel();
+    QStringList previewStatusList = QStringList() << "Индекс" << "RGB" << "Маска" << "Инв.маска";
+    QString previewStatusStr = "' Z '-индекс ' X '-RGB ' C '-маска ' V '-инв.маска ' A '-по часовой ' S '-против часовой ( %1 )";
+    QString getPreviewStatusString();
     QHBoxLayout *horzLayout;
     QCPGraph *packet_lower, *packet_upper;
     QCPItemBracket *bracket;

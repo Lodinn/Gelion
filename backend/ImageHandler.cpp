@@ -39,12 +39,17 @@ int ImageHandler::get_band_by_wave_length(double wavelength) {
   int result = - 1;
   SpectralImage* image = current_image();
   QVector<double> wls = image->wls();
+// проверка попадания на максимальную длину волны и минимальное число каналов
+  if (wls.length() == 1)  return 0;
+  double d = wls[wls.length()-1] - wls[wls.length()-2];
+  if (qAbs(wavelength - wls[wls.length()-1]) < d * .5) return wls.length() - 1;
   for (int ch = 0; ch < wls.length() - 1; ch++) {
     if ((wavelength >= wls[ch]) && (wavelength < wls[ch+1])) {
-      result = ch;
+      if (wavelength - wls[ch] < wls[ch+1] - wavelength) result = ch;
+      else result = ch + 1;
       return result;
-    }
-  }
+    }  // if
+  }  // for
   return result;
 }
 
@@ -108,6 +113,76 @@ void ImageHandler::save_settings_all_images(QStringList &save_file_names)
     } // for
 }
 
+QString ImageHandler::getHDRfileNameConvertedFromJPG(QString jpg_name)
+{
+    QFileInfo info(jpg_name);
+    QString hdrFileName = info.completeBaseName() + ".hdr";
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    hdrFileName = writableLocation + "/" + hdrFileName;
+    if(QFileInfo::exists(hdrFileName)) return hdrFileName;
+    createHdrDatFilesFromJPG(jpg_name, hdrFileName);
+    return hdrFileName;
+}
+
+void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
+{
+    QImage image(jpg_name);
+    image.convertToFormat(QImage::Format_RGB32);
+
+    QFileInfo info(hdr_name);
+    QString dat_name = info.path() + "/" + info.completeBaseName() + ".dat";
+
+    J09::RGB_CANNELS rgb_default;
+    QStringList hdr_list;
+    hdr_list << "ENVI" << "description = {" << rgbConvertedEnvi << "}"
+             << QString("samples = %1").arg(image.width()) << QString("lines = %1").arg(image.height())
+             << "bands = 3" << "header offset = 0" << "file type = ENVI" << "data type = 4" << "interleave = BIL"
+             << "sensor type = unknown" << "byte order = 0" << "wavelength = {" << QString("%1,").arg(rgb_default.blue, 0, 'f', 2)
+             << QString("%1,").arg(rgb_default.green, 0, 'f', 2) << QString("%1").arg(rgb_default.red, 0, 'f', 2) << "}";
+
+
+    QFile hdrfile(hdr_name);
+    hdrfile.remove();
+    hdrfile.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream hdrstream(&hdrfile);
+    hdrstream.setCodec("UTF-8");
+    hdrstream.setGenerateByteOrderMark(true);
+    foreach(QString str, hdr_list) hdrstream << str << endl;
+    hdrstream.flush();
+    hdrfile.close();
+
+    QFile datfile(dat_name);
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);  // byte order = 0
+
+    for(int row=0; row<image.height(); row++) {
+        QRgb *rowData = (QRgb*)image.scanLine(row);
+        for(int band=0; band<3; band++)
+            for(int col=0; col<image.width(); col++) {
+                QRgb pixelData = rowData[col];
+                int pos = band*image.width()+col;
+                switch (band) {
+                case 0: {
+                    float blue = qBlue(pixelData) / rgb_to_float;  datstream << blue;
+                    break; }
+                case 1: {
+                    float green = qGreen(pixelData) / rgb_to_float;  datstream << green;
+                    break; }
+                case 2: {
+                    float red = qRed(pixelData) / rgb_to_float;  datstream << red;
+                    break; }
+                }  // switch
+            }  // for col
+    }  // for row
+    datfile.close();
+
+}
+
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
   return current_image()->get_raster().at(bn).at(script_y).at(script_x);
@@ -159,6 +234,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   QFile hdr_f(fname);
   if(!hdr_f.exists()) return;
   QSettings hdr(fname, QSettings::IniFormat);
+
   uint32_t h, d, w;
   h = hdr.value("lines").toUInt();
   d = hdr.value("bands").toUInt();
@@ -179,6 +255,8 @@ void ImageHandler::read_envi_hdr(QString fname) {
   if (!hdr_f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
   QTextStream hdrf_in(&hdr_f);
   const QString hdr_content = hdrf_in.readAll();
+  auto rgb_start = hdr_content.indexOf(rgbConvertedEnvi);  // определение типа данных
+  if (rgb_start != -1) image->datatype = SpectralImage::dtRGB;
   auto wlarray_start = hdr_content.indexOf("wavelength");
   auto wlarray = hdr_content.mid(wlarray_start);
   wlarray.replace("\n", "").replace("{", "").replace("}", "");

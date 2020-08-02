@@ -26,10 +26,13 @@ settingsDialog::~settingsDialog()
 
 void settingsDialog::setGlobalSettings(J09::globalSettingsType GS)
 {
-
+    ui->lineEdit_global_angle->setText(QString("%1").arg(GS.main_rgb_rotate_start,0,'f',0));
+    ui->lineEdit_global_scale->setText(QString("%1").arg(GS.main_rgb_scale_start,0,'f',0));
 }
+
 
 void settingsDialog::getGlobalSettings(J09::globalSettingsType &GS)
 {
-
+    GS.main_rgb_rotate_start = ui->lineEdit_global_angle->text().toDouble();
+    GS.main_rgb_scale_start = ui->lineEdit_global_scale->text().toDouble();
 }

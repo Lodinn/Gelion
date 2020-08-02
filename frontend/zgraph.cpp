@@ -46,7 +46,7 @@ QString zGraph::getTitleExt() const
     if (this->type()== zPoint::Type)
         return this->getTitle();
     else
-        return QString("%1 [точек-%2 || ср.кв.отклонение-%3%]").arg(this->getTitle())
+        return QString("%1 [точек - %2 || дисперсия - %3%]").arg(this->getTitle())
                                   .arg(count_of_point).arg(sigma, 0, 'f', 1);
 }
 
@@ -106,10 +106,14 @@ void zGraph::setParamsToDialog(zgraphParamDlg *dlg)
     if ( this->type()== zPoint::Type ) {
         dlg->ui->labelPointCountText->setVisible(false);  // количество точек
         dlg->ui->labelCLText->setVisible(false); // относительное отклонение
+        dlg->ui->labelPointCount->setVisible(false);  // количество точек
+        dlg->ui->labelCL->setVisible(false); // относительное отклонение
     }
     else {
         dlg->ui->labelPointCountText->setVisible(true);  // количество точек
         dlg->ui->labelCLText->setVisible(true); // относительное отклонение
+        dlg->ui->labelPointCount->setVisible(true);  // количество точек
+        dlg->ui->labelCL->setVisible(true); // относительное отклонение
         dlg->ui->labelPointCountText->setText(QString("%1").arg(this->count_of_point));  // количество точек
         dlg->ui->labelCLText->setText(QString("%1 %").arg(this->sigma, 0, 'f', 1));  // относительное отклонение
     }  // if
@@ -248,7 +252,8 @@ void zGraph::setupPlotShowOptions()
 // give the axes some labels:
     if (invers_cm) plot->xAxis->setLabel("волновое число, см-1");
     else plot->xAxis->setLabel("длина волны, нм");
-    plot->yAxis->setLabel("коэффициент отражения");
+//    plot->yAxis->setLabel("коэффициент отражения");
+    plot->yAxis->setLabel(imgHand->current_image()->get_y_axis_title_for_plot(true));
     plot->addGraph();
 
 }

@@ -49,15 +49,14 @@ SpectralPlot::SpectralPlot(QWidget *parent)
 void SpectralPlot::updateDataExt(QString data_file_name, QList<zGraph *> list, zGraph *item)
 {
     f_data_file_name = data_file_name;
+    plot->yAxis->setLabel(imgHand->current_image()->get_y_axis_title_for_plot(false));
 
-qDebug() << "updateDataExt 1";
     if (item == nullptr) {
         graph_list = get_visible_graph_list(list);
         updateDataExtBasic();  // перестройка всех профилей
     }
     else {
         int num = graph_list.indexOf(item);
-        qDebug() << "updateDataExt 2"  << num;
         if (num == -1) {
             graph_list = get_visible_graph_list(list);
             updateDataExtBasic();  // перестройка всех профилей
@@ -289,8 +288,6 @@ void SpectralPlot::setupUi()
     gridLayout->addWidget(textEdit, 0, 0, Qt::AlignLeft);
     axisResizeButton = new QPushButton("Полный масштаб");
     gridLayout->addWidget(axisResizeButton, 0, 1, Qt::AlignLeft);
-    rainbowCheckBox = new QCheckBox("Заливка спектральных диапазонов");
-    rainbowCheckBox->setChecked(true);
     gridLayout->addWidget(rainbowCheckBox, 1, 0, Qt::AlignLeft);
     gridLayout->addWidget(deviationCheckBox, 2, 0, Qt::AlignLeft);
     statusBar = new QStatusBar;  // main statusbar
@@ -863,6 +860,7 @@ void SpectralPlot::updateRanges()
         sXmax = std::max(sXmax, *std::max_element(item->keys.begin(), item->keys.end()));
         sYmax = std::max(sYmax, *std::max_element(item->values.begin(), item->values.end()));
         if ( item->type() == zPoint::Type ) continue;
+        if (!gsettings->zobjects_prof_deviation_show) continue;
         sYmax = std::max(sYmax, *std::max_element(item->values_std_dev_upper.begin(), item->values_std_dev_upper.end()));
     }  // foreach
 

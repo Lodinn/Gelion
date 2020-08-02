@@ -26,6 +26,7 @@ public:
     QImage get_REAL_current_image();
     double get_new_brightness(QSlider *slider, int value);
     void save_settings_all_images(QStringList &save_file_names);
+    QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
 protected:
     int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > > raster;
@@ -41,11 +42,13 @@ public slots:
     return strlist;
   }
 private:
-//  int script_y, script_x;
   bool read_file_canceled = false;
   int index_current_dataset = -1;
   QList<SpectralImage*> image_list;
   void save_slice(QString fname, QVector<QVector<double> > slice);
+  QString rgbConvertedEnvi = "Data converted from JPG PNG";
+  void createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name);
+  double rgb_to_float = 255.;
 signals:
   void numbands_obtained(int);
   void reading_progress(int);

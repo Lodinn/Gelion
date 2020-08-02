@@ -136,11 +136,7 @@ private:
   QProgressDialog *progress_dialog = nullptr;
   QCustomPlot *wPlot;
   QVector<QCustomPlot *> plots;
-  struct RGB_CANNELS {
-      double red = 641.0;
-      double green = 550.0;
-      double blue = 460.0;
-  } rgb_default;
+  J09::RGB_CANNELS rgb_default;
 
 signals:
  void read_file(QString);

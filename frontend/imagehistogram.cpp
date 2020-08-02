@@ -61,14 +61,14 @@ void imageHistogram::updatePreviewData() {
 QString imageHistogram::getMaskFormula()
 {
     QString str("");
-    if (inverseMask->isChecked()) str = "inv";
+//    if (inverseMask->isChecked()) str = "inv";
     return QString("{%1}[%2-%3%4]").arg(f_formula).arg(h_data->lower).arg(h_data->upper).arg(str);
 }
 
 QString imageHistogram::getMaskTitle()
 {
     QString str("");
-    if (inverseMask->isChecked()) str = "inv";
+//    if (inverseMask->isChecked()) str = "inv";
     return QString("{%1}[%2-%3%4]").arg(f_title).arg(h_data->lower).arg(h_data->upper).arg(str);
 }
 
@@ -117,20 +117,27 @@ bool imageHistogram::eventFilter(QObject *object, QEvent *event)
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *key = static_cast<QKeyEvent *>(event);
 
-        if(key->key() == Qt::Key_W) {
+        if( key->key() == Qt::Key_A ) { routate90(false); return true; }  // A
+        if( key->key() == Qt::Key_S ) { routate90(true); return true; }  // S
+        if( key->key() == Qt::Key_Z ) {
+            h_data->rgb_preview = 0; updatePreviewImage(); return true; }  // Z
+        if( key->key() == Qt::Key_X ) {
+            h_data->rgb_preview = 1; updatePreviewImage(); return true; }  // X
+        if( key->key() == Qt::Key_C ) {
+            h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C
+        if( key->key() == Qt::Key_V ) {
+            h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V
 
-            h_data->rgb_preview++;
-            if (h_data->rgb_preview > 2) h_data->rgb_preview = 0;
-            updatePreviewImage();
-            return true;
-
-        } // if Key_W
-
-        if(key->key() == Qt::Key_S) { routate90(true);
-            return true; }  // if
-
-        if(key->key() == Qt::Key_A) { routate90(false);
-            return true; }  // if
+        /*if( key->key() == 65 && key->key() == 1060 ) { routate90(true); return true; }  // A
+        if( key->key() == 83 && key->key() == 1067 ) { routate90(false); return true; }  // S
+        if( key->key() == 90 && key->key() == 1071 ) {
+            h_data->rgb_preview = 0; updatePreviewImage(); return true; }  // Z
+        if( key->key() == 88 && key->key() == 1063 ) {
+            h_data->rgb_preview = 1; updatePreviewImage(); return true; }  // X
+        if( key->key() == 67 && key->key() == 1057 ) {
+            h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C
+        if( key->key() == 86 && key->key() == 1052 ) {
+            h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V */
 
     }  // KeyPress
     return QDockWidget::eventFilter(object, event);
@@ -172,13 +179,13 @@ void imageHistogram::setupUi()
     buttonMaskSave->setMinimumHeight(25);
     gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
 
-    inverseMask = new QCheckBox("Инверсная маска");
-    inverseMask->setMinimumHeight(25);
-    inverseMask->setChecked(false);
-    gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
+//    inverseMask = new QCheckBox("Инверсная маска");
+//    inverseMask->setMinimumHeight(25);
+//    inverseMask->setChecked(false);
+//    gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
 
     bottomGroupBox->setLayout(gridLayout);
-    bottomGroupBox->setMaximumHeight(120);
+    bottomGroupBox->setMaximumHeight(100);
 
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
@@ -188,9 +195,9 @@ void imageHistogram::setupUi()
 
     vertLayout->addWidget(plot);
     vertLayout->addWidget(bottomGroupBox);
-    QLabel *label = new QLabel(" Используйте Клавиши 'W' 'S' 'A' ");
-    label->setMaximumHeight(20);
-    vertLayout->addWidget(label);
+
+    labelPreviewStatus->setMaximumHeight(15);
+    vertLayout->addWidget(labelPreviewStatus);
 
 //    labelPreview = new QLabel;
     previewPlot = new QCustomPlot();
@@ -261,12 +268,17 @@ void imageHistogram::setupConnections()
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
     connect(buttonMaskSave, &QPushButton::clicked, this, &imageHistogram::maskSave);
-    connect(inverseMask,&QCheckBox::stateChanged,this, &imageHistogram::updateMask);
-// подключаем сигналы и слоты sliders
+//    connect(inverseMask,&QCheckBox::stateChanged,this, &imageHistogram::updateMask);
+// подключаем сигналы и слоты sliders &&&
     connect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
     connect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
     connect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
 
+}
+
+QString imageHistogram::getPreviewStatusString()
+{
+    return previewStatusStr.arg(previewStatusList.at(h_data->rgb_preview));
 }
 
 void imageHistogram::brightnessChanged()
@@ -319,7 +331,12 @@ void imageHistogram::updatePreviewImage()
     case 1 : {
         QPixmap pixmap = previewRGB->transformed(rm); image_pixmap->setPixmap(pixmap); break; }
     case 2 : {
-        QImage img = get_mask_image( slice, inverseMask->isChecked() );
+        QImage img = get_mask_image( slice, false );
+        QPixmap pixmap = QPixmap::fromImage(img);
+        pixmap = pixmap.transformed(rm); image_pixmap->setPixmap(pixmap);
+        break; }
+    case 3 : {
+        QImage img = get_mask_image( slice, true );
         QPixmap pixmap = QPixmap::fromImage(img);
         pixmap = pixmap.transformed(rm); image_pixmap->setPixmap(pixmap);
         break; }
@@ -328,6 +345,8 @@ void imageHistogram::updatePreviewImage()
     image_pixmap->topLeft->setCoords(0,0);
     image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
     previewPlot->replot();
+
+    labelPreviewStatus->setText( getPreviewStatusString() );
 }
 
 QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized)
@@ -662,7 +681,7 @@ void imageHistogram::maskSave()
         mask_appended->title = title;
         mask_appended->formula = formula;
 
-        mask_appended->invers = inverseMask->isChecked();
+//        mask_appended->invers = inverseMask->isChecked();
         mask_appended->image = get_mask_image( slice, mask_appended->invers );
 
         emit appendMask();
