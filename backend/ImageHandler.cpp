@@ -320,7 +320,14 @@ void ImageHandler::read_envi_hdr(QString fname) {
   }
   datfile.open(QIODevice::ReadOnly);
   read_file_canceled = false;
-  double v;
+  uint8_t v_byte;
+  int16_t v_int16;
+  int32_t v_int32;
+  double v_double;
+  uint16_t v_uint16;
+  uint32_t v_uint32;
+  int64_t v_int64;
+  uint64_t v_uint64;
   for(int z = 0; z < d; z++) {
     QVector<QVector<double> > slice;
     for(int y = 0; y < h; y++) {
@@ -335,32 +342,39 @@ void ImageHandler::read_envi_hdr(QString fname) {
       for(int x = 0; x < w; x++) {
         switch(dtype) {
           case 1:
-            stream >> reinterpret_cast<uint8_t&>(v);
+            stream >> v_byte;
+            line << v_byte;
             break;
           case 2:
-            stream >> reinterpret_cast<int16_t&>(v);
+            stream >> v_int16;
+            line << v_int16;
             break;
           case 3:
-            stream >> reinterpret_cast<int32_t&>(v);
+            stream >> v_int32;
+            line << v_int32;
             break;
           case 4:
           case 5: //the only difference is setFloatingPointPrecision above
-            stream >> v;
+            stream >> v_double;
+            line << v_double;
             break;
           case 12:
-            stream >> reinterpret_cast<uint16_t&>(v);
+            stream >> v_uint16;
+            line << v_uint16;
             break;
           case 13:
-            stream >> reinterpret_cast<uint32_t&>(v);
+            stream >> v_uint32;
+            line << v_uint32;
             break;
           case 14:
-            stream >> reinterpret_cast<int64_t&>(v);
+            stream >> v_int64;
+            line << v_int64;
             break;
           case 15:
-            stream >> reinterpret_cast<uint64_t&>(v);
+            stream >> v_uint64;
+            line << v_uint64;
             break;
         }
-        line.append(v);
       }
       slice.append(line);
     }
