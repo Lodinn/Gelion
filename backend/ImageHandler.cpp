@@ -194,35 +194,34 @@ void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
-  return current_image()->get_raster().at(bn).at(script_y).at(script_x);
+  return current_image()->get_raster()->at(bn).at(script_y).at(script_x);
 }
 
-void ImageHandler::append_index_raster(QString for_eval)
-{
-    raster = current_image()->get_raster();
-    read_file_canceled = false;
-    show_progress_mode = ImageHandler::index_mode;
-    QJSEngine engine;
-    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-    QJSValue js_imagehandler = engine.newQObject(this);
-    QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
-    engine.globalObject().setProperty("getByWL", js_get_by_wl);
-    QSize size = current_image()->get_raster_x_y_size();
-    int w = size.width();  int h = size.height();
-    emit numbands_obtained(h);
-    auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
-    QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
-    for(script_y = 0; script_y < h; script_y++) {
-      for(script_x = 0; script_x < w; script_x++) {
-        output_array[script_y][script_x] = precompiled.call().toNumber();
-      }  // for
-      emit reading_progress(script_y);
-      if (read_file_canceled) return;
-      QApplication::processEvents();
+void ImageHandler::append_index_raster(QString for_eval) {
+  raster = current_image()->get_raster();
+  read_file_canceled = false;
+  show_progress_mode = ImageHandler::index_mode;
+  QJSEngine engine;
+  QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+  QJSValue js_imagehandler = engine.newQObject(this);
+  QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
+  engine.globalObject().setProperty("getByWL", js_get_by_wl);
+  QSize size = current_image()->get_raster_x_y_size();
+  int w = size.width();  int h = size.height();
+  emit numbands_obtained(h);
+  auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
+  QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
+  for(script_y = 0; script_y < h; script_y++) {
+    for(script_x = 0; script_x < w; script_x++) {
+      output_array[script_y][script_x] = precompiled.call().toNumber();
     }  // for
-    current_image()->append_slice(output_array);
+    emit reading_progress(script_y);
+    if (read_file_canceled) return;
+    QApplication::processEvents();
+  }  // for
+  current_image()->append_slice(output_array);
 
-    emit index_finished(current_image()->get_raster().length() - 1);
+  emit index_finished(current_image()->get_raster()->length() - 1);
 }
 
 void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)
@@ -341,7 +340,18 @@ void ImageHandler::read_envi_hdr(QString fname) {
   }  // if
   datfile.open(QIODevice::ReadOnly);
   read_file_canceled = false;
-  double v;     int16_t u16;
+//<<<<<<< HEAD
+//  double v;     int16_t u16;
+//=======
+  uint8_t v_byte;
+  int16_t v_int16;
+  int32_t v_int32;
+  double v_double;
+  uint16_t v_uint16;
+  uint32_t v_uint32;
+  int64_t v_int64;
+  uint64_t v_uint64;
+//>>>>>>> bcba70a07b408bca5587070546373c4b11034040
   for(int z = 0; z < d; z++) {
     QVector<QVector<double> > slice;
     for(int y = 0; y < h; y++) {
@@ -356,34 +366,54 @@ void ImageHandler::read_envi_hdr(QString fname) {
       for(int x = 0; x < w; x++) {
         switch(dtype) {
           case 1:
-            stream >> reinterpret_cast<uint8_t&>(v);
+            stream >> v_byte;
+            line << v_byte;
             break;
           case 2:
-            stream >> reinterpret_cast<int16_t&>(v);
+            stream >> v_int16;
+            line << v_int16;
             break;
           case 3:
-            stream >> reinterpret_cast<int32_t&>(v);
+            stream >> v_int32;
+            line << v_int32;
             break;
           case 4:
-          case 5: { //the only difference is setFloatingPointPrecision above
-            stream >> v;
-            line.append(v);
-            break; }
-          case 12: { //     stream >> reinterpret_cast<uint16_t&>(v);
-            stream >> u16;
-            line.append(u16);
-            break; }
+//<<<<<<< HEAD
+//          case 5: { //the only difference is setFloatingPointPrecision above
+//            stream >> v;
+//            line.append(v);
+//            break; }
+//          case 12: { //     stream >> reinterpret_cast<uint16_t&>(v);
+//            stream >> u16;
+//            line.append(u16);
+//            break; }
+//=======
+          case 5: //the only difference is setFloatingPointPrecision above
+            stream >> v_double;
+            line << v_double;
+            break;
+          case 12:
+            stream >> v_uint16;
+            line << v_uint16;
+            break;
+//>>>>>>> bcba70a07b408bca5587070546373c4b11034040
           case 13:
-            stream >> reinterpret_cast<uint32_t&>(v);
+            stream >> v_uint32;
+            line << v_uint32;
             break;
           case 14:
-            stream >> reinterpret_cast<int64_t&>(v);
+            stream >> v_int64;
+            line << v_int64;
             break;
           case 15:
-            stream >> reinterpret_cast<uint64_t&>(v);
+            stream >> v_uint64;
+            line << v_uint64;
             break;
         }
+//<<<<<<< HEAD
 //        line.append(v);
+//=======
+//>>>>>>> bcba70a07b408bca5587070546373c4b11034040
       }
       slice.append(line);
     }

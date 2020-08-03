@@ -29,7 +29,7 @@ public:
     QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
 protected:
     int script_y, script_x; // например, в ImageHandler.h
-    QVector<QVector<QVector<double> > > raster;
+    QVector<QVector<QVector<double> > >* raster;
     Q_INVOKABLE double getByWL(double wl);
 public slots:
   void read_envi_hdr(QString fname);
