@@ -77,7 +77,7 @@ public:
   enum dataType { dtBase, dtRGB };
   dataType datatype = dataType::dtBase;
   QString get_file_name() { return fname; }
-  QVector<QVector<QVector<double> > > get_raster() { return img; }
+  QVector<QVector<QVector<double> > >* get_raster() { return &img; }
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
   double getBrightness(uint32_t num) { return indexBrightness.at(num); }

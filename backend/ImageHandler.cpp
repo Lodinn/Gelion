@@ -194,35 +194,34 @@ void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
-  return current_image()->get_raster().at(bn).at(script_y).at(script_x);
+  return current_image()->get_raster()->at(bn).at(script_y).at(script_x);
 }
 
-void ImageHandler::append_index_raster(QString for_eval)
-{
-    raster = current_image()->get_raster();
-    read_file_canceled = false;
-    show_progress_mode = ImageHandler::index_mode;
-    QJSEngine engine;
-    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-    QJSValue js_imagehandler = engine.newQObject(this);
-    QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
-    engine.globalObject().setProperty("getByWL", js_get_by_wl);
-    QSize size = current_image()->get_raster_x_y_size();
-    int w = size.width();  int h = size.height();
-    emit numbands_obtained(h);
-    auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
-    QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
-    for(script_y = 0; script_y < h; script_y++) {
-      for(script_x = 0; script_x < w; script_x++) {
-        output_array[script_y][script_x] = precompiled.call().toNumber();
-      }  // for
-      emit reading_progress(script_y);
-      if (read_file_canceled) return;
-      QApplication::processEvents();
+void ImageHandler::append_index_raster(QString for_eval) {
+  raster = current_image()->get_raster();
+  read_file_canceled = false;
+  show_progress_mode = ImageHandler::index_mode;
+  QJSEngine engine;
+  QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+  QJSValue js_imagehandler = engine.newQObject(this);
+  QJSValue js_get_by_wl =  js_imagehandler.property("getByWL");
+  engine.globalObject().setProperty("getByWL", js_get_by_wl);
+  QSize size = current_image()->get_raster_x_y_size();
+  int w = size.width();  int h = size.height();
+  emit numbands_obtained(h);
+  auto precompiled = engine.evaluate("(function(){ return " + for_eval + "})");
+  QVector<QVector<double> > output_array = QVector<QVector<double> >(h , QVector<double>(w));
+  for(script_y = 0; script_y < h; script_y++) {
+    for(script_x = 0; script_x < w; script_x++) {
+      output_array[script_y][script_x] = precompiled.call().toNumber();
     }  // for
-    current_image()->append_slice(output_array);
+    emit reading_progress(script_y);
+    if (read_file_canceled) return;
+    QApplication::processEvents();
+  }  // for
+  current_image()->append_slice(output_array);
 
-    emit index_finished(current_image()->get_raster().length() - 1);
+  emit index_finished(current_image()->get_raster()->length() - 1);
 }
 
 void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)

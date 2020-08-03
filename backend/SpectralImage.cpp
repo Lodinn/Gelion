@@ -257,42 +257,42 @@ void SpectralImage::calculateHistogram(bool full, uint16_t num)
 
     int h = slice.count();  int w = slice.at(0).count();
     if (full) {
-        hg.max = INT_MIN;  hg.min = INT_MAX;
+      hg.max = INT_MIN;  hg.min = INT_MAX;
 
-        for(int y = 0; y < h; y++) {
-            hg.max = std::max(hg.max, *std::max_element(slice[y].begin(), slice[y].end()));
-            hg.min = std::min(hg.min, *std::min_element(slice[y].begin(), slice[y].end()));
-        }  // for
-        if (hg.max == INT_MIN || hg.min == INT_MAX) {
-            qDebug() << "slice IS NOT CORRECT!!!";
-            return;
-        }  // error
-
-        hg.lower = hg.min;  hg.upper = hg.max;
-        hg.sum = .0;  hg.sum_of_part = 100.;
-        hg.vx.resize(hg.hcount);  hg.vy.resize(hg.hcount);  hg.vy.fill(0.);
-        if (std::abs(hg.max - hg.min) < 0.000001) {
-            qDebug() << "slice IS NOT CORRECT!!!";
-            return;
-        }  // error
-
-        double k = (hg.hcount-1.)/(hg.max-hg.min);
-        if (std::abs(k) < 0.000001) {
-            qDebug() << "slice IS NOT CORRECT!!!";
-            return;
-        }  // error
-
-        for (int i=0; i<hg.hcount; i++) hg.vx[i]=hg.min+i/k;
-        for (int y=0; y<h; y++)
-            for (int x=0; x<w; x++){
-                int num_int = qRound((slice[y][x]-hg.min)*k);
-                if (num_int < 0) num_int = 0;
-                if (num_int > hg.hcount - 1) num_int = hg.hcount - 1;
-                hg.vy[num_int]++;
-                hg.sum++;
-            }  // for
-        histogram[num] = hg;
+      for(int y = 0; y < h; y++) {
+        hg.max = std::max(hg.max, *std::max_element(slice[y].begin(), slice[y].end()));
+        hg.min = std::min(hg.min, *std::min_element(slice[y].begin(), slice[y].end()));
+      }  // for
+      if (hg.max == INT_MIN || hg.min == INT_MAX) {
+        qDebug() << "slice IS NOT CORRECT!!!";
         return;
+      }  // error
+
+      hg.lower = hg.min;  hg.upper = hg.max;
+      hg.sum = .0;  hg.sum_of_part = 100.;
+      hg.vx.resize(hg.hcount);  hg.vy.resize(hg.hcount);  hg.vy.fill(0.);
+      if (std::abs(hg.max - hg.min) < 0.000001) {
+        qDebug() << "slice IS NOT CORRECT - all the values are the same; min/max:" << hg.min << hg.max;
+        return;
+      }  // error
+
+      double k = (hg.hcount-1.)/(hg.max-hg.min);
+      if (std::abs(k) < 0.000001) {
+        qDebug() << "slice IS NOT CORRECT!!!";
+        return;
+      }  // error
+
+      for (int i=0; i<hg.hcount; i++) hg.vx[i]=hg.min+i/k;
+      for (int y=0; y<h; y++)
+          for (int x=0; x<w; x++){
+              int num_int = qRound((slice[y][x]-hg.min)*k);
+              if (num_int < 0) num_int = 0;
+              if (num_int > hg.hcount - 1) num_int = hg.hcount - 1;
+              hg.vy[num_int]++;
+              hg.sum++;
+          }  // for
+      histogram[num] = hg;
+      return;
     }  // if (full)
     hg.sum_of_part = 0.;
     for(int i=0;i<hg.hcount-1;i++) {
@@ -306,7 +306,6 @@ void SpectralImage::calculateHistogram(bool full, uint16_t num)
     hg.sum_of_part = 100.*hg.sum_of_part/hg.sum;
 
     histogram[num] = hg;
-
 }
 
 QString SpectralImage::get_y_axis_title_for_plot(bool short_title)
