@@ -37,7 +37,7 @@ private:
     QLabel *labelPreview;
     QLabel *labelPreviewStatus = new QLabel();
     QStringList previewStatusList = QStringList() << "Индекс" << "RGB" << "Маска" << "Инв.маска";
-    QString previewStatusStr = "' Z '-индекс ' X '-RGB ' C '-маска ' V '-инв.маска ' A '-по часовой ' S '-против часовой ( %1 )";
+    QString previewStatusStr = "' Z '-индекс ' X '-RGB ' C '-маска ' V '-инв.маска ' A '-по часовой ' S '-против часовой ( <b>%1</b> )";
     QString getPreviewStatusString();
     QHBoxLayout *horzLayout;
     QCPGraph *packet_lower, *packet_upper;

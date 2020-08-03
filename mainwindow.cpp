@@ -937,6 +937,9 @@ void MainWindow::createDockWidgetForIndexes()
     chListWidget->currentItem()->setSelected(false);  // конкурент
     set_abstract_index_pixmap();
 
+    QSize size = im_handler->current_image()->get_raster_x_y_size();
+    dockIndexList->setWindowTitle(QString("Изображения - [%1 x %2]").arg(size.width()).arg(size.height()));
+
 }
 
 QPointF MainWindow::getPointFromStr(QString str) {
