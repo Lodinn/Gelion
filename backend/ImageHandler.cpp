@@ -36,6 +36,8 @@ QString ImageHandler::get_regular_expression(QString input)
 }
 
 int ImageHandler::get_band_by_wave_length(double wavelength) {
+
+/*<<<<<<< HEAD
   int result = 0;
   QVector<double> wls = current_image()->wls();
   if (wavelength < wls[0]) return 0;
@@ -44,14 +46,20 @@ int ImageHandler::get_band_by_wave_length(double wavelength) {
   if (wls.length() == 1)  return 0;
   double d = wls[wls.length()-1] - wls[wls.length()-2];
   if (qAbs(wavelength - wls[wls.length()-1]) < d * .5) return wls.length() - 1;
+=======*/
+
+  SpectralImage* image = current_image();
+  QVector<double> wls = image->wls();
+  if (wavelength < wls[0]) return 0;
+  int result = wls.length() - 1;
   for (int ch = 0; ch < wls.length() - 1; ch++) {
-    if ((wavelength >= wls[ch]) && (wavelength < wls[ch+1])) {
-      if (wavelength - wls[ch] < wls[ch+1] - wavelength) result = ch;
-      else result = ch + 1;
+    if ((wavelength >= wls[ch]) &&
+        (wavelength < wls[ch+1])) {
+      result = wavelength - wls[ch] < wls[ch+1] - wavelength ? ch : ch + 1;
       return result;
     }  // if
   }  // for
-  return result;
+  return result; //if nothing was found, return the last channel
 }
 
 QPixmap ImageHandler::changeBrightnessPixmap(QImage &img, qreal brightness)
@@ -249,8 +257,8 @@ void ImageHandler::read_envi_hdr(QString fname) {
   int dtype = hdr.value("data type").toInt();
   QString interleave = hdr.value("interleave").toString();
   interleave = interleave.toUpper();
-  if(interleave != "BIL" || dtype != 4) {
-    qDebug() << "Interleave/dtype not implemented yet";
+  if(interleave != "BIL") {
+    qDebug() << "Interleave not implemented yet";
     return;
   }
   if (!hdr_f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
@@ -270,27 +278,88 @@ void ImageHandler::read_envi_hdr(QString fname) {
   image->set_wls(wls);
   hdr_f.close();
   QFileInfo fi(fname);
-  auto datpath = fi.path() + "/" + fi.completeBaseName() + ".dat";
-  QFile datfile(datpath);
-  if(!datfile.exists() || datfile.size() != sizeof(float) * (offset + d*h*w)) {
-    qDebug() << "Invalid file size; expected:" << sizeof(float) * (offset + d*h*w) << "bytes, got" << datfile.size();
+  auto datpath = fi.path() + "/" + fi.completeBaseName();
+  QFile datfile(datpath + ".dat");
+  uint16_t sizeof_data = -1;
+  switch(dtype) {
+    case 1:
+      sizeof_data = 1;
+      break;
+    case 2:
+      sizeof_data = 2;
+      break;
+    case 3:
+      sizeof_data = 4;
+      break;
+    case 4:
+      sizeof_data = 4;
+      break;
+    case 5:
+      sizeof_data = 8;
+      break;
+    case 12:
+      sizeof_data = 2;
+      break;
+    case 13:
+      sizeof_data = 4;
+      break;
+    case 14:
+      sizeof_data = 8;
+      break;
+    case 15:
+      sizeof_data = 8;
+      break;
+    default:
+      qDebug() << "dtype not implemented";
+      return;
+  }
+  if(!datfile.exists()) datfile.setFileName(datpath + ".img"); //FIXME: check the entire QDir::EntryList for the corresponding file
+  if(!datfile.exists() || datfile.size() != sizeof_data * (offset + d*h*w)) {
+    qDebug() << "Invalid file size; expected:" << sizeof_data * (offset + d*h*w) << "bytes, got" << datfile.size() << "from " << datpath;
     return;
   }
   datfile.open(QIODevice::ReadOnly);
   read_file_canceled = false;
+  double v;
   for(int z = 0; z < d; z++) {
     QVector<QVector<double> > slice;
     for(int y = 0; y < h; y++) {
-      datfile.seek(offset + sizeof(float) * w * (d * y + z));
-      QByteArray buf = datfile.read(sizeof(float) * w);
+      datfile.seek(offset + sizeof_data * w * (d * y + z));
+      QByteArray buf = datfile.read(sizeof_data * w);
       QDataStream stream(buf);
-      stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+      if(dtype == 4) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
       if(byteorder != 0) stream.setByteOrder(QDataStream::BigEndian);
         else stream.setByteOrder(QDataStream::LittleEndian);
+
       QVector<double> line;
       for(int x = 0; x < w; x++) {
-        double v;
-        stream >> v;
+        switch(dtype) {
+          case 1:
+            stream >> reinterpret_cast<uint8_t&>(v);
+            break;
+          case 2:
+            stream >> reinterpret_cast<int16_t&>(v);
+            break;
+          case 3:
+            stream >> reinterpret_cast<int32_t&>(v);
+            break;
+          case 4:
+          case 5: //the only difference is setFloatingPointPrecision above
+            stream >> v;
+            break;
+          case 12:
+            stream >> reinterpret_cast<uint16_t&>(v);
+            break;
+          case 13:
+            stream >> reinterpret_cast<uint32_t&>(v);
+            break;
+          case 14:
+            stream >> reinterpret_cast<int64_t&>(v);
+            break;
+          case 15:
+            stream >> reinterpret_cast<uint64_t&>(v);
+            break;
+        }
         line.append(v);
       }
       slice.append(line);
