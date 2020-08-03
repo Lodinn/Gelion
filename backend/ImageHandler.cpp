@@ -267,42 +267,42 @@ void ImageHandler::read_envi_hdr(QString fname) {
   QFileInfo fi(fname);
   auto datpath = fi.path() + "/" + fi.completeBaseName();
   QFile datfile(datpath + ".dat");
-  uint16_t data_sizeof = -1;
+  uint16_t sizeof_data = -1;
   switch(dtype) {
     case 1:
-      data_sizeof = 1;
+      sizeof_data = 1;
       break;
     case 2:
-      data_sizeof = 2;
+      sizeof_data = 2;
       break;
     case 3:
-      data_sizeof = 4;
+      sizeof_data = 4;
       break;
     case 4:
-      data_sizeof = 4;
+      sizeof_data = 4;
       break;
     case 5:
-      data_sizeof = 8;
+      sizeof_data = 8;
       break;
     case 12:
-      data_sizeof = 2;
+      sizeof_data = 2;
       break;
     case 13:
-      data_sizeof = 4;
+      sizeof_data = 4;
       break;
     case 14:
-      data_sizeof = 8;
+      sizeof_data = 8;
       break;
     case 15:
-      data_sizeof = 8;
+      sizeof_data = 8;
       break;
     default:
       qDebug() << "dtype not implemented";
       return;
   }
   if(!datfile.exists()) datfile.setFileName(datpath + ".img"); //FIXME: check the entire QDir::EntryList for the corresponding file
-  if(!datfile.exists() || datfile.size() != data_sizeof * (offset + d*h*w)) {
-    qDebug() << "Invalid file size; expected:" << data_sizeof * (offset + d*h*w) << "bytes, got" << datfile.size() << "from " << datpath;
+  if(!datfile.exists() || datfile.size() != sizeof_data * (offset + d*h*w)) {
+    qDebug() << "Invalid file size; expected:" << sizeof_data * (offset + d*h*w) << "bytes, got" << datfile.size() << "from " << datpath;
     return;
   }
   datfile.open(QIODevice::ReadOnly);
@@ -311,8 +311,8 @@ void ImageHandler::read_envi_hdr(QString fname) {
   for(int z = 0; z < d; z++) {
     QVector<QVector<double> > slice;
     for(int y = 0; y < h; y++) {
-      datfile.seek(offset + data_sizeof * w * (d * y + z));
-      QByteArray buf = datfile.read(data_sizeof * w);
+      datfile.seek(offset + sizeof_data * w * (d * y + z));
+      QByteArray buf = datfile.read(sizeof_data * w);
       QDataStream stream(buf);
       if(dtype == 4) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
       if(byteorder != 0) stream.setByteOrder(QDataStream::BigEndian);
