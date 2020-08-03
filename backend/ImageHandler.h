@@ -47,6 +47,7 @@ private:
   QList<SpectralImage*> image_list;
   void save_slice(QString fname, QVector<QVector<double> > slice);
   QString rgbConvertedEnvi = "Data converted from JPG PNG";
+  QString dataFX10eEnvi = "FX10e data";
   void createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name);
   double rgb_to_float = 255.;
 signals:

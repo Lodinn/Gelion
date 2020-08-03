@@ -266,6 +266,8 @@ void ImageHandler::read_envi_hdr(QString fname) {
   const QString hdr_content = hdrf_in.readAll();
   auto rgb_start = hdr_content.indexOf(rgbConvertedEnvi);  // определение типа данных
   if (rgb_start != -1) image->datatype = SpectralImage::dtRGB;
+  rgb_start = hdr_content.indexOf(dataFX10eEnvi);  // определение типа данных
+  if (rgb_start != -1) image->datatype = SpectralImage::dtFX10e;
   auto wlarray_start = hdr_content.indexOf("wavelength");
   auto wlarray = hdr_content.mid(wlarray_start);
   wlarray.replace("\n", "").replace("{", "").replace("}", "");
@@ -279,7 +281,24 @@ void ImageHandler::read_envi_hdr(QString fname) {
   hdr_f.close();
   QFileInfo fi(fname);
   auto datpath = fi.path() + "/" + fi.completeBaseName();
-  QFile datfile(datpath + ".dat");
+  QFile datfile("");
+
+  switch (image->datatype) {
+  case SpectralImage::dtBase :
+      datfile.setFileName(datpath + ".dat");
+      break;
+  case SpectralImage::dtRGB :
+      datfile.setFileName(datpath + ".dat");
+      break;
+  case SpectralImage::dtFX10e :
+      datfile.setFileName(datpath + ".img");  //FIXME: check the entire QDir::EntryList for the corresponding file
+      break;
+  }  // switch
+
+  if (datfile.fileName().isEmpty()) {
+      qDebug() << "WRONG format ENVI file";  return;
+  }  // if
+
   uint16_t sizeof_data = -1;
   switch(dtype) {
     case 1:
@@ -313,14 +332,16 @@ void ImageHandler::read_envi_hdr(QString fname) {
       qDebug() << "dtype not implemented";
       return;
   }
-  if(!datfile.exists()) datfile.setFileName(datpath + ".img"); //FIXME: check the entire QDir::EntryList for the corresponding file
+//  if(!datfile.exists()) datfile.setFileName(datpath + ".img"); //FIXME: check the entire QDir::EntryList for the corresponding file
+
   if(!datfile.exists() || datfile.size() != sizeof_data * (offset + d*h*w)) {
-    qDebug() << "Invalid file size; expected:" << sizeof_data * (offset + d*h*w) << "bytes, got" << datfile.size() << "from " << datpath;
+    qDebug() << "Invalid file size; expected:" << sizeof_data * (offset + d*h*w) << "bytes, got"
+             << datfile.size() << "from " << datfile.fileName();
     return;
-  }
+  }  // if
   datfile.open(QIODevice::ReadOnly);
   read_file_canceled = false;
-  double v;
+  double v;     int16_t u16;
   for(int z = 0; z < d; z++) {
     QVector<QVector<double> > slice;
     for(int y = 0; y < h; y++) {
@@ -344,12 +365,14 @@ void ImageHandler::read_envi_hdr(QString fname) {
             stream >> reinterpret_cast<int32_t&>(v);
             break;
           case 4:
-          case 5: //the only difference is setFloatingPointPrecision above
+          case 5: { //the only difference is setFloatingPointPrecision above
             stream >> v;
-            break;
-          case 12:
-            stream >> reinterpret_cast<uint16_t&>(v);
-            break;
+            line.append(v);
+            break; }
+          case 12: { //     stream >> reinterpret_cast<uint16_t&>(v);
+            stream >> u16;
+            line.append(u16);
+            break; }
           case 13:
             stream >> reinterpret_cast<uint32_t&>(v);
             break;
@@ -360,7 +383,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
             stream >> reinterpret_cast<uint64_t&>(v);
             break;
         }
-        line.append(v);
+//        line.append(v);
       }
       slice.append(line);
     }

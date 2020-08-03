@@ -74,7 +74,7 @@ class SpectralImage : public QObject {
   Q_OBJECT
 public:
   explicit SpectralImage(QObject *parent = nullptr);
-  enum dataType { dtBase, dtRGB };
+  enum dataType { dtBase, dtRGB, dtFX10e };
   dataType datatype = dataType::dtBase;
   QString get_file_name() { return fname; }
   QVector<QVector<QVector<double> > > get_raster() { return img; }

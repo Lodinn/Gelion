@@ -316,11 +316,13 @@ QString SpectralImage::get_y_axis_title_for_plot(bool short_title)
         switch (datatype) {
         case dataType::dtBase : result = "к-т отражения";  break;
         case dataType::dtRGB : result = "яркость";  break;
+        case dataType::dtFX10e : result = "яркость";  break;
         }  // switch
     else
         switch (datatype) {
         case dataType::dtBase : result = "коэффициент отражения ( r )";  break;
         case dataType::dtRGB : result = "яркость ( r )";  break;
+        case dataType::dtFX10e : result = "яркость ( r )";  break;
         }  // switch
 
     return result;
