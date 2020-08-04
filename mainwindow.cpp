@@ -672,7 +672,7 @@ void MainWindow::toggleViewAction(bool b)
 void MainWindow::open() {
   QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
-      tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg);;Файлы PNG (*.png)"));
+      tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg);;Файлы PNG (*.png);;Файлы TIF (*.tif *.tiff)"));
   if (fname.isEmpty()) return;
   if(!QFileInfo::exists(fname)) {  // Файл не найден
       QMessageBox msgBox;
@@ -686,7 +686,8 @@ void MainWindow::open() {
 
 // jpg added
   QFileInfo info(fname);
-  if ( info.suffix().toLower() == "jpg" || info.suffix().toLower() == "png" )  // выбран файл jpg или png
+  if ( info.suffix().toLower() == "jpg" || info.suffix().toLower() == "png"
+    || info.suffix().toLower() == "tif" || info.suffix().toLower() == "tiff")  // выбран файл jpg или png
       fname = im_handler->getHDRfileNameConvertedFromJPG(fname);
 // jpg added
 
