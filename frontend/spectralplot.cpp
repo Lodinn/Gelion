@@ -868,6 +868,8 @@ void SpectralPlot::updateRanges()
     plot->yAxis->setRange(sYmin, sYmax);
     plot->xAxis2->setRange(sXmin, sXmax);
     plot->yAxis2->setRange(sYmin, sYmax);
+
+    rainbowUp = sYmax * 5.;
 }
 
 void SpectralPlot::createAdditinalGraphs()

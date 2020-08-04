@@ -491,6 +491,7 @@ void zGraph::graphSetData()
     if (this->type() == zPoint::Type) {
         this->plot->graph(0)->setData(keys, values, true);
         this->plot->xAxis->rescale(true);
+        this->plot->yAxis->rescale(true);  this->plot->yAxis->setRangeLower(.0);
         this->plot->replot();
         return;
     }  // if
@@ -498,6 +499,7 @@ void zGraph::graphSetData()
     this->plot->graph(1)->setData(this->keys, this->values_std_dev_lower, true);
     this->plot->graph(2)->setData(this->keys, this->values_std_dev_upper, true);
     this->plot->xAxis->rescale(true);
+    this->plot->yAxis->rescale(true);  this->plot->yAxis->setRangeLower(.0);
     this->plot->replot();
 }
 
