@@ -19,6 +19,8 @@ private:
     bool eventFilter(QObject *object, QEvent *event);
     void setupUi();
     void setupConnections();
+    void setupSlidersConnections();
+    void disconnectSlidersConnections();
     QCustomPlot *plot, *previewPlot;
     QCPTextElement *title;
     QGroupBox *bottomGroupBox;
@@ -79,7 +81,6 @@ private slots:
     void histogramPreview();
     void axisRescale();
     void maskSave();
-    void updateMask();
     void routate90(bool clockwise);
     void contextMenuRequest(QPoint pos);
     void savePlotToPdfJpgPng();
@@ -91,9 +92,6 @@ private slots:
     void saveIndexToCsv();
     void saveMaskToCsv();
     void saveInvMaskToCsv();
-signals:
-     void appendMask();
-
 };
 
 #endif // IMAGEHISTOGRAM_H

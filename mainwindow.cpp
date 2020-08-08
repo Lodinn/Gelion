@@ -221,6 +221,10 @@ void MainWindow::createActions() {
     histogramAct->setEnabled(false);
     indexMenu->addAction(histogramAct);   indexToolBar->addAction(histogramAct);
 
+    maskAct->setCheckable(true); maskAct->setChecked(true);
+    maskAct->setEnabled(false);
+    indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
+
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
@@ -425,28 +429,26 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 
 // СПЕКТРАЛЬНЫЙ АНАЛИЗ
-    imgSpectral->hide();    imgSpectral->setObjectName("imgSpectral");
+    imgSpectral->hide();    //imgSpectral->setObjectName("imgSpectral");
     addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
     connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     imgSpectral->gsettings = &GLOBAL_SETTINGS;  imgSpectral->setDefaultState();
     imgSpectral->imgHand = im_handler;
 
 // АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
-    imgHistogram->hide();   imgHistogram->setObjectName("imgHistogram");
+    imgHistogram->hide();   //imgHistogram->setObjectName("imgHistogram");
     addDockWidget(Qt::BottomDockWidgetArea, imgHistogram);
     connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
-//    connect(imgHistogram,SIGNAL(appendMask()),this,SLOT(appendMaskImage()));
-    bool success = connect(imgHistogram,&imageHistogram::appendMask,this,&MainWindow::open);
-
-//    this, &MainWindow::open
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
-    dockMaskImage->setFixedSize(220,scrHeignt4-36);
+    dockMaskImage->resize(420,scrHeignt4);
     dockMaskImage->setWidget(maskListWidget);
-    dockMaskImage->move(rec.width() - 250,upperIndent+3*scrHeignt4);
+    dockMaskImage->move(rec.width() - 250 - 200,upperIndent+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+// КАЛЬКУЛЯТОР МАСОЧНЫХ ИЗОБРАЖЕНИЙ
+    imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
 }
 
 void MainWindow::appendMaskImage()
@@ -608,9 +610,10 @@ void MainWindow::listWidgetClicked(QListWidgetItem *item)
         view->deleteTmpLines();
     }
     if (item->checkState() == Qt::Checked) {
-        zgrap_item->setVisible(true); zgrap_item->dockw->setVisible(true);
+        zgrap_item->setVisible(true);
+        zgrap_item->dockw->setVisible(!zgrap_item->dockw->isVisible());
         spectralAct->setEnabled(true);
-        imgSpectral->updateDataExt(dataFileName, zitems, nullptr);
+        if (imgSpectral->isVisible()) imgSpectral->updateDataExt(dataFileName, zitems, nullptr);
     }
     else { zgrap_item->setVisible(false); zgrap_item->setSelected(false);
         zgrap_item->dockw->setVisible(false);
@@ -672,7 +675,7 @@ void MainWindow::toggleViewAction(bool b)
 void MainWindow::open() {
   QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
-      tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg);;Файлы PNG (*.png);;Файлы TIF (*.tif *.tiff)"));
+      tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg *.jpeg);;Файлы PNG (*.png);;Файлы TIFF (*.tif *.tiff)"));
   if (fname.isEmpty()) return;
   if(!QFileInfo::exists(fname)) {  // Файл не найден
       QMessageBox msgBox;
@@ -686,8 +689,8 @@ void MainWindow::open() {
 
 // jpg added
   QFileInfo info(fname);
-  if ( info.suffix().toLower() == "jpg" || info.suffix().toLower() == "png"
-    || info.suffix().toLower() == "tif" || info.suffix().toLower() == "tiff")  // выбран файл jpg или png
+  if ( info.suffix().toLower() == "jpg" || info.suffix().toLower() == "png" || info.suffix().toLower() == "jpeg"
+    || info.suffix().toLower() == "tif" || info.suffix().toLower() == "tiff")  // выбран файл jpg jpeg png tif tiff
       fname = im_handler->getHDRfileNameConvertedFromJPG(fname);
 // jpg added
 
@@ -732,6 +735,10 @@ void MainWindow::updateNewDataSet(bool index_update)
     zGraphListWidget->clear();
     indexListWidget->clear();
     chListWidget->clear();
+
+    imgSpectral->hide();  spectralAct->setEnabled(false); spectralAct->setChecked(false);
+    imgHistogram->hide();  histogramAct->setEnabled(false); histogramAct->setChecked(false);
+
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     createDockWidgetForChannels();
     if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
@@ -996,7 +1003,8 @@ void MainWindow::loadMainSettings()
     QString fname = getMainSettingsFileName();
     if (!QFile::exists(fname)) {
         QFileInfo info(fname);
-        QFile::copy("../BPLA/configuration/" + info.completeBaseName() + ".conf", fname);
+//        QFile::copy("../BPLA/configuration/" + info.completeBaseName() + ".conf", fname);
+        QFile::copy(QCoreApplication::applicationDirPath () + "/configuration/" + info.completeBaseName() + ".conf", fname);
     }  // if exists
 
     QFileInfo info(fname);
@@ -1510,6 +1518,7 @@ void MainWindow::show_zgraph_list()
             foreach(zGraph *item, zGraphList) {
                 item->setVisible(true);
                 item->listwidget->setCheckState(Qt::Checked);
+                spectralAct->setEnabled(true);
             }  // foreach
             return;
         }  // case 1
@@ -1517,6 +1526,9 @@ void MainWindow::show_zgraph_list()
             foreach(zGraph *item, zGraphList) {
                 item->setVisible(false);
                 item->listwidget->setCheckState(Qt::Unchecked);
+                imgSpectral->hide();
+                spectralAct->setEnabled(false);
+                spectralAct->setChecked(false);
             }  // foreach
             return;
         }  // case 2
@@ -1768,7 +1780,7 @@ void MainWindow::add_index_pixmap(int num)
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
 // &&& sochi 2020
     im_handler->current_image()->histogram[view->GlobalChannelNum-1]
-            .rotation = - GLOBAL_SETTINGS.main_rgb_rotate_start;
+            .rotation = GLOBAL_SETTINGS.main_rgb_rotate_start;
 // &&& sochi 2020
             QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);

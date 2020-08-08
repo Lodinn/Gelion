@@ -12,6 +12,7 @@
 #include <QMainWindow>
 #include <QProgressDialog>
 #include <QThread>
+#include <imagemask.h>
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -122,8 +123,7 @@ private:
   QMenu *index_quick_menu;
   QAction *spectralAct;
   QAction *histogramAct;
-
-  //  QAction *maskAct;
+  QAction *maskAct = new QAction(QIcon(":/icons/calculator.png"), "Калькулятор масочных изображений");
 
   void createActions();
   void createMainConnections();
@@ -158,6 +158,8 @@ protected:
   QSlider *slider;
   QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
   QListWidget *maskListWidget = new QListWidget(dockMaskImage);
+  imageMask *imgMasks = new imageMask(this);  // окно КАЛЬКУЛЯТОРА МАСОК
+
   void set_abstract_index_pixmap();
   void show_channel_list_update();
   void show_histogram_widget();

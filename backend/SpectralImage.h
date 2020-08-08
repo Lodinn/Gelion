@@ -64,7 +64,7 @@ namespace J09 {
       QString title;  // наименование
       QString formula;  // общая формула алгоритма
       QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
-      QImage image;  // маска
+      QVector<QVector<std::int8_t> > mask;  // маска
       bool invers = false;  // инверсное изображение
   };
 }
@@ -83,9 +83,7 @@ public:
   double getBrightness(uint32_t num) { return indexBrightness.at(num); }
   QString get_y_axis_title_for_plot(bool short_title);  // наименование единиц измерения
 public slots:
-
   QVector<QVector<double> > get_band(uint16_t band);
-
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
   QImage get_index_rgb(bool enhance_contrast = false, bool colorized = true, int num_index = 0);
@@ -107,8 +105,8 @@ private:
 
   // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
-  QVector<J09::maskRecordType *> mask;  // массив масочных изображений 0 - нет, 1 - маска
-  int mask_index = -1;  // текущий номер маски
+  QVector<J09::maskRecordType *> masks;  // массив масочных изображений 0 - нет, 1 - маска
+  int current_mask_index = -1;  // текущий номер маски
 
   QVector<double> wavelengths;
   QSize slice_size;
@@ -119,7 +117,7 @@ private:
   double default_brightness = 1.5;
   int current_slice = -1;
   QRgb get_rainbow_RGB(double Wavelength);
-  int current_mask_index = -1;
+
 public:
   QVector<J09::histogramType> histogram;  // статистика гистограммы
   double wl380 = 380.0;
@@ -148,7 +146,8 @@ public:
   QPair<QString, QString> get_current_formula();
   void append_mask(J09::maskRecordType *msk);
   int setCurrentMaskIndex(int num);
-  J09::maskRecordType *getMask();
+  int getCurrentMaskIndex() { return current_mask_index; }
+  J09::maskRecordType *getCurrentMask();
 
 signals:
 

@@ -14,7 +14,8 @@ void imageHistogram::updateData(QString data_file_name, QString name, QString fo
 {
     if (h_data != nullptr) getHistogramFromSliders();
 
-    this->disconnect();
+    disconnectSlidersConnections();
+
     QString plot_title = QString("Гистограмма - [ %1 \\ %2 ]").arg(name).arg(formula);
     setWindowTitle(plot_title);
     title->setText(plot_title);
@@ -39,7 +40,7 @@ void imageHistogram::updateData(QString data_file_name, QString name, QString fo
     plot->replot();
     setHistogramToBracked();
 
-    setupConnections();
+    setupSlidersConnections();
 
 }
 
@@ -253,6 +254,8 @@ void imageHistogram::setupUi()
     packet_right = plot->addGraph();
     packet_right->setBrush(QBrush(QColor(255, 255, 255, 20)));  // white
 
+    setupConnections();
+
 }
 
 void imageHistogram::setupConnections()
@@ -268,12 +271,23 @@ void imageHistogram::setupConnections()
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
     connect(buttonMaskSave, &QPushButton::clicked, this, &imageHistogram::maskSave);
-//    connect(inverseMask,&QCheckBox::stateChanged,this, &imageHistogram::updateMask);
+}
+
+void imageHistogram::setupSlidersConnections()
+{
 // подключаем сигналы и слоты sliders &&&
     connect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
     connect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
     connect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
 
+}
+
+void imageHistogram::disconnectSlidersConnections()
+{
+// подключаем сигналы и слоты sliders &&&
+    disconnect(sliderBrightness,SIGNAL(valueChanged(int)),this,SLOT(brightnessChanged()));
+    disconnect(sliderLeftColorEdge,SIGNAL(valueChanged(int)),this,SLOT(leftColorChanged()));
+    disconnect(sliderRightColorEdge,SIGNAL(valueChanged(int)),this,SLOT(rightColorChanged()));
 }
 
 QString imageHistogram::getPreviewStatusString()
@@ -342,8 +356,8 @@ void imageHistogram::updatePreviewImage()
         break; }
     }  // switch
 
-    image_pixmap->topLeft->setCoords(0,0);
-    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
+//    image_pixmap->topLeft->setCoords(0,0);
+//    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
     previewPlot->replot();
 
     labelPreviewStatus->setText( getPreviewStatusString() );
@@ -666,9 +680,6 @@ void imageHistogram::axisRescale()
 
 void imageHistogram::maskSave()
 {
-    emit appendMask();
-    qDebug() << "imageHistogram::maskSave()";
-    return;
     addMaskDialog dlg;
     QString formula = getMaskFormula(), title = getMaskTitle();
     dlg.setData(title, formula);
@@ -677,21 +688,13 @@ void imageHistogram::maskSave()
         QString title;
         dlg.getData(title);
 
-        mask_appended = new J09::maskRecordType;
-        mask_appended->title = title;
-        mask_appended->formula = formula;
+//        mask_appended = new J09::maskRecordType;
+//        mask_appended->title = title;
+//        mask_appended->formula = formula;
 
-//        mask_appended->invers = inverseMask->isChecked();
-        mask_appended->image = get_mask_image( slice, mask_appended->invers );
+//        mask_appended->image = get_mask_image( slice, mask_appended->invers );
 
-        emit appendMask();
-        qDebug() << "imageHistogram::maskSave()";
     }  // if
-}
-
-void imageHistogram::updateMask()
-{
-    updatePreviewImage();
 }
 
 void imageHistogram::routate90(bool clockwise)
