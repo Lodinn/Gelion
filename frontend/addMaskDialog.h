@@ -15,10 +15,15 @@ public:
     explicit addMaskDialog(QWidget *parent = nullptr);
     ~addMaskDialog();
     void setData(QString title, QString formula);
-    void getData(QString &title);
+    void getData(QString &title, QString &formula);
 
 private:
     Ui::addMaskDialog *ui;
+    QString m_title, m_formula;
+    QString getFormula();
+    QString getTitle();
+private slots:
+    void changeInversion(int);
 };
 
 #endif // ADDMASKDIALOG_H

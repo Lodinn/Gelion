@@ -29,7 +29,6 @@ private:
     QSlider *sliderLeftColorEdge;
     QSlider *sliderRightColorEdge;
     QCheckBox *previewImage;
-//    QCheckBox *inverseMask;
     QLabel *labelBrightness;
     QLabel *labelLeftBlue;
     QLabel *labelRightRed;

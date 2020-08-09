@@ -662,7 +662,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
 {
   QGraphicsView::mousePressEvent(event);
   if (empty) return;  // сцена не содержит гиперкуба
-  if (event->modifiers() == Qt::ControlModifier)
+  if (event->modifiers() == Qt::ControlModifier && event->button() == Qt::LeftButton)
       insertMode = gQGraphicsView::Point;
   switch (insertMode) {
   case gQGraphicsView::None : {

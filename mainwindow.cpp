@@ -449,6 +449,9 @@ void MainWindow::createConstDockWidgets()
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // КАЛЬКУЛЯТОР МАСОЧНЫХ ИЗОБРАЖЕНИЙ
     imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
+    imgMasks->setPreviewPixmap(mainPixmap);
+    QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
+    maskListWidget->addItem(item);
 }
 
 void MainWindow::appendMaskImage()
@@ -543,7 +546,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     QListWidgetItem *lwItem = new QListWidgetItem();
     item->listwidget = lwItem;
     lwItem->setText(item->getTitle());
-    QFont font = lwItem->font();  font.setBold(true);
+    QFont font = lwItem->font();  font.setBold(item->dockw->isVisible());
     lwItem->setFont(font);
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Checked);
@@ -1743,7 +1746,6 @@ void MainWindow::predefined_index_menu()
     if (action) {
         QString title = action->text();
         QString formula = action->data().toString();
-        qDebug() << title << formula;
         calculateIndexAndStoreToIndexList(title, formula);
     }  // if
 }
@@ -1814,12 +1816,12 @@ void MainWindow::updateHistogram()
     uint32_t depth = im_handler->current_image()->get_bands_count();
     double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
     QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
-    maiPixmap = view->changeBrightnessPixmap(img, brightness);
+    mainPixmap = view->changeBrightnessPixmap(img, brightness);
 
     QVector<QVector<double> > slice_index = im_handler->current_image()->get_band(view->GlobalChannelNum-1);
     QPair<QString, QString> name = im_handler->current_image()->get_current_formula();
 
-    imgHistogram->setPreviewPixmap(maiPixmap);
+    imgHistogram->setPreviewPixmap(mainPixmap);
     imgHistogram->updateData(dataFileName, name.first, name.second, slice_index,
                              im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
     if (histogramAct->isChecked()) imgHistogram->show();

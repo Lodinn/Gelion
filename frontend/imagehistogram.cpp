@@ -61,16 +61,12 @@ void imageHistogram::updatePreviewData() {
 
 QString imageHistogram::getMaskFormula()
 {
-    QString str("");
-//    if (inverseMask->isChecked()) str = "inv";
-    return QString("{%1}[%2-%3%4]").arg(f_formula).arg(h_data->lower).arg(h_data->upper).arg(str);
+    return QString("{%1}[%2-%3]").arg(f_formula).arg(h_data->lower).arg(h_data->upper);
 }
 
 QString imageHistogram::getMaskTitle()
 {
-    QString str("");
-//    if (inverseMask->isChecked()) str = "inv";
-    return QString("{%1}[%2-%3%4]").arg(f_title).arg(h_data->lower).arg(h_data->upper).arg(str);
+    return QString("{%1}[%2-%3]").arg(f_title).arg(h_data->lower).arg(h_data->upper);
 }
 
 void imageHistogram::calculateHistogram(bool full)
@@ -210,17 +206,11 @@ void imageHistogram::setupUi()
 //    horzLayout->addWidget(labelPreview);
     horzLayout->addWidget(previewPlot);
 
-//    horzLayout->setStretch(0,1);
-
     QWidget *widget  = new QWidget;  // вспомогательный виджет
     widget->setLayout(horzLayout);
     setWidget(widget);
     setMinimumWidth(750);
     setMinimumHeight(300);
-//    setMaximumHeight(530);
-
-    // data
-    // ........
 
     // qcustomplot
 
@@ -686,7 +676,7 @@ void imageHistogram::maskSave()
     int dlg_result = dlg.exec();
     if (dlg_result == QDialog::Accepted) {
         QString title;
-        dlg.getData(title);
+        dlg.getData(title, formula);
 
 //        mask_appended = new J09::maskRecordType;
 //        mask_appended->title = title;

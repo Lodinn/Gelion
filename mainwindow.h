@@ -114,7 +114,7 @@ private:
  private:
   QGraphicsScene *scene;
   gQGraphicsView *view;
-  QPixmap maiPixmap;
+  QPixmap mainPixmap;
   QMenu *fileMenu;
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;

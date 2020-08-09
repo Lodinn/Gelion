@@ -11,6 +11,7 @@ addMaskDialog::addMaskDialog(QWidget *parent) :
     setWindowIcon(QIcon(":/icons/256_colors.png"));
     setWindowFlags( Qt::Dialog | Qt::WindowTitleHint );
     ui->buttonBox->buttons().at(1)->setText("Отмена");
+    connect( ui->checkBoxInverse, SIGNAL(stateChanged(int)), this, SLOT(changeInversion(int)) );
 }
 
 addMaskDialog::~addMaskDialog()
@@ -20,11 +21,32 @@ addMaskDialog::~addMaskDialog()
 
 void addMaskDialog::setData(QString title, QString formula)
 {
-    ui->lineEditTitle->setText(title);
-    ui->lineEditFormula->setText(formula);
+    m_title = title;
+    m_formula = formula;
+    ui->lineEditTitle->setText(getTitle());
+    ui->lineEditFormula->setText(getFormula());
 }
 
-void addMaskDialog::getData(QString &title)
+QString addMaskDialog::getFormula()
+{
+    if (ui->checkBoxInverse->isChecked()) return m_formula + "(inv)";
+    else return m_formula;
+}
+
+QString addMaskDialog::getTitle()
+{
+    if (ui->checkBoxInverse->isChecked()) return m_title + "(Инвертированная)";
+    else return m_title;
+
+}
+
+void addMaskDialog::changeInversion(int)
+{
+    ui->lineEditTitle->setText(getTitle());
+    ui->lineEditFormula->setText(getFormula());
+}
+
+void addMaskDialog::getData(QString &title, QString &formula)
 {
     title = ui->lineEditTitle->text();
 }
