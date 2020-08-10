@@ -37,17 +37,6 @@ QString ImageHandler::get_regular_expression(QString input)
 
 int ImageHandler::get_band_by_wave_length(double wavelength) {
 
-/*<<<<<<< HEAD
-  int result = 0;
-  QVector<double> wls = current_image()->wls();
-  if (wavelength < wls[0]) return 0;
-  if (wavelength > wls[wls.count()-1]) return wls.count()-1;
-// проверка попадания на максимальную длину волны и минимальное число каналов
-  if (wls.length() == 1)  return 0;
-  double d = wls[wls.length()-1] - wls[wls.length()-2];
-  if (qAbs(wavelength - wls[wls.length()-1]) < d * .5) return wls.length() - 1;
-=======*/
-
   SpectralImage* image = current_image();
   QVector<double> wls = image->wls();
   if (wavelength < wls[0]) return 0;

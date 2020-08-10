@@ -57,6 +57,7 @@ class MainWindow : public QMainWindow {
 
   void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
+  void add_mask_pixmap(J09::maskRecordType *am);
 
   void createDockWidgetForItem(zGraph *item);
   void setZGraphDockToggled(zGraph *item);
@@ -119,7 +120,6 @@ private:
   QToolBar *fileToolBar;
   QAction *addSeparatorRecentFile;
   QAction *indexAct;
-//  QAction *indexActExt;
   QMenu *index_quick_menu;
   QAction *spectralAct;
   QAction *histogramAct;
@@ -155,6 +155,7 @@ protected:
   QVector<QAction *> show_zgraph_list_acts;
   QVector<QAction *> show_index_list_acts;
   QVector<QAction *> mask_list_acts;
+  QVector<QAction *> show_mask_list_acts;
   QSlider *slider;
   QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
   QListWidget *maskListWidget = new QListWidget(dockMaskImage);
@@ -165,11 +166,14 @@ protected:
   void show_histogram_widget();
   void updateHistogram();
   void calculateVisibleZObject(bool rescale);
+ void createContextAction(const QIcon &icon, const QString &text, int num, QVector<QAction *> &av, const char *member);
 
 private slots:
+  void showContextMenuMaskImagList(const QPoint &pos);
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
   void showContextMenuDockIndexList(const QPoint &pos);
+  void show_mask_list();
   void show_index_list();
   void show_channel_list();
   void show_zgraph_list();
@@ -178,7 +182,6 @@ private slots:
   void settingsDlgShow();
   void change_brightness(int value);
   void spectralUpdateExt(zGraph *item);
-  void appendMaskImage();
 
 };
 

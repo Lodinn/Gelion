@@ -4,7 +4,7 @@ imageMask::imageMask(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
-    move(750,500); resize(700,400);
+    move(750,500); resize(600,400);
 //    hide();
 
 }
@@ -37,6 +37,17 @@ QListWidgetItem *imageMask::createMaskWidgetItem(const QString &atext, const QSt
     return item;
 }
 
+void imageMask::set4MasksToForm()
+{
+    int count = 0;
+    for(int row=0; row<maskListWidget->count();row++) {
+        QListWidgetItem *item = maskListWidget->item(row);
+        if (item->checkState() != Qt::Checked) continue;
+        if (count>pixmapLabelsVector.count()-1) return;
+        pixmapLabelsVector[count]->setNum(row);  count++;
+    }  // for
+}
+
 void imageMask::setupUi()
 {
     setObjectName("mask");
@@ -51,10 +62,10 @@ void imageMask::setupUi()
     setWidget(centralWidget);
     QHBoxLayout  *mainHorzLayout = new QHBoxLayout(centralWidget);  // главный горизонтальный шаблон
     QGroupBox *maskGroupBox = new QGroupBox(tr("Масочное изображение (просмотр или результат расчета)"));
-    mainHorzLayout->addWidget(maskGroupBox, 45);
+    mainHorzLayout->addWidget(maskGroupBox, 50);
 // вертикальный шаблон для 4 масок и калькулятора и двух статус строк
     QVBoxLayout  *mask4andCalculatorLayout = new QVBoxLayout(centralWidget);  // правый вертикальный шаблон
-    mainHorzLayout->addLayout(mask4andCalculatorLayout, 55);
+    mainHorzLayout->addLayout(mask4andCalculatorLayout, 50);
 // левая часть верхнего шаблона
     plot = new QCustomPlot(maskGroupBox);
     QGridLayout *plotLayout = new QGridLayout(maskGroupBox);  // добавление плоттера в шаблон
@@ -73,6 +84,30 @@ void imageMask::setupUi()
 
     defaultRGB.fill(QColor(125,125,125,50));
     setDefaultRGB();
+
+// МАСКИ - ИКОНКИ
+    QGridLayout *maskIconsLayout = new QGridLayout(centralWidget);
+
+    mask4andCalculatorLayout->addLayout(maskIconsLayout,20);
+
+    for (int row = 0; row < mask_row_count; ++row) {
+        for (int column = 0; column < mask_col_count; ++column) {
+            pixmapLabels[column][row] = createPixmapLabel();
+            DropArea *da = pixmapLabels[column][row];
+            da->title = createHeaderLabel(defTitleString);
+            maskIconsLayout->addWidget(da->title, 2 * row, column);
+            maskIconsLayout->addWidget(da, 2 * row + 1, column);
+            da->listWidget = maskListWidget;
+            da->imgHand = imgHand;
+            da->plot = plot;
+            da->image_pixmap = image_pixmap;
+            pixmapLabelsVector.append(da);
+        }
+    }
+    maskIconsLayout->setRowStretch(0,1);        maskIconsLayout->setRowStretch(1,10);
+    maskIconsLayout->setRowStretch(2,1);        maskIconsLayout->setRowStretch(3,10);
+    maskIconsLayout->setColumnStretch(0,50);    maskIconsLayout->setColumnStretch(1,50);
+
 // КАЛЬКУЛЯТОР
     QGroupBox *calculatorGroupBox = new QGroupBox(tr("Калькулятор"));
 
@@ -86,11 +121,11 @@ void imageMask::setupUi()
     Button *cancelButton = createButton(tr("Сброс"), tr("Сброс всех операций\nДля нового расчета выполните:\n"
                                                         "1. выберите маску\n"
                                                         "2. нажмите кнопку операции\n"
-                                                        "3. выберите вторую маску"), SLOT(cancel()));
+                                                        "3. выберите вторую маску"), SLOT(plug()));
     calculatorLayout->addWidget(cancelButton, 1, 1);
     Button *saveButton = createButton(tr("Сохранить ..."), tr("Сохранить в списке масок ..."), SLOT(plug()));
     calculatorLayout->addWidget(saveButton, 0, 2);
-    Button *closeButton = createButton(tr("Закрыть"), tr("Закрыть окно"), SLOT(hide()));
+    Button *closeButton = createButton(tr("Закрыть"), tr("Закрыть окно"), SLOT(hide()));  // HIDE
     calculatorLayout->addWidget(closeButton, 1, 3);
     Button *clearButton = createButton(tr("Очистить"), tr("Очистить окно маска-результат\nи иконки изображений-масок"), SLOT(plug()));
     calculatorLayout->addWidget(clearButton, 0, 3);
@@ -161,15 +196,31 @@ DropArea::DropArea(QWidget *parent)
     clear();
 }
 
+void DropArea::setNum(int n)
+{
+    num = n;
+    J09::maskRecordType *mask = imgHand->current_image()->getMask(num);
+    QImage img = imgHand->current_image()->get_mask_image(num);
+    pixmap = QPixmap::fromImage(img);
+
+    int h=this->height();
+    int w=this->width();
+    this->setPixmap(pixmap.scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+
+    title->setText(mask->title);
+    setToolTip(mask->formula);
+}
+
 void DropArea::clear()
 {
-    setText(tr("<Перетащите сюда\nизображение маску>"));
+    setText(tr("<Перетащите сюда\nмасочное изображение>"));
+    setToolTip(tr("Место для уменьшенного\nмасочного изображения"));
     setBackgroundRole(QPalette::Dark);
 }
 
 void DropArea::dragEnterEvent( QDragEnterEvent* event ) {
 
-    clear();
+    clear();  title->setText(defTitleString);
     setBackgroundRole(QPalette::Highlight);
     event->acceptProposedAction();
 }
@@ -179,7 +230,7 @@ void DropArea::dragLeaveEvent(QDragLeaveEvent *event) {
     else {
     int h=this->height();
     int w=this->width();
-    this->setPixmap(image->scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));}
+    this->setPixmap(pixmap.scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));}
 
     event->accept();
 }
@@ -189,11 +240,8 @@ void DropArea::dropEvent(QDropEvent *event)
     empty = false;
 
     int cr = listWidget->currentRow();
-    title->setText(QString("num = %1").arg(cr));
 
-    int h=this->height();
-    int w=this->width();
-    this->setPixmap(image->scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    setNum(cr);
 
     setBackgroundRole(QPalette::Dark);
     event->acceptProposedAction();
@@ -201,9 +249,9 @@ void DropArea::dropEvent(QDropEvent *event)
 
 void DropArea::mousePressEvent(QMouseEvent *ev)
 {
-    image_pixmap->setPixmap(*image);
-    image_pixmap->topLeft->setCoords(0,image->height());
-    image_pixmap->bottomRight->setCoords(image->width(),0);
+    image_pixmap->setPixmap(pixmap);
+    image_pixmap->topLeft->setCoords(0,pixmap.height());
+    image_pixmap->bottomRight->setCoords(pixmap.width(),0);
     plot->rescaleAxes();
     plot->replot();
 }

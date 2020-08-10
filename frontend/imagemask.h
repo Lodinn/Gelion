@@ -22,9 +22,11 @@ public:
     DropArea(QWidget *parent = 0);
     QLabel *title;
     QListWidget *listWidget;
+    ImageHandler *imgHand = nullptr;
     QCustomPlot *plot;
     QCPItemPixmap *image_pixmap;
-    QPixmap *image;
+    QPixmap pixmap;
+    void setNum(int n);
 public slots:
     void clear();
 protected:
@@ -42,6 +44,8 @@ protected:
 // после завершения действия перетаскивания.
 private:
    bool empty = true;
+   int num;
+   QString defTitleString = QString("Наименование");
 
 };
 
@@ -53,6 +57,7 @@ public:
     void setPreviewPixmap(QPixmap &mainRGB);
     void setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih);
     QListWidgetItem *createMaskWidgetItem(const QString &atext, const QString &atoolTip, const QIcon &aicon);
+    void set4MasksToForm();
 private:
     void setupUi();
     QCustomPlot *plot = nullptr;
@@ -72,6 +77,10 @@ private:
     Button *createButton(const QString &text, const QString &tooltip, const char *member);
     QLabel *createHeaderLabel(const QString &text);
     DropArea *createPixmapLabel();
+    enum { mask_row_count = 2, mask_col_count = 2 };
+    DropArea *pixmapLabels[mask_col_count][mask_row_count];
+    QVector<DropArea *> pixmapLabelsVector;
+    QString defTitleString = QString("Наименование");
 private slots:
     void plug();  // заглушка
 };

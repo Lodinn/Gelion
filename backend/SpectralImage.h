@@ -63,9 +63,10 @@ namespace J09 {
   struct maskRecordType {  // пакет данных об изображении - Маска
       QString title;  // наименование
       QString formula;  // общая формула алгоритма
-      QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
-      QVector<QVector<std::int8_t> > mask;  // маска
       bool invers = false;  // инверсное изображение
+      QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
+      QVector<QVector<int8_t> > mask;  // маска
+      double brightness = 3.;
   };
 }
 QT_END_NAMESPACE
@@ -100,6 +101,7 @@ public slots:
   }
   void set_wls(QVector<double> wls) { wavelengths = wls; }
   void append_slice(QVector<QVector<double> > slice);
+
 
 private:
 
@@ -148,6 +150,9 @@ public:
   int setCurrentMaskIndex(int num);
   int getCurrentMaskIndex() { return current_mask_index; }
   J09::maskRecordType *getCurrentMask();
+  J09::maskRecordType *getMask(int num);
+  QImage current_mask_image();
+  QImage get_mask_image(int num);
 
 signals:
 

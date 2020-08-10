@@ -46,5 +46,7 @@
         <file>icons/fit-to-height.png</file>
         <file>icons/iconfinder_excel_272697.png</file>
         <file>icons/calculator.png</file>
+        <file>icons/puzzle4.png</file>
+        <file>icons/grid.png</file>
     </qresource>
 </RCC>

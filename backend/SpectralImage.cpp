@@ -508,3 +508,41 @@ J09::maskRecordType *SpectralImage::getCurrentMask()
 {
     return masks.at(current_mask_index);
 }
+
+J09::maskRecordType *SpectralImage::getMask(int num)
+{
+    if (num < 0 || num > masks.count() - 1) return nullptr;
+    return masks.at(num);
+}
+
+QImage SpectralImage::current_mask_image()
+{
+    J09::maskRecordType *cm = getCurrentMask();
+    QSize slice_size(cm->mask[0].count(), cm->mask.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                mask_img.setPixel(x, y, cm->mask[y][x]);
+            }  // for
+
+        return mask_img;
+}
+
+QImage SpectralImage::get_mask_image(int num)
+{
+    J09::maskRecordType *mask = getMask(num);
+    if (mask == nullptr) {
+        qDebug() << "MASK READING PROBLEM !!!";
+        return QImage();
+    }
+    QSize slice_size(mask->mask[0].count(), mask->mask.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                mask_img.setPixel(x, y, mask->mask[y][x]);
+            }  // for
+
+        return mask_img;
+}

@@ -23,8 +23,9 @@ void addMaskDialog::setData(QString title, QString formula)
 {
     m_title = title;
     m_formula = formula;
+    ui->checkBoxInverse->setChecked(false);
     ui->lineEditTitle->setText(getTitle());
-    ui->lineEditFormula->setText(getFormula());
+    ui->textEditFormula->setText(getFormula());
 }
 
 QString addMaskDialog::getFormula()
@@ -43,10 +44,11 @@ QString addMaskDialog::getTitle()
 void addMaskDialog::changeInversion(int)
 {
     ui->lineEditTitle->setText(getTitle());
-    ui->lineEditFormula->setText(getFormula());
+    ui->textEditFormula->setText(getFormula());
 }
 
-void addMaskDialog::getData(QString &title, QString &formula)
+void addMaskDialog::getData(QString &title, QString &formula, bool &inverse)
 {
     title = ui->lineEditTitle->text();
+    inverse = ui->checkBoxInverse->isChecked();
 }

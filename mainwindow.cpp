@@ -429,19 +429,26 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 
 // СПЕКТРАЛЬНЫЙ АНАЛИЗ
-    imgSpectral->hide();    //imgSpectral->setObjectName("imgSpectral");
+    imgSpectral->hide();
     addDockWidget(Qt::BottomDockWidgetArea, imgSpectral);
     connect(imgSpectral->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
     imgSpectral->gsettings = &GLOBAL_SETTINGS;  imgSpectral->setDefaultState();
     imgSpectral->imgHand = im_handler;
 
 // АНАЛИЗ ИНДЕКСНЫХ ИЗОБРАЖЕНИЙ
-    imgHistogram->hide();   //imgHistogram->setObjectName("imgHistogram");
+    imgHistogram->hide();
     addDockWidget(Qt::BottomDockWidgetArea, imgHistogram);
     connect(imgHistogram->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+    connect(imgHistogram, &imageHistogram::appendMask, this, &MainWindow::add_mask_pixmap);
 
 // МАСКИ
     dockMaskImage->setFloating(true);  dockMaskImage->setObjectName("dockMaskImage");
+    dockMaskImage->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(dockMaskImage, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showContextMenuMaskImagList(QPoint)));
+    createContextAction(QIcon(":/icons/puzzle4.png"), "Загрузить 4 выделенные маски в калькулятор", 1,
+                        show_mask_list_acts, SLOT(show_mask_list()));
+
     dockMaskImage->resize(420,scrHeignt4);
     dockMaskImage->setWidget(maskListWidget);
     dockMaskImage->move(rec.width() - 250 - 200,upperIndent+3*scrHeignt4);
@@ -452,11 +459,9 @@ void MainWindow::createConstDockWidgets()
     imgMasks->setPreviewPixmap(mainPixmap);
     QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
     maskListWidget->addItem(item);
-}
+    item = imgMasks->createMaskWidgetItem(QString("puzzle4"),QString("e=mc2"),QIcon(":/icons/puzzle4.png"));
+    maskListWidget->addItem(item);
 
-void MainWindow::appendMaskImage()
-{
-    qDebug() << "MainWindow::appendMaskImage()";
 }
 
 void MainWindow::show_profile(QPointF point, int id) {
@@ -539,10 +544,10 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
 // set axes ranges, so we see all data:
     wPlot->xAxis->setRange(GLOBAL_SETTINGS.zobject_plot_xAxis_lower,GLOBAL_SETTINGS.zobject_plot_xAxis_upper);
     wPlot->yAxis->setRange(GLOBAL_SETTINGS.zobject_plot_yAxis_lower,GLOBAL_SETTINGS.zobject_plot_yAxis_upper);
-
     item->setContextMenuConnection();
     addDockWidget(Qt::BottomDockWidgetArea, dockw);
-    dockw->hide();  dockw->setAllowedAreas(nullptr);  // NoToolBarArea - !!! не прикрепляется к главному окну
+    dockw->hide();
+    dockw->setAllowedAreas(nullptr);  // NoToolBarArea - !!! не прикрепляется к главному окну
     QListWidgetItem *lwItem = new QListWidgetItem();
     item->listwidget = lwItem;
     lwItem->setText(item->getTitle());
@@ -765,6 +770,24 @@ void MainWindow::calculateVisibleZObject(bool rescale) {
         return;
     }  // if
     imgSpectral->updateDataExt(dataFileName, z_list, nullptr);
+}
+
+void MainWindow::createContextAction(const QIcon &icon, const QString &text, int num, QVector<QAction *> &av, const char *member)
+{
+    QAction *action = new QAction(icon, text, this);
+    action->setData(num);  av.append(action);
+    connect(action, SIGNAL(triggered()), this, member);
+
+}
+
+void MainWindow::showContextMenuMaskImagList(const QPoint &pos)
+{
+    QPoint globalPos = maskListWidget->mapToGlobal(pos);
+    QMenu menu(this);
+    menu.addAction(maskAct);
+    for (int i = 0; i < show_mask_list_acts.count(); i++)
+        menu.addAction(show_mask_list_acts[i]);
+    menu.exec(globalPos);
 }
 
 void MainWindow::listWidgetDeleteItem(zGraph *item)
@@ -1431,6 +1454,7 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
 {
     QPoint globalPos = zGraphListWidget->mapToGlobal(pos);
     QMenu menu(this);
+    menu.addAction(spectralAct);
     for (int i = 0; i < show_zgraph_list_acts.count(); i++)
         menu.addAction(show_zgraph_list_acts[i]);
 
@@ -1447,6 +1471,7 @@ void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
     if (dataFileName.isEmpty()) return;
     QPoint globalPos = indexListWidget->mapToGlobal(pos);
     QMenu menu(this);
+    menu.addAction(histogramAct);
     for (int i = 0; i < show_index_list_acts.count(); i++) {
         if (i == 0) {
             QString current_item = indexListWidget->currentItem()->text();
@@ -1455,6 +1480,20 @@ void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
         menu.addAction(show_index_list_acts[i]);
     }  // for
     menu.exec(globalPos);
+}
+
+void MainWindow::show_mask_list()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        int num = action->data().toInt();
+        switch (num) {
+        case 1 :     // Загрузить 4 выделенные маски в калькулятор
+            imgMasks->set4MasksToForm();
+            break;
+
+        }
+    }
 }
 
 void MainWindow::show_index_list()
@@ -1772,6 +1811,7 @@ void MainWindow::change_brightness(int value)
 
 void MainWindow::add_index_pixmap(int num)
 {
+    view->GlobalViewMode = 0;
 // num - номер максимального slice, этот номер на 1 меньше чем нужный current_slice
     view->GlobalChannelNum = num + 1;  histogramAct->setEnabled(true);
 // ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
@@ -1795,6 +1835,18 @@ void MainWindow::add_index_pixmap(int num)
 //----------------------------------------------------------
     set_abstract_index_pixmap();
     show_histogram_widget();  // histogram
+}
+
+void MainWindow::add_mask_pixmap(J09::maskRecordType *am)
+{
+    view->GlobalViewMode = 1;
+    im_handler->current_image()->append_mask(am);
+    QImage img = im_handler->current_image()->current_mask_image();
+    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am->title,am->formula,QIcon(QPixmap::fromImage(img)));
+    maskListWidget->addItem(item);
+//    QPixmap pxm = view->changeBrightnessPixmap(img, am->brightness);
+    QPixmap pxm = QPixmap::fromImage(img);
+    view->mainPixmap->setPixmap(pxm);
 }
 
 void MainWindow::set_abstract_index_pixmap()

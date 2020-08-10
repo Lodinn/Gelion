@@ -676,13 +676,16 @@ void imageHistogram::maskSave()
     int dlg_result = dlg.exec();
     if (dlg_result == QDialog::Accepted) {
         QString title;
-        dlg.getData(title, formula);
+        bool inv;
+        dlg.getData(title, formula, inv);
 
-//        mask_appended = new J09::maskRecordType;
-//        mask_appended->title = title;
-//        mask_appended->formula = formula;
+        mask_appended = new J09::maskRecordType;
+        mask_appended->title = title;
+        mask_appended->formula = formula;
+        mask_appended->invers = inv;
+        mask_appended->mask = calculateMask( inv );
 
-//        mask_appended->image = get_mask_image( slice, mask_appended->invers );
+        emit appendMask(mask_appended);
 
     }  // if
 }
@@ -739,6 +742,39 @@ QString imageHistogram::getWritableLocation()
     QDir dir(writableLocation);
     if (!dir.exists()) dir.mkpath(".");
     return writableLocation;
+}
+
+QVector<QVector<int8_t> > imageHistogram::calculateMask(bool inv)
+{
+    if(slice.isEmpty()) {
+      qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
+      return QVector<QVector<int8_t> >();
+    }
+    QSize slice_size(slice[0].count(), slice.count());
+    QVector<QVector<int8_t> > result(slice_size.height(), QVector<int8_t>(slice_size.width()));
+
+    switch (inv) {
+    case true :{
+        QVector<int8_t> line1(slice_size.width(),1);
+        result.fill(line1);
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                result[y][x] = 0;
+            }  // for
+        break; }
+    case false : {
+        QVector<int8_t> line0(slice_size.width(),0);
+        result.fill(line0);
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
+                    result[y][x] = 1;
+            }  // for
+        break; }
+    }  // switch
+
+    return result;
 }
 
 void imageHistogram::savePlotToPdfJpgPng()

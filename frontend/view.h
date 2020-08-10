@@ -35,6 +35,7 @@ public slots:
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;
     int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
+    int GlobalViewMode = 0;  // 0 - z object, rgb, index, chennels === 1 - masks
     bool empty = true;  // сцена не содержит данных
     QList<zGraph *> getZGraphItemsList();  // список рафических объектов на сцене
     QAction *openAct;
