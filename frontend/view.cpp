@@ -701,7 +701,10 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         return;
       } else {
         tmpRect->updateBoundingRect();
-        tmpRect->dockw->show();  tmpRect->dockw->move(mapToGlobal(event->pos()));
+        tmpRect->dockw->show();
+        QFont font = tmpRect->listwidget->font();  font.setBold(tmpRect->dockw->isVisible());
+        tmpRect->listwidget->setFont(font);
+        tmpRect->dockw->move(mapToGlobal(event->pos()));
         show_profile_for_Z(tmpRect);
         deleteTmpLines();
         insertMode = gQGraphicsView::None;
@@ -730,7 +733,10 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             return;
         } else {
             tmpEllipse->updateBoundingRect();
-            tmpEllipse->dockw->show();  tmpEllipse->dockw->move(mapToGlobal(event->pos()));
+            tmpEllipse->dockw->show();
+            QFont font = tmpEllipse->listwidget->font();  font.setBold(tmpEllipse->dockw->isVisible());
+            tmpEllipse->listwidget->setFont(font);
+            tmpEllipse->dockw->move(mapToGlobal(event->pos()));
             show_profile_for_Z(tmpEllipse);
             deleteTmpLines();
             insertMode = gQGraphicsView::None;
@@ -796,7 +802,10 @@ void gQGraphicsView::createPolygon(QPoint pos)
     zp->updateBoundingRect();
     scene()->addItem(zp);
     emit insertZGraphItem(zp);
-    zp->dockw->show();  zp->dockw->move(mapToGlobal(pos));
+    zp->dockw->show();
+    QFont font = zp->listwidget->font();  font.setBold(zp->dockw->isVisible());
+    zp->listwidget->setFont(font);
+    zp->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zp);
     deleteTmpLines();
     emit setZGraphDockToggled(zp);
@@ -817,7 +826,10 @@ void gQGraphicsView::createPolyline(QPoint pos)
     zp->updateBoundingRect();
     scene()->addItem(zp);
     emit insertZGraphItem(zp);
-    zp->dockw->show();  zp->dockw->move(mapToGlobal(pos));
+    zp->dockw->show();
+    QFont font = zp->listwidget->font();  font.setBold(zp->dockw->isVisible());
+    zp->listwidget->setFont(font);
+    zp->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zp);
     deleteTmpLines();
     emit setZGraphDockToggled(zp);
@@ -966,6 +978,8 @@ void gQGraphicsView::insPoint(QPoint pos)
     scene()->addItem(zpoint);
     emit insertZGraphItem(zpoint);
     zpoint->dockw->show();
+    QFont font = zpoint->listwidget->font();  font.setBold(zpoint->dockw->isVisible());
+    zpoint->listwidget->setFont(font);
     zpoint->dockw->move(mapToGlobal(pos));
     show_profile_for_Z(zpoint);
     emit setZGraphDockToggled(zpoint);

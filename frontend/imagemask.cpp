@@ -4,7 +4,8 @@ imageMask::imageMask(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
-    move(750,500); resize(600,400);
+    move(750,200); resize(900,480);
+    installEventFilter(this);
 //    hide();
 
 }
@@ -16,6 +17,7 @@ void imageMask::setPreviewPixmap(QPixmap &mainRGB)
 
 void imageMask::setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih)
 {
+    rotation = gsettings->main_rgb_rotate_start;
     maskListWidget = lw;
     imgHand = ih;
 
@@ -23,13 +25,22 @@ void imageMask::setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih)
     maskListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     maskListWidget->setViewMode( QListWidget::IconMode );
 
+    foreach(DropArea *da, pixmapLabelsVector) {
+        da->listWidget = maskListWidget;
+        da->imgHand = imgHand;
+        da->rotation = rotation;
+    }  // foreach
+
 }
 
-QListWidgetItem *imageMask::createMaskWidgetItem(const QString &atext, const QString &atoolTip, const QIcon &aicon)
+QListWidgetItem *imageMask::createMaskWidgetItem(J09::maskRecordType *am, QImage &img)
 {
     QListWidgetItem *item = new QListWidgetItem(maskListWidget);
-    item->setText(atext); item->setToolTip(atoolTip);
-    item->setIcon(aicon);
+    item->setText(am->title); item->setToolTip(am->formula);
+
+    QMatrix rm;    rm.rotate(rotation);
+    item->setIcon(QIcon(QPixmap::fromImage(img).transformed(rm)));
+
     item->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
     item->setCheckState(Qt::Checked);
@@ -45,15 +56,18 @@ void imageMask::set4MasksToForm()
         if (item->checkState() != Qt::Checked) continue;
         if (count>pixmapLabelsVector.count()-1) return;
         pixmapLabelsVector[count]->setNum(row);  count++;
+
     }  // for
 }
 
 void imageMask::setupUi()
 {
+
     setObjectName("mask");
     setWindowTitle("Калькулятор масочных изображений");
     setAllowedAreas(nullptr);
     setFloating(true);
+    installEventFilter(this);
 
 // размещение на форме интерфейсных элементов
 // порядок размещения - сверху вниз
@@ -97,11 +111,11 @@ void imageMask::setupUi()
             da->title = createHeaderLabel(defTitleString);
             maskIconsLayout->addWidget(da->title, 2 * row, column);
             maskIconsLayout->addWidget(da, 2 * row + 1, column);
-            da->listWidget = maskListWidget;
-            da->imgHand = imgHand;
             da->plot = plot;
             da->image_pixmap = image_pixmap;
+            da->result = &result;
             pixmapLabelsVector.append(da);
+            connect(da, &DropArea::exec, this, &imageMask::maskModify);
         }
     }
     maskIconsLayout->setRowStretch(0,1);        maskIconsLayout->setRowStretch(1,10);
@@ -137,6 +151,18 @@ void imageMask::setupUi()
 
 }
 
+bool imageMask::eventFilter(QObject *object, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *key = static_cast<QKeyEvent *>(event);
+
+        if( key->key() == Qt::Key_A ) { routate90(false); return true; }  // A
+        if( key->key() == Qt::Key_S ) { routate90(true); return true; }  // S
+
+    }  // KeyPress
+    return QDockWidget::eventFilter(object, event);
+}
+
 void imageMask::setDefaultRGB()
 {
     image_pixmap->topLeft->setCoords(0,defaultRGB.height());
@@ -146,6 +172,7 @@ void imageMask::setDefaultRGB()
     plot->yAxis->setRange(0,defaultRGB.height());
 
     image_pixmap->setPixmap(defaultRGB);
+    plot->replot();
 }
 
 QString imageMask::getResultShowModesString()
@@ -174,7 +201,86 @@ DropArea *imageMask::createPixmapLabel()
     return label;
 }
 
+void imageMask::routate90(bool clockwise)
+{
+    if (clockwise) {
+        rotation += 90.;
+        if (rotation > 360.) rotation -= 360.;
+    } else {
+        rotation -= 90.;
+        if (rotation < 0.) rotation += 360.;
+    }  // if
+
+    updateMainPreviewWithIconsPreviw();
+}
+
+void imageMask::updateMainPreviewWithIconsPreviw()
+{
+    foreach(DropArea *da, pixmapLabelsVector) {
+        da->rotation = rotation;
+        da->setNum(da->getNum());
+    }  // foreach
+
+    QMatrix rm;    rm.rotate(rotation);
+    QImage img = get_mask_image();
+    image_pixmap->setPixmap(QPixmap::fromImage(img).transformed(rm));
+    plot->replot();
+}
+
 void imageMask::plug(){}
+
+void imageMask::maskModify(int num)
+{
+    if (im == imageMask::imNone) return;
+    switch (im) {
+    case imageMask::imAddition : doAddition(num);
+        break;
+    case imageMask::imSubtraction : doSubtraction(num);
+        break;
+    }
+}
+
+
+QImage imageMask::get_mask_image()
+{
+    QSize slice_size(result[0].count(), result.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                mask_img.setPixel(x, y, result[y][x]);
+            }  // for
+
+        return mask_img;
+}
+
+void imageMask::doAddition(int num)
+{
+    QSize slice_size(result[0].count(), result.count());
+    J09::maskRecordType *mask = imgHand->current_image()->getMask(num);
+
+    QVector<int8_t> line(slice_size.width(), 1);
+    QVector<QVector<int8_t> > buff(slice_size.height(), line);
+
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if(result[y][x] == 0 && mask->mask[y][x] == 0) buff[y][x] = 0;
+    result = buff;
+}
+
+void imageMask::doSubtraction(int num)
+{
+    QSize slice_size(result[0].count(), result.count());
+    J09::maskRecordType *mask = imgHand->current_image()->getMask(num);
+
+    QVector<int8_t> line(slice_size.width(), 0);
+    QVector<QVector<int8_t> > buff(slice_size.height(), line);
+
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if(result[y][x] == 1 && mask->mask[y][x] == 0) buff[y][x] = 1;
+    result = buff;
+}
 
 Button::Button(const QString &text, QWidget *parent)
     : QToolButton(parent)
@@ -193,15 +299,25 @@ DropArea::DropArea(QWidget *parent)
     setAcceptDrops(true);
     setAutoFillBackground(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    clear();
+    clear(false);
 }
 
 void DropArea::setNum(int n)
 {
     num = n;
+
+    if (n<0) {
+        empty = true;
+        clear(true);
+        return;
+    }
+    empty = false;
+
     J09::maskRecordType *mask = imgHand->current_image()->getMask(num);
+
+    QMatrix rm;    rm.rotate(rotation);
     QImage img = imgHand->current_image()->get_mask_image(num);
-    pixmap = QPixmap::fromImage(img);
+    pixmap = QPixmap::fromImage(img).transformed(rm);
 
     int h=this->height();
     int w=this->width();
@@ -211,26 +327,26 @@ void DropArea::setNum(int n)
     setToolTip(mask->formula);
 }
 
-void DropArea::clear()
+void DropArea::clear(bool full)
 {
     setText(tr("<Перетащите сюда\nмасочное изображение>"));
     setToolTip(tr("Место для уменьшенного\nмасочного изображения"));
     setBackgroundRole(QPalette::Dark);
+    if (full) title->setText(defTitleString);
 }
 
 void DropArea::dragEnterEvent( QDragEnterEvent* event ) {
 
-    clear();  title->setText(defTitleString);
+    clear(true);
     setBackgroundRole(QPalette::Highlight);
     event->acceptProposedAction();
 }
 
 void DropArea::dragLeaveEvent(QDragLeaveEvent *event) {
-    if (empty) setBackgroundRole(QPalette::Dark);
-    else {
-    int h=this->height();
-    int w=this->width();
-    this->setPixmap(pixmap.scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));}
+    if (empty)
+        setBackgroundRole(QPalette::Dark);
+    else
+        setNum(num);
 
     event->accept();
 }
@@ -249,11 +365,19 @@ void DropArea::dropEvent(QDropEvent *event)
 
 void DropArea::mousePressEvent(QMouseEvent *ev)
 {
+    if (empty) return;
+
     image_pixmap->setPixmap(pixmap);
     image_pixmap->topLeft->setCoords(0,pixmap.height());
     image_pixmap->bottomRight->setCoords(pixmap.width(),0);
     plot->rescaleAxes();
     plot->replot();
+    result->clear();
+    QVector<QVector<int8_t> > v(3,QVector<int8_t>(5));
+    result->append(v);
+
+    emit(num);
+
 }
 
 

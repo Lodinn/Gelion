@@ -346,8 +346,6 @@ void imageHistogram::updatePreviewImage()
         break; }
     }  // switch
 
-//    image_pixmap->topLeft->setCoords(0,0);
-//    image_pixmap->bottomRight->setCoords(main_size.width(),main_size.height());
     previewPlot->replot();
 
     labelPreviewStatus->setText( getPreviewStatusString() );
@@ -683,6 +681,7 @@ void imageHistogram::maskSave()
         mask_appended->title = title;
         mask_appended->formula = formula;
         mask_appended->invers = inv;
+        mask_appended->rotation = h_data->rotation;
         mask_appended->mask = calculateMask( inv );
 
         emit appendMask(mask_appended);

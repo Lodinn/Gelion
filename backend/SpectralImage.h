@@ -67,6 +67,7 @@ namespace J09 {
       QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
       QVector<QVector<int8_t> > mask;  // маска
       double brightness = 3.;
+      double rotation = .0;
   };
 }
 QT_END_NAMESPACE

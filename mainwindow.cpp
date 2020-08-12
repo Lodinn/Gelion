@@ -454,13 +454,16 @@ void MainWindow::createConstDockWidgets()
     dockMaskImage->move(rec.width() - 250 - 200,upperIndent+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+
 // КАЛЬКУЛЯТОР МАСОЧНЫХ ИЗОБРАЖЕНИЙ
+    imgMasks->gsettings = &GLOBAL_SETTINGS;
     imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
     imgMasks->setPreviewPixmap(mainPixmap);
-    QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
-    maskListWidget->addItem(item);
-    item = imgMasks->createMaskWidgetItem(QString("puzzle4"),QString("e=mc2"),QIcon(":/icons/puzzle4.png"));
-    maskListWidget->addItem(item);
+
+//    QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
+//    maskListWidget->addItem(item);
+//    item = imgMasks->createMaskWidgetItem(QString("puzzle4"),QString("e=mc2"),QIcon(":/icons/puzzle4.png"));
+//    maskListWidget->addItem(item);
 
 }
 
@@ -551,8 +554,7 @@ void MainWindow::createDockWidgetForItem(zGraph *item)
     QListWidgetItem *lwItem = new QListWidgetItem();
     item->listwidget = lwItem;
     lwItem->setText(item->getTitle());
-    QFont font = lwItem->font();  font.setBold(item->dockw->isVisible());
-    lwItem->setFont(font);
+    QFont font = lwItem->font();  font.setBold(item->dockw->isVisible()); lwItem->setFont(font);
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Checked);
     lwItem->setIcon(item->aicon);
@@ -1842,9 +1844,9 @@ void MainWindow::add_mask_pixmap(J09::maskRecordType *am)
     view->GlobalViewMode = 1;
     im_handler->current_image()->append_mask(am);
     QImage img = im_handler->current_image()->current_mask_image();
-    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am->title,am->formula,QIcon(QPixmap::fromImage(img)));
+    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am, img);
     maskListWidget->addItem(item);
-//    QPixmap pxm = view->changeBrightnessPixmap(img, am->brightness);
+    QMatrix rm;    rm.rotate(am->rotation);
     QPixmap pxm = QPixmap::fromImage(img);
     view->mainPixmap->setPixmap(pxm);
 }

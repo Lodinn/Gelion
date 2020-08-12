@@ -26,9 +26,12 @@ public:
     QCustomPlot *plot;
     QCPItemPixmap *image_pixmap;
     QPixmap pixmap;
+    QVector<QVector<int8_t> > *result;  // ссылка на массив для хранения результатов операций
     void setNum(int n);
+    int getNum() { return num; }
+    double rotation = .0;
 public slots:
-    void clear();
+    void clear(bool full);
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragLeaveEvent(QDragLeaveEvent *event) override;
@@ -46,7 +49,8 @@ private:
    bool empty = true;
    int num;
    QString defTitleString = QString("Наименование");
-
+signals:
+   void exec(int num);
 };
 
 class imageMask : public QDockWidget
@@ -56,16 +60,20 @@ public:
     imageMask(QWidget * parent = nullptr);
     void setPreviewPixmap(QPixmap &mainRGB);
     void setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih);
-    QListWidgetItem *createMaskWidgetItem(const QString &atext, const QString &atoolTip, const QIcon &aicon);
+    QListWidgetItem *createMaskWidgetItem(J09::maskRecordType *am, QImage &img);
     void set4MasksToForm();
+    J09::globalSettingsType *gsettings;
 private:
+    enum inputMode { imNone, imAddition, imSubtraction };
+    inputMode im = imageMask::imNone;
     void setupUi();
+    bool eventFilter(QObject *object, QEvent *event);
     QCustomPlot *plot = nullptr;
     QCPItemPixmap *image_pixmap = nullptr;
     QPixmap *previewRGB = nullptr;
     QListWidget *maskListWidget = nullptr;
     ImageHandler *imgHand = nullptr;
-    QSize defaultIconSize = QSize(64,64);
+    QSize defaultIconSize = QSize(32+64,32+64);
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
     QString getResultShowModesString();
@@ -81,8 +89,16 @@ private:
     DropArea *pixmapLabels[mask_col_count][mask_row_count];
     QVector<DropArea *> pixmapLabelsVector;
     QString defTitleString = QString("Наименование");
+    QVector<QVector<int8_t> > result;  // массив для хранения результатов операций
+    double rotation = .0;
+    void routate90(bool clockwise);
+    void updateMainPreviewWithIconsPreviw();
+    QImage get_mask_image();
+    void doAddition(int num);
+    void doSubtraction(int num);
 private slots:
     void plug();  // заглушка
+    void maskModify(int num);
 };
 
 #endif // IMAGEMASK_H
