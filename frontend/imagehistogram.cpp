@@ -678,11 +678,15 @@ void imageHistogram::maskSave()
         dlg.getData(title, formula, inv);
 
         mask_appended = new J09::maskRecordType;
+        mask_appended->checked = true;
         mask_appended->title = title;
         mask_appended->formula = formula;
         mask_appended->invers = inv;
-        mask_appended->rotation = h_data->rotation;
+        mask_appended->formula_step_by_step = QStringList() << title << formula;
         mask_appended->mask = calculateMask( inv );
+        mask_appended->img = get_mask_image(mask_appended->mask);
+        mask_appended->brightness = 3.;
+        mask_appended->rotation = h_data->rotation;
 
         emit appendMask(mask_appended);
 
@@ -774,6 +778,19 @@ QVector<QVector<int8_t> > imageHistogram::calculateMask(bool inv)
     }  // switch
 
     return result;
+}
+
+QImage imageHistogram::get_mask_image(QVector<QVector<int8_t> > &mask)
+{
+    QSize slice_size(mask[0].count(), mask.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                mask_img.setPixel(x, y, mask[y][x]);
+            }  // for
+
+        return mask_img;
 }
 
 void imageHistogram::savePlotToPdfJpgPng()

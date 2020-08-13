@@ -61,11 +61,13 @@ namespace J09 {
       double main_rgb_scale_start = 3.;
   };
   struct maskRecordType {  // пакет данных об изображении - Маска
+      bool checked = true;
       QString title;  // наименование
       QString formula;  // общая формула алгоритма
       bool invers = false;  // инверсное изображение
       QStringList formula_step_by_step;  // общая формула алгоритма разбитая на составляющие
       QVector<QVector<int8_t> > mask;  // маска
+      QImage img;
       double brightness = 3.;
       double rotation = .0;
   };
@@ -154,6 +156,7 @@ public:
   J09::maskRecordType *getMask(int num);
   QImage current_mask_image();
   QImage get_mask_image(int num);
+  int getMasksCount() { return masks.count(); }
 
 signals:
 

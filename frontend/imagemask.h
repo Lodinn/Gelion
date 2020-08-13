@@ -63,9 +63,15 @@ public:
     QListWidgetItem *createMaskWidgetItem(J09::maskRecordType *am, QImage &img);
     void set4MasksToForm();
     J09::globalSettingsType *gsettings;
+    void saveMasksToFile(QString data_file_name);
+    void loadMasksFromFile(QString data_file_name);
+    void updateMaskListWidget();
 private:
+    QString defMaskFileDataName = "masks.dat";
     enum inputMode { imNone, imAddition, imSubtraction };
     inputMode im = imageMask::imNone;
+    int show_mode = 1;  // 1 - mask 0 - RGB
+
     void setupUi();
     bool eventFilter(QObject *object, QEvent *event);
     QCustomPlot *plot = nullptr;
@@ -77,7 +83,7 @@ private:
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
     QString getResultShowModesString();
-    int show_mode = 1;
+
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
     QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
     QLabel *formulaLabel = new QLabel;
@@ -96,6 +102,7 @@ private:
     QImage get_mask_image();
     void doAddition(int num);
     void doSubtraction(int num);
+    QString getMaskDataFileName(QString data_file_name);
 private slots:
     void plug();  // заглушка
     void maskModify(int num);

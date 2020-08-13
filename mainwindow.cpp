@@ -448,6 +448,8 @@ void MainWindow::createConstDockWidgets()
             this, SLOT(showContextMenuMaskImagList(QPoint)));
     createContextAction(QIcon(":/icons/puzzle4.png"), "Загрузить 4 выделенные маски в калькулятор", 1,
                         show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/puzzle4.png"), "сохранить в файл", 2,  // test
+                        show_mask_list_acts, SLOT(show_mask_list()));
 
     dockMaskImage->resize(420,scrHeignt4);
     dockMaskImage->setWidget(maskListWidget);
@@ -737,6 +739,10 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->openAct->setEnabled(true);
   set_action_enabled(true);
   QApplication::processEvents();
+
+  imgMasks->loadMasksFromFile(dataFileName);
+  imgMasks->updateMaskListWidget();
+
 }
 
 void MainWindow::updateNewDataSet(bool index_update)
@@ -1493,7 +1499,9 @@ void MainWindow::show_mask_list()
         case 1 :     // Загрузить 4 выделенные маски в калькулятор
             imgMasks->set4MasksToForm();
             break;
-
+        case 2 :     // test
+            imgMasks->saveMasksToFile(dataFileName);
+            break;
         }
     }
 }
@@ -1843,11 +1851,9 @@ void MainWindow::add_mask_pixmap(J09::maskRecordType *am)
 {
     view->GlobalViewMode = 1;
     im_handler->current_image()->append_mask(am);
-    QImage img = im_handler->current_image()->current_mask_image();
-    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am, img);
+    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am, am->img);
     maskListWidget->addItem(item);
-    QMatrix rm;    rm.rotate(am->rotation);
-    QPixmap pxm = QPixmap::fromImage(img);
+    QPixmap pxm = QPixmap::fromImage(am->img);
     view->mainPixmap->setPixmap(pxm);
 }
 

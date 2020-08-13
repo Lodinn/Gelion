@@ -38,7 +38,7 @@ QListWidgetItem *imageMask::createMaskWidgetItem(J09::maskRecordType *am, QImage
     QListWidgetItem *item = new QListWidgetItem(maskListWidget);
     item->setText(am->title); item->setToolTip(am->formula);
 
-    QMatrix rm;    rm.rotate(rotation);
+    QMatrix rm;    rm.rotate(am->rotation);
     item->setIcon(QIcon(QPixmap::fromImage(img).transformed(rm)));
 
     item->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
@@ -282,6 +282,70 @@ void imageMask::doSubtraction(int num)
     result = buff;
 }
 
+QString imageMask::getMaskDataFileName(QString data_file_name)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(data_file_name);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation + "/" + defMaskFileDataName;
+}
+
+void imageMask::loadMasksFromFile(QString data_file_name)
+{
+    if (data_file_name.isEmpty()) return;
+
+    QFile datfile(getMaskDataFileName(data_file_name));
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+    int count;
+    datstream >> count;
+    for(int i=0; i<count; i++) {
+        J09::maskRecordType *am = new J09::maskRecordType;
+        imgHand->current_image()->append_mask(am);
+        datstream >> am->checked >> am->title >> am->formula >> am->invers;
+        datstream >> am->formula_step_by_step >> am->img >> am->brightness >> am->rotation;
+        datstream >> am->mask;
+    }
+    datfile.close();
+}
+
+void imageMask::updateMaskListWidget()
+{
+    maskListWidget->clear();
+    int count = imgHand->current_image()->getMasksCount();
+    for(int i=0; i<count; i++) {
+        J09::maskRecordType *am = imgHand->current_image()->getMask(i);
+        QListWidgetItem *item = this->createMaskWidgetItem(am, am->img);
+        maskListWidget->addItem(item);
+    }
+}
+
+void imageMask::saveMasksToFile(QString data_file_name)
+{
+    if (data_file_name.isEmpty()) return;
+
+    QFile datfile(getMaskDataFileName(data_file_name));
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+    int count = imgHand->current_image()->getMasksCount();
+    datstream << count;
+    for(int i=0; i<count; i++) {
+        J09::maskRecordType *m = imgHand->current_image()->getMask(i);
+        datstream << m->checked << m->title << m->formula << m->invers;
+        datstream << m->formula_step_by_step << m->img << m->brightness << m->rotation;
+        datstream << m->mask;
+    }
+    datfile.close();
+}
+
+
 Button::Button(const QString &text, QWidget *parent)
     : QToolButton(parent)
 {
@@ -376,7 +440,7 @@ void DropArea::mousePressEvent(QMouseEvent *ev)
     QVector<QVector<int8_t> > v(3,QVector<int8_t>(5));
     result->append(v);
 
-    emit(num);
+    emit exec(num);
 
 }
 

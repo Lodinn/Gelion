@@ -71,6 +71,7 @@ private:
     J09::maskRecordType *mask_appended;
     QString getWritableLocation();
     QVector<QVector<int8_t> > calculateMask(bool inv);  // маска
+    QImage get_mask_image(QVector<QVector<int8_t> > &mask);
 private slots:
     void brightnessChanged();
     void leftColorChanged();
