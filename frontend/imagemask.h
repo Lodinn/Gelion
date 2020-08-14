@@ -58,7 +58,6 @@ class imageMask : public QDockWidget
     Q_OBJECT
 public:
     imageMask(QWidget * parent = nullptr);
-    void setPreviewPixmap(QPixmap &mainRGB);
     void setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih);
     QListWidgetItem *createMaskWidgetItem(J09::maskRecordType *am, QImage &img);
     void set4MasksToForm();
@@ -66,24 +65,28 @@ public:
     void saveMasksToFile(QString data_file_name);
     void loadMasksFromFile(QString data_file_name);
     void updateMaskListWidget();
+    void setPreviewPixmap(QPixmap &mainRGB);
 private:
     QString defMaskFileDataName = "masks.dat";
     enum inputMode { imNone, imAddition, imSubtraction };
     inputMode im = imageMask::imNone;
     int show_mode = 1;  // 1 - mask 0 - RGB
+    int current_num = -1;
 
     void setupUi();
     bool eventFilter(QObject *object, QEvent *event);
     QCustomPlot *plot = nullptr;
     QCPItemPixmap *image_pixmap = nullptr;
-    QPixmap *previewRGB = nullptr;
+    QPixmap *previewRGB;
     QListWidget *maskListWidget = nullptr;
     ImageHandler *imgHand = nullptr;
     QSize defaultIconSize = QSize(32+64,32+64);
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
+    void updatePreviewImage();
+    J09::maskRecordType result;  // массив для хранения результатов операций
+     QVector<DropArea *> pixmapLabelsVector;
     QString getResultShowModesString();
-
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
     QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
     QLabel *formulaLabel = new QLabel;
@@ -93,19 +96,30 @@ private:
     DropArea *createPixmapLabel();
     enum { mask_row_count = 2, mask_col_count = 2 };
     DropArea *pixmapLabels[mask_col_count][mask_row_count];
-    QVector<DropArea *> pixmapLabelsVector;
     QString defTitleString = QString("Наименование");
-    QVector<QVector<int8_t> > result;  // массив для хранения результатов операций
     double rotation = .0;
     void routate90(bool clockwise);
     void updateMainPreviewWithIconsPreviw();
-    QImage get_mask_image();
     void doAddition(int num);
     void doSubtraction(int num);
+    void updateResult(int num);
     QString getMaskDataFileName(QString data_file_name);
+    void setMaskToMainPixmap(int num);
+// BUTTONS
+    void setButtonsEnabled(bool enabled);
+    Button *additionButton;
+    Button *subtractionButton;
+    Button *cancelButton;
+    Button *saveButton;
+    Button *closeButton;
+    Button *clearButton;
 private slots:
     void plug();  // заглушка
     void maskModify(int num);
+    void clear();
+    void addition();
+    void subtraction();
+    void cancel();
 };
 
 #endif // IMAGEMASK_H

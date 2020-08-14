@@ -156,6 +156,7 @@ public:
   J09::maskRecordType *getMask(int num);
   QImage current_mask_image();
   QImage get_mask_image(int num);
+  QImage get_mask_image(J09::maskRecordType &msk);
   int getMasksCount() { return masks.count(); }
 
 signals:

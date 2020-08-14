@@ -34,6 +34,7 @@ class MainWindow : public QMainWindow {
 
   void histogramSlot();  // гистограмма
   void spectralSlot();  // спектральный анализ
+  void masksSlot();    // маски
 
   void winZGraphList();
   void indexListUpdate();
@@ -160,6 +161,7 @@ protected:
   QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
   QListWidget *maskListWidget = new QListWidget(dockMaskImage);
   imageMask *imgMasks = new imageMask(this);  // окно КАЛЬКУЛЯТОРА МАСОК
+  void imgMasksUpdatePreviewPixmap();
 
   void set_abstract_index_pixmap();
   void show_channel_list_update();

@@ -546,3 +546,16 @@ QImage SpectralImage::get_mask_image(int num)
 
         return mask_img;
 }
+
+QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
+{
+    QSize slice_size(msk.mask[0].count(), msk.mask.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+        for(int y = 0; y < slice_size.height(); y++)
+            for(int x = 0; x < slice_size.width(); x++) {
+                mask_img.setPixel(x, y, msk.mask[y][x]);
+            }  // for
+
+        return mask_img;
+}

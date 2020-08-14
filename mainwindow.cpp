@@ -221,7 +221,7 @@ void MainWindow::createActions() {
     histogramAct->setEnabled(false);
     indexMenu->addAction(histogramAct);   indexToolBar->addAction(histogramAct);
 
-    maskAct->setCheckable(true); maskAct->setChecked(true);
+    maskAct->setCheckable(true); maskAct->setChecked(false);
     maskAct->setEnabled(false);
     indexMenu->addAction(maskAct);   indexToolBar->addAction(maskAct);
 
@@ -260,6 +260,15 @@ void MainWindow::createStatusBar() {
     statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
 }
 
+void MainWindow::imgMasksUpdatePreviewPixmap()
+{
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
+    QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
+    mainPixmap = view->changeBrightnessPixmap(img, brightness);
+    imgMasks->setPreviewPixmap(mainPixmap);
+}
+
 void MainWindow::createMainConnections()
 {
 // file menu
@@ -288,6 +297,7 @@ void MainWindow::createMainConnections()
 
     connect(scene,SIGNAL(selectionChanged()),view,SLOT(selectionZChanged()));
 
+    connect(maskAct, SIGNAL(triggered()), this, SLOT(masksSlot()));  // маски
     connect(histogramAct, SIGNAL(triggered()), this, SLOT(histogramSlot()));  // гистограмма
     connect(spectralAct, SIGNAL(triggered()), this, SLOT(spectralSlot()));  // СПЕКТРАЛЬНЫЙ АНАЛИЗ
     connect(view, SIGNAL(changeZObject(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
@@ -458,9 +468,9 @@ void MainWindow::createConstDockWidgets()
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 
 // КАЛЬКУЛЯТОР МАСОЧНЫХ ИЗОБРАЖЕНИЙ
+    imgMasks->hide();
     imgMasks->gsettings = &GLOBAL_SETTINGS;
     imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
-    imgMasks->setPreviewPixmap(mainPixmap);
 
 //    QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
 //    maskListWidget->addItem(item);
@@ -682,6 +692,7 @@ void MainWindow::toggleViewAction(bool b)
 
     histogramAct->setChecked(imgHistogram->isVisible());
     spectralAct->setChecked(imgSpectral->isVisible());
+    maskAct->setChecked(imgMasks->isVisible());
 }
 
 void MainWindow::open() {
@@ -742,6 +753,7 @@ void MainWindow::add_envi_hdr_pixmap() {
 
   imgMasks->loadMasksFromFile(dataFileName);
   imgMasks->updateMaskListWidget();
+  maskAct->setEnabled(true);  maskAct->setChecked(false);
 
 }
 
@@ -754,6 +766,7 @@ void MainWindow::updateNewDataSet(bool index_update)
 
     imgSpectral->hide();  spectralAct->setEnabled(false); spectralAct->setChecked(false);
     imgHistogram->hide();  histogramAct->setEnabled(false); histogramAct->setChecked(false);
+    imgMasks->hide();  maskAct->setEnabled(false); maskAct->setChecked(false);
 
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     createDockWidgetForChannels();
@@ -893,13 +906,17 @@ void MainWindow::delete_progress_dialog() {
   }
 }
 
-void MainWindow::histogramSlot()
-{
-    imgHistogram->setVisible(!imgHistogram->isVisible());
+void MainWindow::histogramSlot() { imgHistogram->setVisible(!imgHistogram->isVisible()); }
+
+
+void MainWindow::masksSlot() {
+
+    imgMasks->setVisible(!imgMasks->isVisible());
+    if (imgMasks->isVisible()) imgMasksUpdatePreviewPixmap();
 }
 
-void MainWindow::spectralSlot()
-{
+
+void MainWindow::spectralSlot() {
     auto z_list = view->getZGraphItemsList();  // список рафических объектов на сцене
     imgSpectral->updateDataExt(dataFileName, z_list, nullptr);
     imgSpectral->setVisible(!imgSpectral->isVisible());
