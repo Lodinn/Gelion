@@ -184,6 +184,15 @@ void imageHistogram::setupUi()
     bottomGroupBox->setLayout(gridLayout);
     bottomGroupBox->setMaximumHeight(100);
 
+    QGroupBox *centralGroupBox = new QGroupBox("Наименование \ Формула");
+    QVBoxLayout *centralGBLayout = new QVBoxLayout(centralGroupBox);
+    QLineEdit *title_of_mask = new QLineEdit(centralGroupBox);
+    QLineEdit *formula_of_mask = new QLineEdit(centralGroupBox);
+    centralGBLayout->addWidget(title_of_mask);  title_of_mask->setText("title");
+    centralGBLayout->addWidget(formula_of_mask);  formula_of_mask->setText("formula");
+    formula_of_mask->setReadOnly(true);
+    centralGroupBox->setMaximumHeight(75);
+
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
     plot->plotLayout()->insertRow(0);
@@ -191,6 +200,7 @@ void imageHistogram::setupUi()
     plot->plotLayout()->addElement(0, 0, title);
 
     vertLayout->addWidget(plot);
+    vertLayout->addWidget(centralGroupBox);
     vertLayout->addWidget(bottomGroupBox);
 
     labelPreviewStatus->setMaximumHeight(15);
@@ -202,9 +212,9 @@ void imageHistogram::setupUi()
 
     horzLayout = new QHBoxLayout;
 
-    horzLayout->addLayout(vertLayout);
+    horzLayout->addLayout(vertLayout,1);
 //    horzLayout->addWidget(labelPreview);
-    horzLayout->addWidget(previewPlot);
+    horzLayout->addWidget(previewPlot,1);
 
     QWidget *widget  = new QWidget;  // вспомогательный виджет
     widget->setLayout(horzLayout);
