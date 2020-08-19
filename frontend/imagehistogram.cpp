@@ -121,9 +121,9 @@ bool imageHistogram::eventFilter(QObject *object, QEvent *event)
         if( key->key() == Qt::Key_X ) {
             h_data->rgb_preview = 1; updatePreviewImage(); return true; }  // X
         if( key->key() == Qt::Key_C ) {
-            h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C
+            h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C mask norm
         if( key->key() == Qt::Key_V ) {
-            h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V
+            h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V mask inversion
 
         /*if( key->key() == 65 && key->key() == 1060 ) { routate90(true); return true; }  // A
         if( key->key() == 83 && key->key() == 1067 ) { routate90(false); return true; }  // S
@@ -181,17 +181,18 @@ void imageHistogram::setupUi()
 //    inverseMask->setChecked(false);
 //    gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
 
-    bottomGroupBox->setLayout(gridLayout);
-    bottomGroupBox->setMaximumHeight(100);
+    centralGroupBox = new QGroupBox("Наименование \\ Формула");
+    centralGBLayout = new QVBoxLayout(centralGroupBox);
+    title_of_mask = new QLineEdit("title", centralGroupBox);
+    formula_of_mask = new QLineEdit("formula", centralGroupBox);
+    centralGBLayout->addWidget(title_of_mask, 1);
+    centralGBLayout->addWidget(formula_of_mask, 1);
 
-    QGroupBox *centralGroupBox = new QGroupBox("Наименование \ Формула");
-    QVBoxLayout *centralGBLayout = new QVBoxLayout(centralGroupBox);
-    QLineEdit *title_of_mask = new QLineEdit(centralGroupBox);
-    QLineEdit *formula_of_mask = new QLineEdit(centralGroupBox);
-    centralGBLayout->addWidget(title_of_mask);  title_of_mask->setText("title");
-    centralGBLayout->addWidget(formula_of_mask);  formula_of_mask->setText("formula");
+    bottomGroupBox->setLayout(gridLayout);
+    bottomGroupBox->setFixedHeight(75);
+
     formula_of_mask->setReadOnly(true);
-    centralGroupBox->setMaximumHeight(75);
+    centralGroupBox->setMaximumHeight(100);
 
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
@@ -255,6 +256,7 @@ void imageHistogram::setupUi()
     packet_right->setBrush(QBrush(QColor(255, 255, 255, 20)));  // white
 
     setupConnections();
+    buttonMaskSave->setEnabled(false);
 
 }
 
@@ -359,6 +361,8 @@ void imageHistogram::updatePreviewImage()
     previewPlot->replot();
 
     labelPreviewStatus->setText( getPreviewStatusString() );
+    bool enabled = (h_data->rgb_preview == 2 || h_data->rgb_preview == 3);
+    buttonMaskSave->setEnabled(enabled);
 }
 
 QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized)
@@ -678,7 +682,22 @@ void imageHistogram::axisRescale()
 
 void imageHistogram::maskSave()
 {
-    addMaskDialog dlg;
+    QString title(title_of_mask->text());
+    QString formula(formula_of_mask->text());
+    mask_appended = new J09::maskRecordType;
+    mask_appended->checked = true;
+    mask_appended->title = title;
+    mask_appended->formula = formula;
+    mask_appended->invers = h_data->rgb_preview == 3;
+    mask_appended->formula_step_by_step = QStringList() << title << formula;
+    mask_appended->mask = calculateMask( mask_appended->invers );
+    mask_appended->img = get_mask_image(mask_appended->mask);
+    mask_appended->brightness = 3.;
+    mask_appended->rotation = h_data->rotation;
+
+    emit appendMask(mask_appended);
+
+/*    addMaskDialog dlg;
     QString formula = getMaskFormula(), title = getMaskTitle();
     dlg.setData(title, formula);
     int dlg_result = dlg.exec();
@@ -700,7 +719,7 @@ void imageHistogram::maskSave()
 
         emit appendMask(mask_appended);
 
-    }  // if
+    }  // if */
 }
 
 void imageHistogram::routate90(bool clockwise)
@@ -808,7 +827,7 @@ void imageHistogram::savePlotToPdfJpgPng()
     QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить изображение гистограммы"), writableLocation,
-        tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
+        tr("Файлы PDF (*.pdf);;Файлы PNG (*.png);;Файлы JPG (*.jpg)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }

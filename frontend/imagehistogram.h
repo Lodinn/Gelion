@@ -72,6 +72,10 @@ private:
     QString getWritableLocation();
     QVector<QVector<int8_t> > calculateMask(bool inv);  // маска
     QImage get_mask_image(QVector<QVector<int8_t> > &mask);
+    QGroupBox *centralGroupBox;
+    QVBoxLayout *centralGBLayout;
+    QLineEdit *title_of_mask;
+    QLineEdit *formula_of_mask;
 private slots:
     void brightnessChanged();
     void leftColorChanged();

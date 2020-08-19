@@ -83,9 +83,10 @@ private:
     QSize defaultIconSize = QSize(32+64,32+64);
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
+    void setRGBtoPlot(QPixmap &pixmap);
     void updatePreviewImage();
     J09::maskRecordType result;  // массив для хранения результатов операций
-     QVector<DropArea *> pixmapLabelsVector;
+
     QString getResultShowModesString();
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
     QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
@@ -96,6 +97,8 @@ private:
     DropArea *createPixmapLabel();
     enum { mask_row_count = 2, mask_col_count = 2 };
     DropArea *pixmapLabels[mask_col_count][mask_row_count];
+    QVector<DropArea *> pixmapLabelsVector;
+
     QString defTitleString = QString("Наименование");
     double rotation = .0;
     void routate90(bool clockwise);

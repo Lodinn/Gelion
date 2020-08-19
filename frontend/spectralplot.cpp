@@ -399,7 +399,7 @@ void SpectralPlot::savePlotToPdfJpgPng()
     QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить изображение спектральных профилей"), writableLocation,
-        tr("Файлы PNG (*.png);;Файлы PDF (*.pdf);;Файлы JPG (*.jpg)"));
+        tr("Файлы PDF (*.pdf);;Файлы PNG (*.png);;Файлы JPG (*.jpg)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }

@@ -67,20 +67,102 @@ void imageMask::setupUi()
     setFloating(true);
     installEventFilter(this);
 
-// размещение на форме интерфейсных элементов
-// порядок размещения - сверху вниз
+    // размещение на форме интерфейсных элементов
+    // порядок размещения - сверху вниз
 
     QWidget *centralWidget = new QWidget(this);
     setWidget(centralWidget);
-    QHBoxLayout  *mainHorzLayout = new QHBoxLayout(centralWidget);  // главный горизонтальный шаблон
-    QGroupBox *maskGroupBox = new QGroupBox(tr("Масочное изображение (просмотр или результат расчета)"));
+    QHBoxLayout *mainHorzLayout = new QHBoxLayout(centralWidget);  // главный горизонтальный шаблон
+    QGroupBox *maskGroupBox = new QGroupBox(tr("Изображение"));
+    mainHorzLayout->addWidget(maskGroupBox, 3);  //*************main
+    // вертикальный шаблон для 2 масок и калькулятора и двух статус строк
+    QVBoxLayout *mask2andCalculatorLayout = new QVBoxLayout(centralWidget);  // правый вертикальный шаблон
+    mainHorzLayout->addLayout(mask2andCalculatorLayout, 2);  //*************main
+
+    plot = new QCustomPlot(maskGroupBox);
+//    QGridLayout *plotLayout = new QGridLayout(maskGroupBox);  // добавление плоттера
+    QVBoxLayout *plotLayout = new QVBoxLayout(maskGroupBox);
+    maskGroupBox->setLayout(plotLayout);
+
+    plotLayout->addWidget(plot, 10);
+    plot->setToolTip("Окно отображения результата\n"
+                     "арифметических операций с масками.\n"
+                     "Для масштабирования используйте\n"
+                     "перетаскивание мышью\n"
+                     "и колесо мыши");
+    plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    plot->addLayer("image");
+    image_pixmap = new QCPItemPixmap(plot);
+    image_pixmap->setVisible(true);
+    image_pixmap->setLayer("image");
+    image_pixmap->setScaled(true);
+
+    defaultRGB.fill(QColor(125,125,125,50));
+    setRGBtoPlot(defaultRGB);
+
+    QGridLayout *titleGrid = new QGridLayout(maskGroupBox);
+    plotLayout->addLayout(titleGrid, 3);
+    QLabel *titleLabel = new QLabel("Наименование", maskGroupBox);
+    QLabel *formulaLabel = new QLabel("Формула", maskGroupBox);
+    QTextEdit *formulaEdit = new QTextEdit("Формула", maskGroupBox);
+    QLineEdit *titleEdit = new QLineEdit("Наименование", maskGroupBox);
+    saveButton = createButton(tr("Сохранить"), tr("Сохранить в списке масок"), SLOT(plug()));
+
+    titleGrid->addWidget(saveButton, 0, 2);
+    titleGrid->addWidget(titleLabel, 0, 0);
+    titleGrid->addWidget(titleEdit, 0, 1);
+    titleGrid->addWidget(formulaLabel, 1, 0, Qt::AlignTop);
+    titleGrid->addWidget(formulaEdit, 1, 1);
+
+    titleGrid->setRowStretch(0,1);  titleGrid->setRowStretch(1,3);
+    titleGrid->setColumnStretch(0,25);
+    titleGrid->setColumnStretch(1,50);
+    titleGrid->setColumnStretch(2,20);
+
+    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Изображение"));
+    QHBoxLayout *calculatorLayout = new QHBoxLayout(calculatorGroupBox);
+    calculatorGroupBox->setLayout(calculatorLayout);
+
+    for(int i=0; i<2; i++) {
+        DropArea *da = createPixmapLabel();
+        da->title = createHeaderLabel(defTitleString);  // up\down preview
+        mask2andCalculatorLayout->addWidget(da->title, 1);
+        mask2andCalculatorLayout->addWidget(da, 15);
+        da->plot = plot;  da->image_pixmap = image_pixmap;
+        pixmapLabelsVector.append(da);
+
+        if (i == 0) mask2andCalculatorLayout->addWidget(calculatorGroupBox, 2);
+    }
+
+    QRadioButton *addition = new QRadioButton(tr("Добавление"));
+    QRadioButton *subtraction = new QRadioButton(tr("Вычитание"));
+    QRadioButton *clipping = new QRadioButton(tr("Отсечение"));
+
+    calculatorLayout->addWidget(addition, 1);
+    calculatorLayout->addWidget(subtraction, 1);
+    calculatorLayout->addWidget(clipping, 1);
+    calculatorLayout->addStretch(1);
+
+    addition->setChecked(true);
+
+
+    return;
+
+
+// размещение на форме интерфейсных элементов
+// порядок размещения - сверху вниз
+
+//    QWidget *centralWidget = new QWidget(this);
+//    setWidget(centralWidget);
+//    QHBoxLayout  *mainHorzLayout = new QHBoxLayout(centralWidget);  // главный горизонтальный шаблон
+//    QGroupBox *maskGroupBox = new QGroupBox(tr("Масочное изображение (просмотр или результат расчета)"));
     mainHorzLayout->addWidget(maskGroupBox, 50);
 // вертикальный шаблон для 4 масок и калькулятора и двух статус строк
     QVBoxLayout  *mask4andCalculatorLayout = new QVBoxLayout(centralWidget);  // правый вертикальный шаблон
     mainHorzLayout->addLayout(mask4andCalculatorLayout, 50);
 // левая часть верхнего шаблона
     plot = new QCustomPlot(maskGroupBox);
-    QGridLayout *plotLayout = new QGridLayout(maskGroupBox);  // добавление плоттера в шаблон
+//    QGridLayout *plotLayout = new QGridLayout(maskGroupBox);  // добавление плоттера
     plotLayout->addWidget(plot);
     plot->setToolTip("Окно отображения результата\n"
                      "арифметических операций с масками.\n"
@@ -121,26 +203,26 @@ void imageMask::setupUi()
     maskIconsLayout->setColumnStretch(0,50);    maskIconsLayout->setColumnStretch(1,50);
 
 // КАЛЬКУЛЯТОР
-    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Калькулятор"));
+//    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Калькулятор"));
 
     mask4andCalculatorLayout->addWidget(calculatorGroupBox,5);
 
-    QGridLayout *calculatorLayout = new QGridLayout(calculatorGroupBox);
-    additionButton = createButton(tr("+"), tr("1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"), SLOT(plug()));
-    calculatorLayout->addWidget(additionButton, 0, 0);
-    subtractionButton = createButton(tr("-"), tr("1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"), SLOT(plug()));
-    calculatorLayout->addWidget(subtractionButton, 0, 1);
-    cancelButton = createButton(tr("Сброс"), tr("Сброс всех операций\nДля нового расчета выполните:\n"
-                                                        "1. выберите маску\n"
-                                                        "2. нажмите кнопку операции\n"
-                                                        "3. выберите вторую маску"), SLOT(plug()));
-    calculatorLayout->addWidget(cancelButton, 1, 1);
-    saveButton = createButton(tr("Сохранить ..."), tr("Сохранить в списке масок ..."), SLOT(plug()));
-    calculatorLayout->addWidget(saveButton, 0, 2);
-    closeButton = createButton(tr("Закрыть"), tr("Закрыть окно"), SLOT(hide()));  // HIDE
-    calculatorLayout->addWidget(closeButton, 1, 3);
-    clearButton = createButton(tr("Очистить"), tr("Очистить окно маска-результат\nи иконки изображений-масок"), SLOT(plug()));
-    calculatorLayout->addWidget(clearButton, 0, 3);
+//    QGridLayout *calculatorLayout = new QGridLayout(calculatorGroupBox);
+//    additionButton = createButton(tr("+"), tr("1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"), SLOT(plug()));
+//    calculatorLayout->addWidget(additionButton, 0, 0);
+//    subtractionButton = createButton(tr("-"), tr("1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"), SLOT(plug()));
+//    calculatorLayout->addWidget(subtractionButton, 0, 1);
+//    cancelButton = createButton(tr("Сброс"), tr("Сброс всех операций\nДля нового расчета выполните:\n"
+//                                                        "1. выберите маску\n"
+//                                                        "2. нажмите кнопку операции\n"
+//                                                        "3. выберите вторую маску"), SLOT(plug()));
+//    calculatorLayout->addWidget(cancelButton, 1, 1);
+//    saveButton = createButton(tr("Сохранить ..."), tr("Сохранить в списке масок ..."), SLOT(plug()));
+//    calculatorLayout->addWidget(saveButton, 0, 2);
+//    closeButton = createButton(tr("Закрыть"), tr("Закрыть окно"), SLOT(hide()));  // HIDE
+//    calculatorLayout->addWidget(closeButton, 1, 3);
+//    clearButton = createButton(tr("Очистить"), tr("Очистить окно маска-результат\nи иконки изображений-масок"), SLOT(plug()));
+//    calculatorLayout->addWidget(clearButton, 0, 3);
 
     formulaLabel->setText("Формуля операции по форме $наименование 1$ + $наименование 2$");
     mask4andCalculatorLayout->addWidget(formulaLabel,1);
@@ -148,10 +230,10 @@ void imageMask::setupUi()
     mask4andCalculatorLayout->addWidget(showModeLabel,1);
 
 // CONNECTIONS
-    connect(clearButton, &Button::pressed, this, &imageMask::clear);
-    connect(additionButton, &Button::pressed, this, &imageMask::addition);
-    connect(subtractionButton, &Button::pressed, this, &imageMask::subtraction);
-    connect(cancelButton, &Button::pressed, this, &imageMask::cancel);
+//    connect(clearButton, &Button::pressed, this, &imageMask::clear);
+//    connect(additionButton, &Button::pressed, this, &imageMask::addition);
+//    connect(subtractionButton, &Button::pressed, this, &imageMask::subtraction);
+//    connect(cancelButton, &Button::pressed, this, &imageMask::cancel);
 }
 
 bool imageMask::eventFilter(QObject *object, QEvent *event)
@@ -179,6 +261,18 @@ void imageMask::setDefaultRGB()
     plot->yAxis->setRange(0,defaultRGB.height());
 
     image_pixmap->setPixmap(defaultRGB);
+    plot->replot();
+}
+
+void imageMask::setRGBtoPlot(QPixmap &pixmap)
+{
+    image_pixmap->topLeft->setCoords(0,pixmap.height());
+    image_pixmap->bottomRight->setCoords(pixmap.width(),0);
+
+    plot->xAxis->setRange(0,pixmap.width());
+    plot->yAxis->setRange(0,pixmap.height());
+
+    image_pixmap->setPixmap(pixmap);
     plot->replot();
 }
 
