@@ -4,7 +4,7 @@ imageMask::imageMask(QWidget *parent)
     : QDockWidget(parent)
 {
     setupUi();
-    move(750,200); resize(900,480);
+    move(750,200); resize(900,600);
     installEventFilter(this);
 }
 
@@ -102,24 +102,26 @@ void imageMask::setupUi()
 
     QGridLayout *titleGrid = new QGridLayout(maskGroupBox);
     plotLayout->addLayout(titleGrid, 3);
-    QLabel *titleLabel = new QLabel("Наименование", maskGroupBox);
-    QLabel *formulaLabel = new QLabel("Формула", maskGroupBox);
-    QTextEdit *formulaEdit = new QTextEdit("Формула", maskGroupBox);
-    QLineEdit *titleEdit = new QLineEdit("Наименование", maskGroupBox);
+    titleLabel = new QLabel("Наименование", maskGroupBox);
+    formulaLabel = new QLabel("Формула", maskGroupBox);
+    formulaEdit = new QTextEdit("Формула", maskGroupBox);
+    formulaEdit->setReadOnly(true);
+    titleEdit = new QLineEdit("Наименование", maskGroupBox);
     saveButton = createButton(tr("Сохранить"), tr("Сохранить в списке масок"), SLOT(plug()));
+    clearButton = createButton(tr("Очистить"), tr("Очистить изображение\nи иконки изображений-масок"), SLOT(plug()));
 
-    titleGrid->addWidget(saveButton, 0, 2);
+    titleGrid->addWidget(saveButton, 0, 2);  titleGrid->addWidget(clearButton, 1, 2, Qt::AlignTop);
     titleGrid->addWidget(titleLabel, 0, 0);
     titleGrid->addWidget(titleEdit, 0, 1);
     titleGrid->addWidget(formulaLabel, 1, 0, Qt::AlignTop);
     titleGrid->addWidget(formulaEdit, 1, 1);
 
-    titleGrid->setRowStretch(0,1);  titleGrid->setRowStretch(1,3);
-    titleGrid->setColumnStretch(0,25);
-    titleGrid->setColumnStretch(1,50);
-    titleGrid->setColumnStretch(2,20);
+    titleGrid->setRowStretch(0,3);  titleGrid->setRowStretch(1,5);
+    titleGrid->setColumnStretch(0,15);
+    titleGrid->setColumnStretch(1,45);
+    titleGrid->setColumnStretch(2,15);
 
-    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Изображение"));
+    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Калькулятор"));
     QHBoxLayout *calculatorLayout = new QHBoxLayout(calculatorGroupBox);
     calculatorGroupBox->setLayout(calculatorLayout);
 
@@ -134,9 +136,15 @@ void imageMask::setupUi()
         if (i == 0) mask2andCalculatorLayout->addWidget(calculatorGroupBox, 2);
     }
 
-    QRadioButton *addition = new QRadioButton(tr("Добавление"));
-    QRadioButton *subtraction = new QRadioButton(tr("Вычитание"));
-    QRadioButton *clipping = new QRadioButton(tr("Отсечение"));
+    addition = new QRadioButton(tr("Добавление"));
+    addition->setToolTip(tr("1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"));
+    subtraction = new QRadioButton(tr("Вычитание"));
+    subtraction->setToolTip(tr("1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"));
+    clipping = new QRadioButton(tr("Отсечение"));
+
+    calculationButtons.append(addition);addition->installEventFilter(this);
+    calculationButtons.append(subtraction);subtraction->installEventFilter(this);
+    calculationButtons.append(clipping);clipping->installEventFilter(this);
 
     calculatorLayout->addWidget(addition, 1);
     calculatorLayout->addWidget(subtraction, 1);
@@ -247,8 +255,21 @@ bool imageMask::eventFilter(QObject *object, QEvent *event)
             show_mode = 0; updatePreviewImage(); return true; }  // ' X '-RGB
         if( key->key() == Qt::Key_C ) {
             show_mode = 1; updatePreviewImage(); return true; }  // C
-
     }  // KeyPress
+    if (event->type() == QEvent::MouseButtonPress) {
+        if (object == addition) {
+            cm = calcMode::cmAdd;
+            titleEdit->setText("add");
+        }
+        if (object == subtraction) {
+            cm = calcMode::cmSubt;
+            titleEdit->setText("subtraction");
+        }
+        if (object == clipping) {
+            cm = calcMode::cmClip;
+            titleEdit->setText("clipping");
+        }
+    }  // MouseButtonPress
     return QDockWidget::eventFilter(object, event);
 }
 
@@ -300,20 +321,6 @@ void imageMask:: clear()
 {
     foreach(DropArea *da, pixmapLabelsVector) da->setNum(-1);
     setDefaultRGB();
-}
-
-void imageMask::addition()
-{
-    im = imageMask::imAddition;
-    setButtonsEnabled(false);
-    formulaLabel->setText(result.title + " + ");
-}
-
-void imageMask::subtraction()
-{
-    im = imageMask::imSubtraction;
-    setButtonsEnabled(false);
-    formulaLabel->setText(result.title + " - ");
 }
 
 void imageMask::cancel()

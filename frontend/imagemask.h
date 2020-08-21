@@ -72,6 +72,8 @@ private:
     inputMode im = imageMask::imNone;
     int show_mode = 1;  // 1 - mask 0 - RGB
     int current_num = -1;
+    enum calcMode { cmAdd, cmSubt, cmClip };
+    calcMode cm = calcMode::cmAdd;
 
     void setupUi();
     bool eventFilter(QObject *object, QEvent *event);
@@ -90,7 +92,6 @@ private:
     QString getResultShowModesString();
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
     QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
-    QLabel *formulaLabel = new QLabel;
     QLabel *showModeLabel = new QLabel;
     Button *createButton(const QString &text, const QString &tooltip, const char *member);
     QLabel *createHeaderLabel(const QString &text);
@@ -98,6 +99,7 @@ private:
     enum { mask_row_count = 2, mask_col_count = 2 };
     DropArea *pixmapLabels[mask_col_count][mask_row_count];
     QVector<DropArea *> pixmapLabelsVector;
+    QVector<QRadioButton *> calculationButtons;
 
     QString defTitleString = QString("Наименование");
     double rotation = .0;
@@ -116,12 +118,17 @@ private:
     Button *saveButton;
     Button *closeButton;
     Button *clearButton;
+    QRadioButton *addition;
+    QRadioButton *subtraction;
+    QRadioButton *clipping;
+    QLabel *titleLabel;
+    QLabel *formulaLabel;
+    QTextEdit *formulaEdit;
+    QLineEdit *titleEdit;
 private slots:
     void plug();  // заглушка
     void maskModify(int num);
     void clear();
-    void addition();
-    void subtraction();
     void cancel();
 };
 
