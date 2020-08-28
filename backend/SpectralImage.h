@@ -43,7 +43,7 @@ namespace J09 {
       bool load_resent_project = true;  // при запуске загружать последний проект
       bool save_project_settings = false;  // сохранять настройки проекта
       bool restore_project_settings = false;  // восстанавливать настройки проекта
-      int resent_files_count = 3;  // количество последних файлов
+      int resent_files_count = 3;  // &&& количество последних файлов
       bool save_not_checked_roi = true;  // сохранять в настройках неотмеченные области интереса
       int zobject_dock_size_w = 450;  // размеры окна профиля, пиксели
       int zobject_dock_size_h = 150;  // размеры окна профиля, пиксели
@@ -81,11 +81,15 @@ public:
   enum dataType { dtBase, dtRGB, dtFX10e };
   dataType datatype = dataType::dtBase;
   QString get_file_name() { return fname; }
+  void save_icon_to_file(QPixmap &pixmap, QSize &size);
+
   QVector<QVector<QVector<double> > >* get_raster() { return &img; }
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
   double getBrightness(uint32_t num) { return indexBrightness.at(num); }
   QString get_y_axis_title_for_plot(bool short_title);  // наименование единиц измерения
+  QString mainIconFileName = "/main.png";
+
 public slots:
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
@@ -158,6 +162,7 @@ public:
   QImage get_mask_image(int num);
   QImage get_mask_image(J09::maskRecordType &msk);
   int getMasksCount() { return masks.count(); }
+  void deleteAllMasks();
 
 signals:
 

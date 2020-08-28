@@ -125,6 +125,18 @@ QString ImageHandler::getHDRfileNameConvertedFromJPG(QString jpg_name)
     return hdrFileName;
 }
 
+QIcon ImageHandler::load_icon_from_file(QString &fname, double rotation)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(fname);
+    QString icon_fname = writableLocation + "/" + info.completeBaseName() + mainIconFileName;
+    QPixmap pixmap(64,64);  pixmap.fill(Qt::white);
+    if (QFile(icon_fname).exists()) pixmap.load(icon_fname);
+    QMatrix rm;    rm.rotate(rotation);
+    return QIcon(pixmap.transformed(rm));
+}
+
+
 void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 {
     QImage image(jpg_name);
@@ -238,6 +250,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   w = hdr.value("samples").toUInt();
   emit numbands_obtained(d);
   SpectralImage* image = new SpectralImage();
+  image->mainIconFileName = mainIconFileName;
   image->fname = fname;
   image->set_image_size(d, h, w);
   uint32_t offset = hdr.value("header offset").toUInt();

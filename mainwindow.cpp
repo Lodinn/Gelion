@@ -19,6 +19,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
+//    this->setIconSize(tb_def_size);
+
   setWindowTitle(QString("%1").arg(appName));
   QApplication::setApplicationName(appName);
 
@@ -153,6 +155,7 @@ void MainWindow::SetupUi() {
   createStatusBar();
   createConstDockWidgets();
   createMainConnections();
+  createResentFilesList();
 
 }
 
@@ -173,7 +176,7 @@ void MainWindow::createActions() {
   addSeparatorRecentFile = fileMenu->addSeparator();  // для дальнейшей вставки списка файлов
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
-  fileToolBar = addToolBar(tr("Файл"));  fileToolBar->setObjectName("fileToolBar");
+  fileToolBar = addToolBar(fileMenu->title());  fileToolBar->setObjectName("fileToolBar");fileToolBar->setIconSize(tb_def_size);
   fileToolBar->addAction(view->openAct);
   fileToolBar->addAction(view->localFolderAct);
   fileToolBar->addAction(view->saveAct);                        // main save
@@ -189,7 +192,7 @@ void MainWindow::createActions() {
   itemsMenu->addAction(view->polygonAct); itemsToolBar->addAction(view->polygonAct);
 // &&&index
     QMenu *indexMenu = menuBar()->addMenu(tr("&Индексы"));
-    QToolBar *indexToolBar = addToolBar(tr("Индексы"));
+    QToolBar *indexToolBar = addToolBar(indexMenu->title());indexToolBar->setIconSize(tb_def_size);
     indexToolBar->setObjectName("indexToolBar");
     const QIcon indexIcon =
         QIcon::fromTheme("Добавить индексное изображение", QIcon(":/icons/MapleLeaf.png"));
@@ -197,9 +200,6 @@ void MainWindow::createActions() {
     indexMenu->addAction(indexAct);   indexToolBar->addAction(indexAct);
     connect(indexAct, SIGNAL(triggered()), this, SLOT(inputIndexDlgShow()));
 
-//    indexActExt = new QAction(indexIcon, tr("&Быстрый расчет индекса"), this);
-//    indexMenu->addAction(indexActExt);
-//    indexToolBar->addAction(indexActExt);
     index_quick_menu = new QMenu(tr("&Быстрый выбор индекса"), this);
     index_quick_menu->setIcon(indexIcon);
 
@@ -228,7 +228,7 @@ void MainWindow::createActions() {
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
   QToolBar *winToolBar = addToolBar(winMenu->title());
-  winToolBar->setObjectName("winToolBar");
+  winToolBar->setObjectName("winToolBar");winToolBar->setIconSize(tb_def_size);
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
   winMenu->addAction(view->indexListAct);   winToolBar->addAction(view->indexListAct);
   winMenu->addAction(view->channelListAct);   winToolBar->addAction(view->channelListAct);
@@ -239,7 +239,7 @@ void MainWindow::createActions() {
 // &&& settings
   QMenu *settingsMenu = menuBar()->addMenu("&Настройки");
   QToolBar *settingsToolBar = addToolBar(settingsMenu->title());
-  settingsToolBar->setObjectName("settingsToolBar");
+  settingsToolBar->setObjectName("settingsToolBar");winToolBar->setIconSize(tb_def_size);
   slider = new QSlider(Qt::Horizontal);
   slider->setToolTip("Яркость");
   slider->setMaximum(100);  slider->setFixedSize(150,12);
@@ -312,6 +312,36 @@ void MainWindow::createMainConnections()
 
 }
 
+void MainWindow::createResentFilesList()
+{
+    QString fname = getMainSettingsFileName();
+    QSettings settings( fname , QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+    settings.beginGroup( "Resent files" );
+    const QStringList childKeys = settings.childKeys();
+
+    recentFileNames.clear();
+    view->resentFilesActions.clear();
+    foreach (const QString &childKey, childKeys) {
+        QString fname = settings.value(childKey).toString();
+        QFileInfo info(fname);
+        QIcon icon = im_handler->load_icon_from_file(fname, GLOBAL_SETTINGS.main_rgb_rotate_start);
+        QAction *recentAct = new QAction(this);
+        recentAct->setText(info.fileName());
+        recentAct->setData(fname);
+        recentAct->setIcon(icon);
+        fileToolBar->addAction(recentAct);
+        connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
+        recentFileNames.append(fname);
+        fileMenu->insertAction(addSeparatorRecentFile, recentAct);
+        view->resentFilesActions.append(recentAct);
+    }
+
+    settings.endGroup();
+
+}
+
 void MainWindow::spectralUpdateExt(zGraph *item)
 {
     if (item != nullptr) item->data_file_name = dataFileName;
@@ -319,21 +349,6 @@ void MainWindow::spectralUpdateExt(zGraph *item)
     auto zz_list = view->getZGraphItemsList();
 
     imgSpectral->updateDataExt(dataFileName, zz_list, item);
-
-//    if (item == nullptr) {
-//        imgSpectral->updateData(dataFileName, zz_list, true);  // обновление всех профилей
-//        imgSpectral->update();
-//        return;
-//    }  // if
-
-//    QList<zGraph *> z_list;  foreach(zGraph *z, zz_list) if (z->isVisible()) z_list.append(z);
-//    int num = 0;
-//    foreach(zGraph *z, z_list) {
-//        if (!z->isVisible()) continue;
-//        if (z == item) { num = z_list.indexOf(z); break; }
-//    }  // if
-//    if (num == -1) return;
-//    imgSpectral->updateDataOneProfile(item);
 
 }
 
@@ -412,6 +427,7 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/delete-32.png"), "Удалить индексное изображение", this);
     action->setData(0);  show_index_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_index_list()));
+
 // Список Каналов
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(chListWidget, SIGNAL(customContextMenuRequested(QPoint)),
@@ -428,6 +444,12 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/all_channels.png"), "Отображать все каналы", this);
     action->setData(1);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+
+    createContextAction(QIcon(":/icons/ok.png"), "Выделить все каналы", 11,  // check all
+                        show_channel_list_acts, SLOT(show_channel_list()));
+    createContextAction(QIcon(":/icons/unchecked-checkbox.png"), "Снять выделение со всех каналов", 12,  // uncheck all
+                        show_channel_list_acts, SLOT(show_channel_list()));
+
     action = new QAction(QIcon(":/icons/step2_channels.png"), "Отображать каналы с шагом 2", this);
     action->setData(2);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
@@ -437,6 +459,15 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/step10_channels.png"), "Отображать каналы с шагом 10", this);
     action->setData(10);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
+
+    createContextAction(QIcon(":/icons/ok.png"), "Отображать только выделенные каналы", 14,  // check only show
+                        show_channel_list_acts, SLOT(show_channel_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_channel_list_acts.append(action);
+    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные каналы в файлы ...", 15,  // save checked pdf
+                        show_channel_list_acts, SLOT(show_channel_list()));
+    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные каналы в Excel *.csv файлы ...", 16,  // save checked csv
+                        show_channel_list_acts, SLOT(show_channel_list()));
+
 
 // СПЕКТРАЛЬНЫЙ АНАЛИЗ
     imgSpectral->hide();
@@ -456,26 +487,37 @@ void MainWindow::createConstDockWidgets()
     dockMaskImage->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(dockMaskImage, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenuMaskImagList(QPoint)));
-    createContextAction(QIcon(":/icons/puzzle4.png"), "Загрузить 4 выделенные маски в калькулятор", 1,
+    createContextAction(QIcon(":/icons/puzzle.png"), "Загрузить 2 выделенные маски в калькулятор", 3,
                         show_mask_list_acts, SLOT(show_mask_list()));
-    createContextAction(QIcon(":/icons/puzzle4.png"), "сохранить в файл", 2,  // test
+    createContextAction(QIcon(":/icons/ok.png"), "Выделить все маски", 1,  // check all
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/unchecked-checkbox.png"), "Снять выделение со всех масок", 2,  // uncheck all
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить все маски", 8,  // delete all
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_mask_list_acts.append(action);
+    createContextAction(QIcon(":/icons/theater.png"), "Сохранить выделенные изображения маски (*.msk) ...", 4,  // save checked
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/theater.png"), "Загрузить изображения маски (*.msk) ...", 5,  // load checked
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные изображения в файлы ...", 6,  // save checked pdf
+                        show_mask_list_acts, SLOT(show_mask_list()));
+    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные изображения в Excel *.csv файлы ...", 7,  // save checked csv
                         show_mask_list_acts, SLOT(show_mask_list()));
 
-    dockMaskImage->resize(420,scrHeignt4);
+
+    dockMaskImage->resize(420,scrHeignt4+18);
     dockMaskImage->setWidget(maskListWidget);
     dockMaskImage->move(rec.width() - 250 - 200,upperIndent+3*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
+
+    connect(maskListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedMaskList(QListWidgetItem*)));
     connect(dockMaskImage->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 
 // КАЛЬКУЛЯТОР МАСОЧНЫХ ИЗОБРАЖЕНИЙ
     imgMasks->hide();
     imgMasks->gsettings = &GLOBAL_SETTINGS;
     imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
-
-//    QListWidgetItem *item = imgMasks->createMaskWidgetItem(QString("calculator"),QString("e=mc2"),QIcon(":/icons/calculator.png"));
-//    maskListWidget->addItem(item);
-//    item = imgMasks->createMaskWidgetItem(QString("puzzle4"),QString("e=mc2"),QIcon(":/icons/puzzle4.png"));
-//    maskListWidget->addItem(item);
 
 }
 
@@ -751,10 +793,6 @@ void MainWindow::add_envi_hdr_pixmap() {
   set_action_enabled(true);
   QApplication::processEvents();
 
-  imgMasks->loadMasksFromFile(dataFileName);
-  imgMasks->updateMaskListWidget();
-  maskAct->setEnabled(true);  maskAct->setChecked(false);
-
 }
 
 void MainWindow::updateNewDataSet(bool index_update)
@@ -930,6 +968,8 @@ void MainWindow::createDockWidgetForChannels()
     auto wavelengths = im_handler->current_image()->wls();
     foreach(QString str, strlist) {
         QListWidgetItem *lwItem = new QListWidgetItem();
+        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+        lwItem->setCheckState(Qt::Unchecked);
         lwItem->setText(str);
         chListWidget->addItem(lwItem);
         int lwnum = strlist.indexOf(str);
@@ -971,6 +1011,8 @@ void MainWindow::restoreIndexListWidget() {
     for (int i = 0; i < count; i++) {
         im_handler->current_image()->set_current_slice(depth + i);
         QListWidgetItem *lwItem = new QListWidgetItem();
+        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+        lwItem->setCheckState(Qt::Unchecked);
         indexListWidget->addItem(lwItem);
         lwItem->setIcon(QIcon(":/icons/palette.png"));
         QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
@@ -987,6 +1029,8 @@ void MainWindow::createDockWidgetForIndexes()
     if (indexListWidget->count() == 0) {
         create_default_RGB_image();
         QListWidgetItem *lwItem = new QListWidgetItem();
+        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+        lwItem->setCheckState(Qt::Unchecked);
         indexListWidget->addItem(lwItem);
         lwItem->setIcon(QIcon(":/icons/palette.png"));
         QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
@@ -1054,7 +1098,6 @@ void MainWindow::loadMainSettings()
     QString fname = getMainSettingsFileName();
     if (!QFile::exists(fname)) {
         QFileInfo info(fname);
-//        QFile::copy("../BPLA/configuration/" + info.completeBaseName() + ".conf", fname);
         QFile::copy(QCoreApplication::applicationDirPath () + "/configuration/" + info.completeBaseName() + ".conf", fname);
     }  // if exists
 
@@ -1119,6 +1162,18 @@ void MainWindow::saveMainSettings()
     foreach(J09::indexType item, indexList) settings.setValue( item.name, item.formula );
     settings.endGroup();
 
+    // recent files
+    settings.remove("Resent files");
+    settings.beginGroup( "Resent files" );
+    int count = 1;
+    for(int i=0; i<recentFileNames.count(); i++) {
+        if (count > GLOBAL_SETTINGS.resent_files_count) break;
+        QString key(QString("file%1").arg(count));
+        settings.setValue( key , recentFileNames[i] );
+        count++;
+    }
+    settings.endGroup();
+
 }
 
 QString MainWindow::getMainSettingsFileName()
@@ -1140,6 +1195,8 @@ void MainWindow::restoreSettingsVersionOne(QSettings *settings)
         chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
     }  else {
         QListWidgetItem *lwItem = indexListWidget->item(view->GlobalChannelNum - depth);
+        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+        lwItem->setCheckState(Qt::Unchecked);
         itemClickedIndexList(lwItem);
         indexListWidget->setCurrentItem(lwItem);  indexListWidget->scrollToItem(lwItem);
     }  // if
@@ -1389,6 +1446,10 @@ void MainWindow::restoreSettingsVersionTwo(QSettings *settings)
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 {
     indexListWidget->currentItem()->setSelected(false);  // конкурент
+    QListWidgetItem *mlw = maskListWidget->currentItem();
+    if(mlw) mlw->setSelected(false);  // конкурент
+
+    view->GlobalViewMode = 0;
     int num = chListWidget->row(lwItem);
     view->GlobalChannelNum = num;
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
@@ -1400,6 +1461,10 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 {
     chListWidget->currentItem()->setSelected(false);  // конкурент
+    QListWidgetItem *mlw = maskListWidget->currentItem();
+    if(mlw) mlw->setSelected(false);  // конкурент
+
+    view->GlobalViewMode = 0;
     int num = indexListWidget->row(lwItem);
     uint32_t depth = im_handler->current_image()->get_bands_count();
     view->GlobalChannelNum = num + depth;
@@ -1408,6 +1473,16 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
     set_abstract_index_pixmap();
     if (num==0) {imgHistogram->hide(); histogramAct->setEnabled(false); }
     else { updateHistogram(); histogramAct->setEnabled(true); }
+}
+
+void MainWindow::itemClickedMaskList(QListWidgetItem *lwItem)
+{
+    chListWidget->currentItem()->setSelected(false);  // конкурент
+    indexListWidget->currentItem()->setSelected(false);  // конкурент
+    view->GlobalViewMode = 1;
+    int num = maskListWidget->row(lwItem);
+    view->GlobalChannelNum = -1;  view->GlobalMaskNum = num;
+    set_abstract_mask_pixmap();
 }
 
 void MainWindow::addRecentFile()
@@ -1419,10 +1494,13 @@ void MainWindow::addRecentFile()
     recentAct->setText(info.fileName());
     recentAct->setData(fname);
     recentAct->setIcon(QIcon(view->mainPixmap->pixmap()));
+    QPixmap pxmap = view->mainPixmap->pixmap();
+    im_handler->current_image()->save_icon_to_file(pxmap, tb_def_size);
     fileToolBar->addAction(recentAct);
     connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
     recentFileNames.append(dataFileName);
     fileMenu->insertAction(addSeparatorRecentFile, recentAct);
+    view->resentFilesActions.append(recentAct);
 }
 
 void MainWindow::saveGLOBALSettings()
@@ -1470,7 +1548,7 @@ void MainWindow::showContextMenuChannelList(const QPoint &pos)
     QMenu menu(this);
     for (int i = 0; i < show_channel_list_acts.count(); i++) {
         menu.addAction(show_channel_list_acts[i]);
-        if (i == 0 ) menu.addSeparator();
+        if (i == 2 ) menu.addSeparator();
     }  // for
     menu.exec(globalPos);
 }
@@ -1513,12 +1591,73 @@ void MainWindow::show_mask_list()
     if (action) {
         int num = action->data().toInt();
         switch (num) {
-        case 1 :     // Загрузить 4 выделенные маски в калькулятор
-            imgMasks->set4MasksToForm();
+        case 1 : for (int row = 0; row < maskListWidget->count(); row++)
+                maskListWidget->item(row)->setCheckState(Qt::Checked);
             break;
-        case 2 :     // test
-            imgMasks->saveMasksToFile(dataFileName);
+        case 2 : for (int row = 0; row < maskListWidget->count(); row++)
+                maskListWidget->item(row)->setCheckState(Qt::Unchecked);
             break;
+        case 3 : { int count = imgMasks->set2MasksToForm();    // Загрузить 2 выделенные маски в калькулятор
+            if (count > 0) imgMasks->show();
+            break; }
+        case 4 : {                                              // Сохранить выделенные изображения маски (*.msk)
+            auto proj_path = getDataSetPath();
+            QString fname = QFileDialog::getSaveFileName(
+                        this, tr("Сохранить выделенные изображения маски"), proj_path,
+                        tr("Файлы изображений масок (*.msk);;Файлы изображений масок (*.msk)"));
+            if (fname.isEmpty()) return;
+            imgMasks->saveMasksToFile(fname, maskListWidget);
+            break; }
+        case 5 : {                                              // Загрузить изображения маски (*.msk)
+            auto proj_path = getDataSetPath();
+            if (proj_path.isEmpty()) {
+                QMessageBox msgBox;
+                msgBox.setWindowIcon(icon256);
+                msgBox.setWindowTitle("Ошибка");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(" Нет загруженного проекта !");
+                msgBox.exec();
+                return;
+            }
+            QFileDialog fd;
+            fd.move(dockMaskImage->pos() + QPoint(-fd.width(),dockMaskImage->height()));
+            QString fname = fd.getOpenFileName(
+                this, tr("Загрузка изображений масок"), proj_path,
+                tr("Файлы изображений масок (*.msk);;Файлы изображений масок (*.msk)"));
+            if (fname.isEmpty()) return;
+            imgMasks->loadMasksFromFile(fname);
+            imgMasks->updateMaskListWidget();
+            maskAct->setEnabled(true);  maskAct->setChecked(true);
+            imgMasks->show();
+            break; }
+        case 8 : {                                              // Удалить все маски
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Удаление всех масок");
+            msgBox.setText("Вы подтверждаете удаление всех масок ?\nВосстановить удаление будет невозможно !");
+            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            msgBox.buttons().at(0)->setText("Да");
+            msgBox.buttons().at(1)->setText("Отмена");
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setWindowIcon(icon256);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
+            QPoint pos = dockMaskImage->pos(); QPoint mv(-300,0); msgBox.move(pos + mv);
+
+            int res = msgBox.exec();
+            if (res == QMessageBox::Ok) {   // нажата кнопка Да
+                imgMasks->clearForAllObjects();
+                maskAct->setChecked(false); maskAct->setEnabled(false);
+// режим отображения устанавливаем в RGB
+                view->GlobalViewMode = 0;
+                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+            //----------------------------------------------------------------
+                set_abstract_index_pixmap();
+                imgHistogram->hide(); histogramAct->setEnabled(false);
+                chListWidget->currentItem()->setSelected(false);  // конкурент
+                indexListWidget->setCurrentRow(0);
+                indexListWidget->currentItem()->setSelected(true);  // RGB
+            }  // if QMessageBox::Ok
+            break; }
         }
     }
 }
@@ -1567,12 +1706,38 @@ void MainWindow::show_channel_list_update() {
     }  // for
 }
 
+void MainWindow::show_channel_list_special_update(int t) {
+    switch (t) {
+    case 1 : for (int row = 0; row < chListWidget->count(); row++)
+            chListWidget->item(row)->setCheckState(Qt::Checked);
+        break;
+    case 2 : for (int row = 0; row < chListWidget->count(); row++)
+            chListWidget->item(row)->setCheckState(Qt::Unchecked);
+        break;
+    case 3 : for (int row = 0; row < chListWidget->count(); row++)
+            if (chListWidget->item(row)->checkState() == Qt::Checked)
+                chListWidget->item(row)->setHidden(false);
+            else
+                chListWidget->item(row)->setHidden(true);
+        break;
+    }
+
+}
+
 void MainWindow::show_channel_list()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         view->GlobalChannelStep = action->data().toInt();
-        show_channel_list_update();
+        switch (view->GlobalChannelStep) {
+        case 1 :
+        case 2 :
+        case 5 :
+        case 10 : show_channel_list_update(); break;
+        case 11 : show_channel_list_special_update(1); break;
+        case 12 : show_channel_list_special_update(2); break;
+        case 14 : show_channel_list_special_update(3); break;
+        }
     }  // if
 }
 
@@ -1665,7 +1830,6 @@ void MainWindow::show_zgraph_list()
                 tr("Файлы областей интереса (*.roi);;Файлы областей интереса (*.roi)"));
             if (fname.isEmpty()) return;
 
-//            QSettings settings( fname, QSettings::IniFormat );
             QSettings *settings = new QSettings( fname, QSettings::IniFormat );
             QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
             settings->setIniCodec( codec );
@@ -1851,7 +2015,9 @@ void MainWindow::add_index_pixmap(int num)
     im_handler->current_image()->histogram[view->GlobalChannelNum-1]
             .rotation = GLOBAL_SETTINGS.main_rgb_rotate_start;
 // &&& sochi 2020
-            QListWidgetItem *lwItem = new QListWidgetItem();
+    QListWidgetItem *lwItem = new QListWidgetItem();
+    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+    lwItem->setCheckState(Qt::Unchecked);
     indexListWidget->addItem(lwItem);
     lwItem->setIcon(QIcon(":/icons/palette.png"));
     QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
@@ -1880,6 +2046,14 @@ void MainWindow::set_abstract_index_pixmap()
     im_handler->set_brightness_to_slider(slider, brightness);
     QImage img = im_handler->get_REAL_current_image();
     QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm);
+}
+
+void MainWindow::set_abstract_mask_pixmap()
+{
+    im_handler->current_image()->setCurrentMaskIndex(view->GlobalMaskNum);
+    J09::maskRecordType *am = im_handler->current_image()->getCurrentMask();
+    QPixmap pxm = QPixmap::fromImage(am->img);
     view->mainPixmap->setPixmap(pxm);
 }
 

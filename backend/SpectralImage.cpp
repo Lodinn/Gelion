@@ -6,9 +6,21 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QtMath>
+#include <QPixmap>
+#include <QIcon>
 
 SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
     //    img.clear();
+}
+
+void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize &size)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString icon_fname = writableLocation + "/" + info.completeBaseName() + mainIconFileName;
+    if (QFile(icon_fname).exists()) return;
+    QPixmap small_pixmap = pixmap.scaled(size);
+    small_pixmap.save(icon_fname);
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
@@ -558,4 +570,10 @@ QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
             }  // for
 
         return mask_img;
+}
+
+void SpectralImage::deleteAllMasks()
+{
+    foreach(J09::maskRecordType *m, masks) delete m;
+    masks.clear();
 }

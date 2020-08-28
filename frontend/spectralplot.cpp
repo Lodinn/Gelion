@@ -735,8 +735,8 @@ void SpectralPlot::DisplayCurveData(QMouseEvent *event, QCustomPlot *curPlot, QS
         if (plottable->name().indexOf(devLowerUniqueStr) != -1) return;
         if (plottable->name().indexOf(devUpperUniqueStr) != -1) return;
 
-        double x = curPlot->xAxis->pixelToCoord(event->localPos().x());
-        double y = curPlot->yAxis->pixelToCoord(event->localPos().y());
+//        double x = curPlot->xAxis->pixelToCoord(event->localPos().x());
+//        double y = curPlot->yAxis->pixelToCoord(event->localPos().y());
 
         QCPGraph *graph =  qobject_cast<QCPGraph*>(plottable);
 

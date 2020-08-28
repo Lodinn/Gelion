@@ -27,8 +27,9 @@ public:
     QCPItemPixmap *image_pixmap;
     QPixmap pixmap;
     QVector<QVector<int8_t> > *result;  // ссылка на массив для хранения результатов операций
-    void setNum(int n);
-    int getNum() { return num; }
+    void setNumA(int n);
+    int getNumA() { return num; }
+    bool isEmptyA() { return empty; }
     double rotation = .0;
 public slots:
     void clear(bool full);
@@ -47,7 +48,7 @@ protected:
 // после завершения действия перетаскивания.
 private:
    bool empty = true;
-   int num;
+   int num = -1;
    QString defTitleString = QString("Наименование");
 signals:
    void exec(int num);
@@ -60,12 +61,13 @@ public:
     imageMask(QWidget * parent = nullptr);
     void setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih);
     QListWidgetItem *createMaskWidgetItem(J09::maskRecordType *am, QImage &img);
-    void set4MasksToForm();
+    int set2MasksToForm();
     J09::globalSettingsType *gsettings;
-    void saveMasksToFile(QString data_file_name);
-    void loadMasksFromFile(QString data_file_name);
+    void saveMasksToFile(QString fname, QListWidget *mlw);
+    void loadMasksFromFile(QString fname);
     void updateMaskListWidget();
     void setPreviewPixmap(QPixmap &mainRGB);
+    void clearForAllObjects();
 private:
     QString defMaskFileDataName = "masks.dat";
     enum inputMode { imNone, imAddition, imSubtraction };
@@ -82,10 +84,10 @@ private:
     QPixmap *previewRGB;
     QListWidget *maskListWidget = nullptr;
     ImageHandler *imgHand = nullptr;
-    QSize defaultIconSize = QSize(32+64,32+64);
+    QSize defaultIconSize = QSize(32+64+16,32+64+16);
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
-    void setRGBtoPlot(QPixmap &pixmap);
+    void setPixmapToPlot(QPixmap &pixmap);
     void updatePreviewImage();
     J09::maskRecordType result;  // массив для хранения результатов операций
 
@@ -125,11 +127,21 @@ private:
     QLabel *formulaLabel;
     QTextEdit *formulaEdit;
     QLineEdit *titleEdit;
+    QLabel *infoLabel;
+    QGroupBox *maskGroupBox;
+    QGroupBox *calculatorGroupBox;
 private slots:
-    void plug();  // заглушка
-    void maskModify(int num);
+//    void plug();  // заглушка
+//    void maskModify(int num);
+
+//    void cancel();
+    void contextMenuRequest(QPoint pos);
+    void saveMaskToPdfJpgPng();
+    void saveMaskToCsv();
+    void execSlot(int num);
     void clear();
-    void cancel();
+signals:
+   void m_exec(int num);
 };
 
 #endif // IMAGEMASK_H

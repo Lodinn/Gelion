@@ -35,7 +35,8 @@ public slots:
 public:
     qreal GlobalScale = 1;  qreal GlobalRotate = 0;
     int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
-    int GlobalViewMode = 0;  // 0 - z object, rgb, index, chennels === 1 - masks
+    int GlobalMaskNum = 0;
+    int GlobalViewMode = 0;  // 0 - z object, rgb, index, chennels ***=== 1 - masks
     bool empty = true;  // сцена не содержит данных
     QList<zGraph *> getZGraphItemsList();  // список рафических объектов на сцене
     QAction *openAct;
@@ -69,6 +70,7 @@ public:
     QPixmap changeBrightnessPixmap(QImage &img, qreal brightness);
     QString index_title_str, index_formula_str;
     QColor waveLengthToRGB(double Wavelength);  // 380 - 781
+    QVector<QAction *> resentFilesActions;
  protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;

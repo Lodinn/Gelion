@@ -42,6 +42,9 @@ void imageHistogram::updateData(QString data_file_name, QString name, QString fo
 
     setupSlidersConnections();
 
+    title_of_mask->setText(QString("%1 - %2").arg(name).arg(formula));
+    formula_of_mask->setText(getMaskFormula());
+
 }
 
 void imageHistogram::setPreviewPixmap(QPixmap &mainRGB)
@@ -61,7 +64,10 @@ void imageHistogram::updatePreviewData() {
 
 QString imageHistogram::getMaskFormula()
 {
-    return QString("{%1}[%2-%3]").arg(f_formula).arg(h_data->lower).arg(h_data->upper);
+    if (h_data->rgb_preview == 3)
+        return QString("&%1&[%2-%3]inv").arg(f_formula).arg(h_data->lower).arg(h_data->upper);
+
+    return QString("&%1&[%2-%3]").arg(f_formula).arg(h_data->lower).arg(h_data->upper);
 }
 
 QString imageHistogram::getMaskTitle()
@@ -124,18 +130,6 @@ bool imageHistogram::eventFilter(QObject *object, QEvent *event)
             h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C mask norm
         if( key->key() == Qt::Key_V ) {
             h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V mask inversion
-
-        /*if( key->key() == 65 && key->key() == 1060 ) { routate90(true); return true; }  // A
-        if( key->key() == 83 && key->key() == 1067 ) { routate90(false); return true; }  // S
-        if( key->key() == 90 && key->key() == 1071 ) {
-            h_data->rgb_preview = 0; updatePreviewImage(); return true; }  // Z
-        if( key->key() == 88 && key->key() == 1063 ) {
-            h_data->rgb_preview = 1; updatePreviewImage(); return true; }  // X
-        if( key->key() == 67 && key->key() == 1057 ) {
-            h_data->rgb_preview = 2; updatePreviewImage(); return true; }  // C
-        if( key->key() == 86 && key->key() == 1052 ) {
-            h_data->rgb_preview = 3; updatePreviewImage(); return true; }  // V */
-
     }  // KeyPress
     return QDockWidget::eventFilter(object, event);
 }
@@ -175,11 +169,6 @@ void imageHistogram::setupUi()
     buttonMaskSave = new QPushButton("Добавить в список Маски ...");
     buttonMaskSave->setMinimumHeight(25);
     gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
-
-//    inverseMask = new QCheckBox("Инверсная маска");
-//    inverseMask->setMinimumHeight(25);
-//    inverseMask->setChecked(false);
-//    gridLayout->addWidget(inverseMask, 3, 1, Qt::AlignLeft);
 
     centralGroupBox = new QGroupBox("Наименование \\ Формула");
     centralGBLayout = new QVBoxLayout(centralGroupBox);
@@ -363,6 +352,9 @@ void imageHistogram::updatePreviewImage()
     labelPreviewStatus->setText( getPreviewStatusString() );
     bool enabled = (h_data->rgb_preview == 2 || h_data->rgb_preview == 3);
     buttonMaskSave->setEnabled(enabled);
+
+    formula_of_mask->setText(getMaskFormula());
+
 }
 
 QImage imageHistogram::get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized)
@@ -553,6 +545,8 @@ void imageHistogram::setHistogramToBracked()
 
     bracketText->setText(QString("[%1-%2](%3 %)").arg(h_data->lower,0,'g',3)
                          .arg(h_data->upper,0,'g',3).arg(qRound(h_data->sum_of_part)));
+    formula_of_mask->setText(getMaskFormula());
+
     bracket->left->setCoords(h_data->lower, bracketTextIndent*yrange.upper);
     bracket->right->setCoords(h_data->upper, bracketTextIndent*yrange.upper);
 
@@ -686,10 +680,13 @@ void imageHistogram::maskSave()
     QString formula(formula_of_mask->text());
     mask_appended = new J09::maskRecordType;
     mask_appended->checked = true;
-    mask_appended->title = title;
-    mask_appended->formula = formula;
+
+    mask_appended->title = title_of_mask->text();
+    mask_appended->formula = formula_of_mask->text();
+    mask_appended->formula_step_by_step = QStringList() << mask_appended->formula;
+
     mask_appended->invers = h_data->rgb_preview == 3;
-    mask_appended->formula_step_by_step = QStringList() << title << formula;
+
     mask_appended->mask = calculateMask( mask_appended->invers );
     mask_appended->img = get_mask_image(mask_appended->mask);
     mask_appended->brightness = 3.;
@@ -697,29 +694,6 @@ void imageHistogram::maskSave()
 
     emit appendMask(mask_appended);
 
-/*    addMaskDialog dlg;
-    QString formula = getMaskFormula(), title = getMaskTitle();
-    dlg.setData(title, formula);
-    int dlg_result = dlg.exec();
-    if (dlg_result == QDialog::Accepted) {
-        QString title;
-        bool inv;
-        dlg.getData(title, formula, inv);
-
-        mask_appended = new J09::maskRecordType;
-        mask_appended->checked = true;
-        mask_appended->title = title;
-        mask_appended->formula = formula;
-        mask_appended->invers = inv;
-        mask_appended->formula_step_by_step = QStringList() << title << formula;
-        mask_appended->mask = calculateMask( inv );
-        mask_appended->img = get_mask_image(mask_appended->mask);
-        mask_appended->brightness = 3.;
-        mask_appended->rotation = h_data->rotation;
-
-        emit appendMask(mask_appended);
-
-    }  // if */
 }
 
 void imageHistogram::routate90(bool clockwise)

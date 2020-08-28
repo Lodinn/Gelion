@@ -7,12 +7,12 @@
 #include "view.h"
 #include "spectralplot.h"
 #include "imagehistogram.h"
+#include <imagemask.h>
 
 #include <QGraphicsScene>
 #include <QMainWindow>
 #include <QProgressDialog>
 #include <QThread>
-#include <imagemask.h>
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -43,6 +43,9 @@ class MainWindow : public QMainWindow {
 
   void listWidgetClicked(QListWidgetItem *item);
   void listWidgetDoubleClicked(QListWidgetItem *item);
+  void itemClickedChannelList(QListWidgetItem *lwItem);
+  void itemClickedIndexList(QListWidgetItem *lwItem);
+  void itemClickedMaskList(QListWidgetItem *lwItem);
 
   void listWidgetDeleteItem(zGraph *item);
   void winZGraphProfilesShowAll();
@@ -51,8 +54,6 @@ class MainWindow : public QMainWindow {
   void createDockWidgetForChannels();
   void createDockWidgetForIndexes();
   void restoreIndexListWidget();
-  void itemClickedChannelList(QListWidgetItem *lwItem);
-  void itemClickedIndexList(QListWidgetItem *lwItem);
   void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
 
@@ -94,6 +95,8 @@ private:
   QVector<J09::indexType> indexList;
   QVector<QAction *> predefined_index_list_acts;
   J09::globalSettingsType GLOBAL_SETTINGS;  // ГЛОБАЛЬНЫЕ НАСТРОЙКИ
+  QSize tb_def_size = QSize(32,32);
+  QString mainIconFileName = "/main.png";
 
   void create_default_RGB_image();  // создание цветного изображения по умолчанию
  private:
@@ -128,6 +131,7 @@ private:
 
   void createActions();
   void createMainConnections();
+  void createResentFilesList();
   void createConstDockWidgets();
   void SetupUi();
   void createStatusBar();
@@ -164,7 +168,9 @@ protected:
   void imgMasksUpdatePreviewPixmap();
 
   void set_abstract_index_pixmap();
+  void set_abstract_mask_pixmap();
   void show_channel_list_update();
+  void show_channel_list_special_update(int t);
   void show_histogram_widget();
   void updateHistogram();
   void calculateVisibleZObject(bool rescale);

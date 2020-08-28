@@ -23,9 +23,13 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
 
     pointAct = new QAction(pointIcon, "Добавить ОИ-[Точка]", this);
     rectAct = new QAction(rectIcon, "Добавить ОИ-[Прямоугольник]", this);
+    rectAct->setShortcut(QKeySequence::Bold);
     ellipseAct = new QAction(ellipseIcon, "Добавить ОИ-[Эллипс]", this);
+    ellipseAct->setShortcut(QKeySequence::Find);
     polylineAct = new QAction(polylineIcon, "Добавить ОИ-[Полилиния]", this);
+    polylineAct->setShortcut(QKeySequence::Redo);
     polygonAct = new QAction(polygonIcon, "Добавить ОИ- [Полигон]", this);
+    polygonAct->setShortcut(QKeySequence::Undo);
     closeAct = new QAction("&Выход", this);
     closeAct->setShortcuts(QKeySequence::Close);
 
@@ -935,7 +939,12 @@ void gQGraphicsView::contextMenuEvent(QContextMenuEvent *event)
         contextMenuEnable = true;  return;
     }  // if
     QMenu menu(this);
+
     menu.addAction(openAct);
+    // resent files
+    QMenu *menu_resent_files = menu.addMenu("Недавние файлы");
+    foreach(QAction *act, resentFilesActions) menu_resent_files->addAction(act);
+
     menu.addSeparator();
     menu.addAction(pointAct);
     menu.addAction(rectAct);
@@ -944,6 +953,7 @@ void gQGraphicsView::contextMenuEvent(QContextMenuEvent *event)
     menu.addAction(polygonAct);
     menu.addSeparator();
     menu.addAction(closeAct);
+
     menu.exec(event->globalPos());
 }
 
