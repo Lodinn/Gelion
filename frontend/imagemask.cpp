@@ -22,8 +22,8 @@ void imageMask::clearForAllObjects()
 
 void imageMask::setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih)
 {
-    rotation = gsettings->main_rgb_rotate_start;
-    mr_result.rotation = rotation;
+    m_rotation = gsettings->main_rgb_rotate_start;
+    mr_result.rotation = m_rotation;
     maskListWidget = lw;
     imgHand = ih;
 
@@ -34,7 +34,7 @@ void imageMask::setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih)
     foreach(DropArea *da, pixmapLabelsVector) {
         da->listWidget = maskListWidget;
         da->imgHand = imgHand;
-        da->rotation = rotation;
+        da->rotation = m_rotation;
     }  // foreach
 }
 
@@ -104,10 +104,11 @@ void imageMask::setupUi()
     image_pixmap->setScaled(true);
 
     defaultRGB.fill(QColor(125,125,125,50));
-    setPixmapToPlot(defaultRGB);
+    setPixmapToPlot(defaultRGB,true);
 
     QGridLayout *titleGrid = new QGridLayout(maskGroupBox);
     plotLayout->addLayout(titleGrid, 3);
+
     titleLabel = new QLabel("Наименование", maskGroupBox);
     formulaLabel = new QLabel("Формула", maskGroupBox);
 
@@ -167,8 +168,6 @@ void imageMask::setupUi()
 
     addition->setChecked(true);
 
-    setButtonsEnabled(false);  calculatorGroupBox->setEnabled(false);
-
     // CONNECTIONS
     plot->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(plot, &QCustomPlot::customContextMenuRequested, this, &imageMask::contextMenuRequest);
@@ -176,9 +175,7 @@ void imageMask::setupUi()
         connect(da, &DropArea::exec, this, &imageMask::execSlot);
     connect(this, &imageMask::m_exec, this, &imageMask::execSlot);
 
-
-    //    connect(clearButton, &Button::pressed, this, &imageMask::clear);
-
+    setEnabledOfMainGroupsWidgets(false,false,false);
     return;
 
 
@@ -298,6 +295,7 @@ bool imageMask::eventFilter(QObject *object, QEvent *event)
 {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *key = static_cast<QKeyEvent *>(event);
+
         if( key->key() == Qt::Key_X ) {
             show_mode = 0; m_exec(QPoint(0,1)); return true; }  // ' X '-RGB
         if( key->key() == Qt::Key_C ) {
@@ -312,9 +310,9 @@ bool imageMask::eventFilter(QObject *object, QEvent *event)
     down_to_up = mouse->modifiers() == Qt::ControlModifier;
 
     if (event->type() == QEvent::MouseButtonPress) {
-        if (object == addition) m_exec(QPoint(-2,0));
-        if (object == subtraction) m_exec(QPoint(-3,0));
-        if (object == clipping) m_exec(QPoint(-4,0));
+        if (object == addition) if (calculatorGroupBox->isEnabled()) m_exec(QPoint(-2,0));
+        if (object == subtraction) if (calculatorGroupBox->isEnabled())  m_exec(QPoint(-3,0));
+        if (object == clipping) if (calculatorGroupBox->isEnabled()) m_exec(QPoint(-4,0));
     }  // MouseButtonPress
 
     return QDockWidget::eventFilter(object, event);
@@ -329,16 +327,20 @@ void imageMask::setDefaultRGB()
     plot->yAxis->setRange(0,defaultRGB.height());
 
     image_pixmap->setPixmap(defaultRGB);
+    mr_result.img = defaultRGB.toImage();
+
     plot->replot();
 }
 
-void imageMask::setPixmapToPlot(QPixmap &pixmap)
+void imageMask::setPixmapToPlot(QPixmap &pixmap, bool setRange)
 {
     image_pixmap->topLeft->setCoords(0,pixmap.height());
     image_pixmap->bottomRight->setCoords(pixmap.width(),0);
 
-    plot->xAxis->setRange(0,pixmap.width());
-    plot->yAxis->setRange(0,pixmap.height());
+    if (setRange) {
+        plot->xAxis->setRange(0,pixmap.width());
+        plot->yAxis->setRange(0,pixmap.height());
+    }
 
     image_pixmap->setPixmap(pixmap);
     plot->replot();
@@ -378,16 +380,8 @@ void imageMask::clear()
     titleEdit->setText("Наименование");
     formulaEdit->setText("Формула");
     setDefaultRGB();
-
+    setEnabledOfMainGroupsWidgets(false,false,false);
 }
-
-//void imageMask::cancel()
-//{
-//    formulaLabel->setText(result.title);
-//    setButtonsEnabled(true);
-//    show_mode = 1;
-//    updatePreviewImage();
-//}
 
 QString imageMask::getResultShowModesString()
 {
@@ -439,24 +433,6 @@ void imageMask::updateMainPreviewWithIconsPreviw()
     image_pixmap->setPixmap(QPixmap::fromImage(mr_result.img).transformed(rm));
     plot->replot();
 }
-
-//void imageMask::plug(){}
-
-//void imageMask::maskModify(int num)
-//{
-//    current_num = num;  show_mode = 1;  showModeLabel->setText(getResultShowModesString());
-//    setButtonsEnabled(true);
-//    switch (im) {
-//    case imageMask::imNone : setMaskToMainPixmap(num);
-//        break;
-//    case imageMask::imAddition : doAddition(num);
-//        updateResult(num);
-//        break;
-//    case imageMask::imSubtraction : doSubtraction(num);
-//        updateResult(num);
-//        break;
-//    }
-//}
 
 void imageMask::doAddition(int num)
 {
@@ -520,6 +496,25 @@ void imageMask::setMaskToMainPixmap(int num)
     formulaLabel->setText(mr_result.title);
 }
 
+void imageMask::setEnabledOfMainGroupsWidgets(bool e_left, bool e_right, bool e_save)
+{
+    titleLabel->setEnabled(e_left);  // = new QLabel("Наименование", maskGroupBox);
+    formulaLabel->setEnabled(e_left); // = new QLabel("Формула", maskGroupBox);
+    titleEdit->setEnabled(e_left); // = new QLineEdit("Наименование", maskGroupBox);
+    formulaEdit->setEnabled(e_left); // = new QTextEdit("Формула", maskGroupBox);
+
+    saveButton->setEnabled(e_save); // = createButton(tr("Сохранить"), tr("Сохранить в списке масок"), SLOT(m_save()));
+
+    clearButton->setEnabled(e_left); // = createButton(tr("Очистить"), tr("Очистить изображение\nи иконки изображений-масок"), SLOT(clear()));
+
+    if (e_right) {
+        bool gb_enabled = pixmapLabelsVector[0]->isEmptyA() || pixmapLabelsVector[1]->isEmptyA();
+        calculatorGroupBox->setEnabled(!gb_enabled);
+    }
+    else
+        calculatorGroupBox->setEnabled(e_right);
+}
+
 void imageMask::setButtonsEnabled(bool enabled)
 {
     titleLabel->setEnabled(enabled);
@@ -528,17 +523,6 @@ void imageMask::setButtonsEnabled(bool enabled)
     titleEdit->setEnabled(enabled);
     saveButton->setEnabled(enabled);
     clearButton->setEnabled(enabled);
-
-
-//    calculatorGroupBox->setEnabled(enabled);
-
-//    additionButton->setEnabled(enabled);
-//    subtractionButton->setEnabled(enabled);
-//    cancelButton->setEnabled(true);
-//    saveButton->setEnabled(enabled);
-//    closeButton->setEnabled(enabled);
-//    clearButton->setEnabled(enabled);
-
 }
 
 void imageMask::contextMenuRequest(QPoint pos)
@@ -567,10 +551,10 @@ void imageMask::execSlot(QPoint p)
 {
     if(p.x() == -1) return;
 
-//    bool gb_enabled = pixmapLabelsVector[0]->isEmptyA() || pixmapLabelsVector[1]->isEmptyA();
-//    calculatorGroupBox->setEnabled(!gb_enabled);
+    if (p.x() >= 0 && p.y() == 0) {  // выбрано масочное изображение
 
-    if (p.x() >= 0) {  // выбрано масочное изображение
+        setEnabledOfMainGroupsWidgets(true,true,false);
+        show_mode = 1;  infoLabel->setText(getResultShowModesString());
         J09::maskRecordType *mask = imgHand->current_image()->getMask(p.x());
 
         QMatrix rm;    rm.rotate(mask->rotation);
@@ -578,19 +562,51 @@ void imageMask::execSlot(QPoint p)
 
         mr_result.img = mask->img;
         mr_result.rotation = mask->rotation;
+        mr_result.title = mask->title;
+        mr_result.formula_step_by_step = mask->formula_step_by_step;
 
-        setPixmapToPlot(pixmap);
+        setPixmapToPlot(pixmap,true);
 
         titleEdit->setText(mask->title);
+
         formulaEdit->clear();
         foreach(QString str, mask->formula_step_by_step)
             formulaEdit->append(str);
 
         return;
     }
-// выбран расчетный метод
 
-    saveButton->setEnabled(true);
+    if (p.x() >= 0 && p.y() > 0) {  // выбран специальный режим
+        switch (p.y()) {
+        case 1 : {  show_mode = 0;  infoLabel->setText(getResultShowModesString());     // ' X '-RGB
+            setEnabledOfMainGroupsWidgets(false,false,false);
+            QMatrix rm;    rm.rotate(mr_result.rotation);
+            QPixmap pixmap = previewRGB->transformed(rm);
+            setPixmapToPlot(pixmap,false);
+            titleEdit->setText("RGB");  formulaEdit->clear();
+            break; }
+        case 2 : {  show_mode = 1;  infoLabel->setText(getResultShowModesString());     // ' C '-mask
+            setEnabledOfMainGroupsWidgets(true,true,false);
+            QMatrix rm;    rm.rotate(mr_result.rotation);
+            QPixmap pixmap = QPixmap::fromImage(mr_result.img).transformed(rm);
+            setPixmapToPlot(pixmap,false);
+            titleEdit->setText(mr_result.title);
+            formulaEdit->clear();
+            foreach(QString str, mr_result.formula_step_by_step)
+                formulaEdit->append(str);
+            break; }
+        case 3 : {  // А по часовой
+            break; }
+        case 4 : {  // S против часовой
+            break; }
+        }
+
+        return;
+    }
+
+// выбран расчетный метод
+    show_mode = 1;  infoLabel->setText(getResultShowModesString());                     // ' C '-mask
+    setEnabledOfMainGroupsWidgets(true,true,true);
 
     DropArea *plv1;
     DropArea *plv2;

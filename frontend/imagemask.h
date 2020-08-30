@@ -89,7 +89,7 @@ private:
     QSize defaultIconSize = QSize(32+64+16,32+64+16);
     QPixmap defaultRGB = QPixmap(512,512);
     void setDefaultRGB();
-    void setPixmapToPlot(QPixmap &pixmap);
+    void setPixmapToPlot(QPixmap &pixmap, bool setRange);
     void updatePreviewImage();
     J09::maskRecordType mr_result;  // массив для хранения результатов операций
 
@@ -106,7 +106,7 @@ private:
     QVector<QRadioButton *> calculationButtons;
 
     QString defTitleString = QString("Наименование");
-    double rotation = .0;
+    double m_rotation = .0;
     void routate90(bool clockwise);
     void updateMainPreviewWithIconsPreviw();
     void doAddition(int num);
@@ -114,6 +114,7 @@ private:
     void updateResult(int num);
     QString getMaskDataFileName(QString data_file_name);
     void setMaskToMainPixmap(int num);
+    void setEnabledOfMainGroupsWidgets(bool e_left, bool e_right, bool e_save);
 // BUTTONS
     void setButtonsEnabled(bool enabled);
 
@@ -137,17 +138,14 @@ private:
     QGroupBox *maskGroupBox;
     QGroupBox *calculatorGroupBox;
 private slots:
-//    void plug();  // заглушка
-//    void maskModify(int num);
-
-//    void cancel();
     void contextMenuRequest(QPoint pos);
     void saveMaskToPdfJpgPng();
     void saveMaskToCsv();
 
     void clear();
-    void execSlot(QPoint p);
     void m_save();
+
+    void execSlot(QPoint p);
 
 signals:
    void m_exec(QPoint p);

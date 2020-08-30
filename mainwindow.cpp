@@ -1598,7 +1598,7 @@ void MainWindow::show_mask_list()
                 maskListWidget->item(row)->setCheckState(Qt::Unchecked);
             break;
         case 3 : { int count = imgMasks->set2MasksToForm();    // Загрузить 2 выделенные маски в калькулятор
-            if (count > 0) imgMasks->show();
+            if (count > 0) imgMasks->show();  imgMasksUpdatePreviewPixmap();
             break; }
         case 4 : {                                              // Сохранить выделенные изображения маски (*.msk)
             auto proj_path = getDataSetPath();
@@ -1628,7 +1628,7 @@ void MainWindow::show_mask_list()
             imgMasks->loadMasksFromFile(fname);
             imgMasks->updateMaskListWidget();
             maskAct->setEnabled(true);  maskAct->setChecked(true);
-            imgMasks->show();
+            imgMasks->show();  imgMasksUpdatePreviewPixmap();
             break; }
         case 8 : {                                              // Удалить все маски
             QMessageBox msgBox;
