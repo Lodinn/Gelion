@@ -38,6 +38,7 @@ protected:
     void dragLeaveEvent(QDragLeaveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void mousePressEvent(QMouseEvent *ev) Q_DECL_OVERRIDE;
+
 // Класс QDragEnterEvent предоставляет событие, которое отправляется виджету,
 // когда в него входит действие перетаскивания.
 // Класс QDragMoveEvent предоставляет событие, которое отправляется
@@ -46,12 +47,13 @@ protected:
 // когда действие перетаскивания покидает его.
 // Класс QDropEvent предоставляет событие, которое отправляется
 // после завершения действия перетаскивания.
+
 private:
    bool empty = true;
    int num = -1;
    QString defTitleString = QString("Наименование");
 signals:
-   void exec(int num);
+   void exec(QPoint p);
 };
 
 class imageMask : public QDockWidget
@@ -89,7 +91,7 @@ private:
     void setDefaultRGB();
     void setPixmapToPlot(QPixmap &pixmap);
     void updatePreviewImage();
-    J09::maskRecordType result;  // массив для хранения результатов операций
+    J09::maskRecordType mr_result;  // массив для хранения результатов операций
 
     QString getResultShowModesString();
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
@@ -114,15 +116,19 @@ private:
     void setMaskToMainPixmap(int num);
 // BUTTONS
     void setButtonsEnabled(bool enabled);
+
     Button *additionButton;
     Button *subtractionButton;
     Button *cancelButton;
     Button *saveButton;
     Button *closeButton;
     Button *clearButton;
+
     QRadioButton *addition;
     QRadioButton *subtraction;
     QRadioButton *clipping;
+    bool down_to_up = false;
+
     QLabel *titleLabel;
     QLabel *formulaLabel;
     QTextEdit *formulaEdit;
@@ -138,10 +144,13 @@ private slots:
     void contextMenuRequest(QPoint pos);
     void saveMaskToPdfJpgPng();
     void saveMaskToCsv();
-    void execSlot(int num);
+
     void clear();
+    void execSlot(QPoint p);
+    void m_save();
+
 signals:
-   void m_exec(int num);
+   void m_exec(QPoint p);
 };
 
 #endif // IMAGEMASK_H

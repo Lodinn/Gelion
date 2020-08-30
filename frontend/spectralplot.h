@@ -53,7 +53,7 @@ private:
     void setRainbowSpectralRanges();
     void setStdVevProfiles();  // профили стандартного отклонения
     int rainbowTransparency = 50;
-    int deviationTransparency = 50;
+    int deviationTransparency = 75;
     double rainbowUp = 25.;
     int rainbowNum;
     QVector<QPointF> x_rainbow;  // координаты заливки спектральных диапазонов
