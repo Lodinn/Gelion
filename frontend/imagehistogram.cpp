@@ -676,8 +676,8 @@ void imageHistogram::axisRescale()
 
 void imageHistogram::maskSave()
 {
-    QString title(title_of_mask->text());
-    QString formula(formula_of_mask->text());
+//    QString title(title_of_mask->text());
+//    QString formula(formula_of_mask->text());
     mask_appended = new J09::maskRecordType;
     mask_appended->checked = true;
 

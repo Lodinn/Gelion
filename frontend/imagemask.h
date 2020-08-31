@@ -95,7 +95,8 @@ private:
 
     QString getResultShowModesString();
     QStringList resultShowModesList = QStringList() <<  "RGB" << "Маска";
-    QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
+//    QString resultShowModesStr = "' X '-RGB  ' C '-маска  ' A '-по часовой  ' S '-против часовой ( <b>%1</b> )";
+    QString resultShowModesStr = "' X '-RGB  ' C '-маска ( <b>%1</b> )";
     QLabel *showModeLabel = new QLabel;
     Button *createButton(const QString &text, const QString &tooltip, const char *member);
     QLabel *createHeaderLabel(const QString &text);
@@ -108,6 +109,7 @@ private:
     QString defTitleString = QString("Наименование");
     double m_rotation = .0;
     void routate90(bool clockwise);
+    void updatepixmapLabelsVector();
     void updateMainPreviewWithIconsPreviw();
     void doAddition(int num);
     void doSubtraction(int num);
@@ -128,6 +130,11 @@ private:
     QRadioButton *addition;
     QRadioButton *subtraction;
     QRadioButton *clipping;
+    void addition_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);      // сложение
+    void subtraction_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);   // вычитание
+    void clipping_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);      // отсечение
+    QImage get_mask_image(QVector<QVector<int8_t> > &m);
+
     bool down_to_up = false;
 
     QLabel *titleLabel;
@@ -149,6 +156,7 @@ private slots:
 
 signals:
    void m_exec(QPoint p);
+   void appendMask(J09::maskRecordType *am);
 };
 
 #endif // IMAGEMASK_H

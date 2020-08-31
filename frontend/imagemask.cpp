@@ -62,6 +62,7 @@ int imageMask::set2MasksToForm()
         if (count>pixmapLabelsVector.count()-1) return count;
         pixmapLabelsVector[count]->setNumA(row);  count++;
     }  // for
+    setEnabledOfMainGroupsWidgets(true,true,false);
     return count;
 }
 
@@ -176,120 +177,8 @@ void imageMask::setupUi()
     connect(this, &imageMask::m_exec, this, &imageMask::execSlot);
 
     setEnabledOfMainGroupsWidgets(false,false,false);
-    return;
-
-
-// размещение на форме интерфейсных элементов
-// порядок размещения - сверху вниз
-
-//    QWidget *centralWidget = new QWidget(this);
-//    setWidget(centralWidget);
-//    QHBoxLayout  *mainHorzLayout = new QHBoxLayout(centralWidget);  // главный горизонтальный шаблон
-//    QGroupBox *maskGroupBox = new QGroupBox(tr("Масочное изображение (просмотр или результат расчета)"));
-    mainHorzLayout->addWidget(maskGroupBox, 50);
-// вертикальный шаблон для 4 масок и калькулятора и двух статус строк
-    QVBoxLayout  *mask4andCalculatorLayout = new QVBoxLayout(centralWidget);  // правый вертикальный шаблон
-    mainHorzLayout->addLayout(mask4andCalculatorLayout, 50);
-// левая часть верхнего шаблона
-    plot = new QCustomPlot(maskGroupBox);
-//    QGridLayout *plotLayout = new QGridLayout(maskGroupBox);  // добавление плоттера
-    plotLayout->addWidget(plot);
-    plot->setToolTip("Окно отображения результата\n"
-                     "арифметических операций с масками.\n"
-                     "Для масштабирования используйте\n"
-                     "перетаскивание мышью\n"
-                     "и колесо мыши");
-    plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-    plot->addLayer("image");
-    image_pixmap = new QCPItemPixmap(plot);
-    image_pixmap->setVisible(true);
-    image_pixmap->setLayer("image");
-    image_pixmap->setScaled(true);
-
-    defaultRGB.fill(QColor(125,125,125,50));
-    setDefaultRGB();
-
-
-// МАСКИ - ИКОНКИ
-    QGridLayout *maskIconsLayout = new QGridLayout(centralWidget);
-
-    mask4andCalculatorLayout->addLayout(maskIconsLayout,20);
-
-    for (int row = 0; row < mask_row_count; ++row) {
-        for (int column = 0; column < mask_col_count; ++column) {
-            pixmapLabels[column][row] = createPixmapLabel();
-            DropArea *da = pixmapLabels[column][row];
-            da->title = createHeaderLabel(defTitleString);
-            maskIconsLayout->addWidget(da->title, 2 * row, column);
-            maskIconsLayout->addWidget(da, 2 * row + 1, column);
-            da->plot = plot;
-            da->image_pixmap = image_pixmap;
-            pixmapLabelsVector.append(da);
-//            connect(da, &DropArea::exec, this, &imageMask::maskModify);
-        }
-    }
-    maskIconsLayout->setRowStretch(0,1);        maskIconsLayout->setRowStretch(1,10);
-    maskIconsLayout->setRowStretch(2,1);        maskIconsLayout->setRowStretch(3,10);
-    maskIconsLayout->setColumnStretch(0,50);    maskIconsLayout->setColumnStretch(1,50);
-
-// КАЛЬКУЛЯТОР
-//    QGroupBox *calculatorGroupBox = new QGroupBox(tr("Калькулятор"));
-
-    mask4andCalculatorLayout->addWidget(calculatorGroupBox,5);
-
-//    QGridLayout *calculatorLayout = new QGridLayout(calculatorGroupBox);
-//    additionButton = createButton(tr("+"), tr("1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"), SLOT(plug()));
-//    calculatorLayout->addWidget(additionButton, 0, 0);
-//    subtractionButton = createButton(tr("-"), tr("1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"), SLOT(plug()));
-//    calculatorLayout->addWidget(subtractionButton, 0, 1);
-//    cancelButton = createButton(tr("Сброс"), tr("Сброс всех операций\nДля нового расчета выполните:\n"
-//                                                        "1. выберите маску\n"
-//                                                        "2. нажмите кнопку операции\n"
-//                                                        "3. выберите вторую маску"), SLOT(plug()));
-//    calculatorLayout->addWidget(cancelButton, 1, 1);
-//    saveButton = createButton(tr("Сохранить ..."), tr("Сохранить в списке масок ..."), SLOT(plug()));
-//    calculatorLayout->addWidget(saveButton, 0, 2);
-//    closeButton = createButton(tr("Закрыть"), tr("Закрыть окно"), SLOT(hide()));  // HIDE
-//    calculatorLayout->addWidget(closeButton, 1, 3);
-//    clearButton = createButton(tr("Очистить"), tr("Очистить окно маска-результат\nи иконки изображений-масок"), SLOT(plug()));
-//    calculatorLayout->addWidget(clearButton, 0, 3);
-
-    formulaLabel->setText("Формуля операции по форме $наименование 1$ + $наименование 2$");
-    mask4andCalculatorLayout->addWidget(formulaLabel,1);
-    showModeLabel->setText(getResultShowModesString());
-    mask4andCalculatorLayout->addWidget(showModeLabel,1);
-
-// CONNECTIONS
-//    connect(clearButton, &Button::pressed, this, &imageMask::clear);
-//    connect(additionButton, &Button::pressed, this, &imageMask::addition);
-//    connect(subtractionButton, &Button::pressed, this, &imageMask::subtraction);
-//    connect(cancelButton, &Button::pressed, this, &imageMask::cancel);
+//    return;
 }
-
-/* if (event->type() == QEvent::KeyPress) {
-        QKeyEvent *key = static_cast<QKeyEvent *>(event);
-
-        if( key->key() == Qt::Key_A ) { routate90(false); return true; }  // A
-        if( key->key() == Qt::Key_S ) { routate90(true); return true; }  // S
-        if( key->key() == Qt::Key_X ) {
-            show_mode = 0; updatePreviewImage(); return true; }  // ' X '-RGB
-        if( key->key() == Qt::Key_C ) {
-            show_mode = 1; updatePreviewImage(); return true; }  // C
-    }  // KeyPress
-    if (event->type() == QEvent::MouseButtonPress) {
-        if (object == addition) {
-            cm = calcMode::cmAdd;
-            titleEdit->setText("add");
-        }
-        if (object == subtraction) {
-            cm = calcMode::cmSubt;
-            titleEdit->setText("subtraction");
-        }
-        if (object == clipping) {
-            cm = calcMode::cmClip;
-            titleEdit->setText("clipping");
-        }
-    }  // MouseButtonPress */
 
 bool imageMask::eventFilter(QObject *object, QEvent *event)
 {
@@ -301,8 +190,8 @@ bool imageMask::eventFilter(QObject *object, QEvent *event)
         if( key->key() == Qt::Key_C ) {
             show_mode = 1; m_exec(QPoint(0,2)); return true; }  // ' C '-mask
 
-        if( key->key() == Qt::Key_A ) { m_exec(QPoint(0,3)); return true; }  // A
-        if( key->key() == Qt::Key_S ) { m_exec(QPoint(0,4)); return true; }  // S
+//        if( key->key() == Qt::Key_A ) { m_exec(QPoint(0,3)); return true; }  // A
+//        if( key->key() == Qt::Key_S ) { m_exec(QPoint(0,4)); return true; }  // S
 
     }  // KeyPress
 
@@ -422,6 +311,14 @@ void imageMask::routate90(bool clockwise)
     updateMainPreviewWithIconsPreviw();
 }
 
+void imageMask::updatepixmapLabelsVector()
+{
+    foreach(DropArea *da, pixmapLabelsVector) {
+        da->rotation = mr_result.rotation;
+        da->setNumA(da->getNumA());
+    }  // foreach
+}
+
 void imageMask::updateMainPreviewWithIconsPreviw()
 {
     foreach(DropArea *da, pixmapLabelsVector) {
@@ -525,6 +422,53 @@ void imageMask::setButtonsEnabled(bool enabled)
     clearButton->setEnabled(enabled);
 }
 
+void imageMask::addition_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+{
+    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
+
+    QVector<int8_t> line(slice_size.width(), 1);
+    QVector<QVector<int8_t> > buff(slice_size.height(), line);
+
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if(mask1->mask[y][x] == 0 && mask2->mask[y][x] == 0) buff[y][x] = 0;
+    mr_result.mask = buff;
+    mr_result.img = get_mask_image(buff);
+}
+
+void imageMask::subtraction_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+{
+
+}
+
+void imageMask::clipping_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+{
+
+}
+
+QImage imageMask::get_mask_image(QVector<QVector<int8_t> > &m)
+{
+    if(m.isEmpty()) {
+      qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
+      return QImage();
+    }
+    QSize slice_size(m[0].count(), m.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+
+    mask_img.fill(1);
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if (m[y][x] == 0) mask_img.setPixel(x, y, 0);
+
+    return mask_img;
+}
+
+/*if (down_to_up) {
+        plv1 = pixmapLabelsVector[1]; plv2 = pixmapLabelsVector[0];
+    } else {
+        plv1 = pixmapLabelsVector[0]; plv2 = pixmapLabelsVector[1];
+    }*/
+
 void imageMask::contextMenuRequest(QPoint pos)
 {
     QMenu *menu = new QMenu(plot);
@@ -576,7 +520,7 @@ void imageMask::execSlot(QPoint p)
         return;
     }
 
-    if (p.x() >= 0 && p.y() > 0) {  // выбран специальный режим
+    if (p.x() == 0 && p.y() > 0) {  // выбран специальный режим
         switch (p.y()) {
         case 1 : {  show_mode = 0;  infoLabel->setText(getResultShowModesString());     // ' X '-RGB
             setEnabledOfMainGroupsWidgets(false,false,false);
@@ -596,8 +540,24 @@ void imageMask::execSlot(QPoint p)
                 formulaEdit->append(str);
             break; }
         case 3 : {  // А по часовой
+            mr_result.rotation += 90.;  qDebug() << "3 mr_result.rotation" << mr_result.rotation;
+            if (mr_result.rotation > 360.) mr_result.rotation -= 360.;
+            QMatrix rm;    rm.rotate(mr_result.rotation);
+            QPixmap pixmap;
+            if (show_mode == 0) pixmap = previewRGB->transformed(rm);
+            else pixmap = QPixmap::fromImage(mr_result.img).transformed(rm);
+            setPixmapToPlot(pixmap,false);
+//            updatepixmapLabelsVector();
             break; }
         case 4 : {  // S против часовой
+            mr_result.rotation -= 90.;  qDebug() << "4 mr_result.rotation" << mr_result.rotation;
+            if (mr_result.rotation < .0) mr_result.rotation += 360.;
+            QMatrix rm;    rm.rotate(mr_result.rotation);
+            QPixmap pixmap;
+            if (show_mode == 0) pixmap = previewRGB->transformed(rm);
+            else pixmap = QPixmap::fromImage(mr_result.img).transformed(rm);
+            setPixmapToPlot(pixmap,false);
+//            updatepixmapLabelsVector();
             break; }
         }
 
@@ -610,8 +570,10 @@ void imageMask::execSlot(QPoint p)
 
     DropArea *plv1;
     DropArea *plv2;
-    if (down_to_up) { plv1 = pixmapLabelsVector[1]; plv2 = pixmapLabelsVector[0]; }
-    else { plv1 = pixmapLabelsVector[0]; plv2 = pixmapLabelsVector[1];
+    if (down_to_up) {
+        plv1 = pixmapLabelsVector[1]; plv2 = pixmapLabelsVector[0];
+    } else {
+        plv1 = pixmapLabelsVector[0]; plv2 = pixmapLabelsVector[1];
     }
 
     QString t1 = plv1->title->text();
@@ -643,27 +605,47 @@ void imageMask::execSlot(QPoint p)
         QString res_title = QString("%1 + %2").arg(t1).arg(t2);
         titleEdit->setText(res_title);
         result.append(QString("$%1$ addition $%2$").arg(t1).arg(t2));
+        addition_calculate(mask1, mask2);      // сложение
         break; }
     case -3 : {                     // subtraction                   !вычитание
         QString res_title = QString("%1 - %2").arg(t1).arg(t2);
         titleEdit->setText(res_title);
         result.append(QString("$%1$ subtraction $%2$").arg(t1).arg(t2));
+        subtraction_calculate(mask1, mask2);   // вычитание
         break; }
     case -4 : {                     // clipping                       !отсечение
         QString res_title = QString("%1 cl %2").arg(t1).arg(t2);
         titleEdit->setText(res_title);
         result.append(QString("$%1$ clipping $%2$").arg(t1).arg(t2));
+        clipping_calculate(mask1, mask2);      // отсечение
         break; }
     }
+    // отображение результата
+    QMatrix rm;    rm.rotate(mr_result.rotation);
+    QPixmap pixmap = QPixmap::fromImage(mr_result.img).transformed(rm);
+    setPixmapToPlot(pixmap,false);
 
     formulaEdit->clear();
     foreach(QString str, result) formulaEdit->append(str);
 
+    mr_result.title = titleEdit->text();
+    mr_result.formula_step_by_step = result;
+    mr_result.formula.clear();
+    foreach(QString str, result) {
+        int num = result.indexOf(str);
+        if (num == result.count() - 1)
+            mr_result.formula.append(str);
+        else
+            mr_result.formula.append(str + '\n');
+    }
 }
 
 void imageMask::m_save()
 {
-
+    J09::maskRecordType *mask_appended = new J09::maskRecordType;
+    *mask_appended = mr_result;
+    mask_appended->checked = true;
+    emit appendMask(mask_appended);
 }
 
 void imageMask::loadMasksFromFile(QString fname)

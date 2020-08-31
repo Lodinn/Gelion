@@ -518,6 +518,8 @@ void MainWindow::createConstDockWidgets()
     imgMasks->hide();
     imgMasks->gsettings = &GLOBAL_SETTINGS;
     imgMasks->setLWidgetAndIHandler(maskListWidget, im_handler);
+    connect(imgMasks->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
+    connect(imgMasks, &imageMask::appendMask, this, &MainWindow::add_mask_pixmap);
 
 }
 
@@ -950,7 +952,8 @@ void MainWindow::histogramSlot() { imgHistogram->setVisible(!imgHistogram->isVis
 void MainWindow::masksSlot() {
 
     imgMasks->setVisible(!imgMasks->isVisible());
-    if (imgMasks->isVisible()) imgMasksUpdatePreviewPixmap();
+//    if (imgMasks->isVisible())
+    imgMasksUpdatePreviewPixmap();
 }
 
 
