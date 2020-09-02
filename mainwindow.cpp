@@ -399,17 +399,17 @@ void MainWindow::createConstDockWidgets()
     action->setData(7);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 // работа с изображениями - масками
-    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
-    action = new QAction(QIcon(":/icons/theater-roi.png"), "Создать маску из областей интереса ...", this);
-    action->setData(8);  show_zgraph_list_acts.append(action);  // mask - 6
-    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+//    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
+//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Создать маску из областей интереса ...", this);
+//    action->setData(8);  show_zgraph_list_acts.append(action);  // mask - 6
+//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
-    action = new QAction(QIcon(":/icons/theater-roi.png"), "Sun", this);
-    action->setData(9);  mask_list_acts.append(action);  // mask - 7
-    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-    action = new QAction(QIcon(":/icons/theater-roi.png"), "Shadow", this);
-    action->setData(10);  mask_list_acts.append(action);  // mask - 8
-    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Sun", this);
+//    action->setData(9);  mask_list_acts.append(action);  // mask - 7
+//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
+//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Shadow", this);
+//    action->setData(10);  mask_list_acts.append(action);  // mask - 8
+//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
 // Изображения
     dockIndexList->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -424,17 +424,32 @@ void MainWindow::createConstDockWidgets()
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // контекстное меню для индексных изображений
-    action = new QAction(QIcon(":/icons/delete-32.png"), "Удалить индексное изображение", this);
-    action->setData(0);  show_index_list_acts.append(action);
+//    action = new QAction(QIcon(":/icons/delete-32.png"), "Удалить индексное изображение", this);
+//    action->setData(0);  show_index_list_acts.append(action);
+    show_index_list_acts.append(histogramAct);
+    action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
+    createContextAction(QIcon(":/icons/palette.png"), "Сохранить выделенные индексные изображения (*.index) ...", 1,  // save checked
+                        show_index_list_acts, SLOT(show_index_list()));
+    createContextAction(QIcon(":/icons/palette.png"), "Загрузить индексные изображения (*.index) ...", 2,  // load checked
+                        show_index_list_acts, SLOT(show_index_list()));
+
+    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные индексы в файлы ...", 3,  // save checked pdf
+                        show_index_list_acts, SLOT(show_index_list()));
+    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные индексы в Excel *.csv файлы ...", 4,  // save checked csv
+                        show_index_list_acts, SLOT(show_index_list()));
+    createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить все индексные изображения (кроме RGB) ...", 5,  // delete ALL (rgb)
+                        show_index_list_acts, SLOT(show_index_list()));
+
     connect(action, SIGNAL(triggered()), this, SLOT(show_index_list()));
 
 // Список Каналов
+    int correct_ch_mask = 10;
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(chListWidget, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenuChannelList(QPoint)));
     dockChannelList->setWindowIcon(QIcon(":/icons/list-channel.jpg"));
     dockChannelList->setFloating(true);  dockChannelList->setObjectName("dockChannelList");
-    dockChannelList->setFixedSize(220,scrHeignt4-36);
+    dockChannelList->setFixedSize(220,scrHeignt4-36-correct_ch_mask);
     dockChannelList->setWidget(chListWidget);
     dockChannelList->move(rec.width() - 250,upperIndent+2*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockChannelList);
@@ -506,9 +521,9 @@ void MainWindow::createConstDockWidgets()
                         show_mask_list_acts, SLOT(show_mask_list()));
 
 
-    dockMaskImage->resize(420,scrHeignt4+18);
+    dockMaskImage->resize(450,scrHeignt4+18+correct_ch_mask);
     dockMaskImage->setWidget(maskListWidget);
-    dockMaskImage->move(rec.width() - 250 - 200,upperIndent+3*scrHeignt4);
+    dockMaskImage->move(rec.width() - 250 - 200 - 30,upperIndent+3*scrHeignt4-correct_ch_mask);
     addDockWidget(Qt::BottomDockWidgetArea, dockMaskImage);
 
     connect(maskListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedMaskList(QListWidgetItem*)));
@@ -1564,10 +1579,10 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
     for (int i = 0; i < show_zgraph_list_acts.count(); i++)
         menu.addAction(show_zgraph_list_acts[i]);
 
-    QMenu *maskMenu = menu.addMenu(tr("Отфильтровать по маске"));
+//    QMenu *maskMenu = menu.addMenu(tr("Отфильтровать по маске"));
 
-    for (int i = 0; i < mask_list_acts.count(); i++)
-        maskMenu->addAction(mask_list_acts[i]);
+//    for (int i = 0; i < mask_list_acts.count(); i++)
+//        maskMenu->addAction(mask_list_acts[i]);
 
     menu.exec(globalPos);
 }
@@ -1577,14 +1592,17 @@ void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
     if (dataFileName.isEmpty()) return;
     QPoint globalPos = indexListWidget->mapToGlobal(pos);
     QMenu menu(this);
-    menu.addAction(histogramAct);
-    for (int i = 0; i < show_index_list_acts.count(); i++) {
-        if (i == 0) {
-            QString current_item = indexListWidget->currentItem()->text();
-            show_index_list_acts[i]->setText(QString("Удалить индексное изображение %1").arg(current_item));
-        }  // if
+//    menu.addAction(histogramAct);
+//    for (int i = 0; i < show_index_list_acts.count(); i++) {
+//        if (i == 0) {
+//            QString current_item = indexListWidget->currentItem()->text();
+//            show_index_list_acts[i]->setText(QString("Удалить индексное изображение %1").arg(current_item));
+//        }  // if
+//        menu.addAction(show_index_list_acts[i]);
+//    }  // for
+    for (int i = 0; i < show_index_list_acts.count(); i++)
         menu.addAction(show_index_list_acts[i]);
-    }  // for
+
     menu.exec(globalPos);
 }
 
@@ -1670,34 +1688,34 @@ void MainWindow::show_index_list()
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         int num = action->data().toInt();
-        switch (num) {
-        case 0 : {    // Удалить индексное изображение
-            QMessageBox msgBox;
-            msgBox.setWindowTitle("Удаление индексного изображения");
-            msgBox.setText(QString("Вы подтверждаете удаление индексного изображения %1 ?\nВосстановить удаление будет невозможно !")
-                           .arg(indexListWidget->currentItem()->text()));
-            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-            msgBox.buttons().at(0)->setText("Да");
-            msgBox.buttons().at(1)->setText("Отмена");
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.setWindowIcon(icon256);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            QPoint pos = dockIndexList->pos();
-            QPoint mv(-300,200);
-            msgBox.move(pos + mv);
+//        switch (num) {
+//        case 0 : {    // Удалить индексное изображение
+//            QMessageBox msgBox;
+//            msgBox.setWindowTitle("Удаление индексного изображения");
+//            msgBox.setText(QString("Вы подтверждаете удаление индексного изображения %1 ?\nВосстановить удаление будет невозможно !")
+//                           .arg(indexListWidget->currentItem()->text()));
+//            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+//            msgBox.buttons().at(0)->setText("Да");
+//            msgBox.buttons().at(1)->setText("Отмена");
+//            msgBox.setIcon(QMessageBox::Critical);
+//            msgBox.setWindowIcon(icon256);
+//            msgBox.setDefaultButton(QMessageBox::Cancel);
+//            QPoint pos = dockIndexList->pos();
+//            QPoint mv(-300,200);
+//            msgBox.move(pos + mv);
 
-            int res = msgBox.exec();
+//            int res = msgBox.exec();
 
-     /*       if (res == QMessageBox::Ok) {   // нажата кнопка Да
-                view->clearForAllObjects();
-                zGraphListWidget->clear();
-                spectralAct->setEnabled(false);
-                imgSpectral->hide();
-            }  // if QMessageBox::Ok */
+//            if (res == QMessageBox::Ok) {   // нажата кнопка Да
+//                view->clearForAllObjects();
+//                zGraphListWidget->clear();
+//                spectralAct->setEnabled(false);
+//                imgSpectral->hide();
+//            }  // if QMessageBox::Ok
 
-            return;
-        }  // case 0
-        }  // switch
+//            return;
+//        }  // case 0
+//        }  // switch
     }  // if
 }
 

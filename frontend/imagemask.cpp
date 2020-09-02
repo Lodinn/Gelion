@@ -424,6 +424,7 @@ void imageMask::setButtonsEnabled(bool enabled)
 
 void imageMask::addition_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
 {
+    // "1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"
     QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
 
     QVector<int8_t> line(slice_size.width(), 1);
@@ -438,12 +439,32 @@ void imageMask::addition_calculate(J09::maskRecordType *mask1, J09::maskRecordTy
 
 void imageMask::subtraction_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
 {
+    // "1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"
+    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
 
+    QVector<int8_t> line(slice_size.width(), 0);
+    QVector<QVector<int8_t> > buff(slice_size.height(), line);
+
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if(mask1->mask[y][x] == 1 && mask2->mask[y][x] == 0) buff[y][x] = 1;
+    mr_result.mask = buff;
+    mr_result.img = get_mask_image(buff);
 }
 
 void imageMask::clipping_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
 {
+    // "1 cl 1 = 1\n1 cl 0 = 0\n0 cl 1 = 0\n0 cl 0 = 0"
+    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
 
+    QVector<int8_t> line(slice_size.width(), 0);
+    QVector<QVector<int8_t> > buff(slice_size.height(), line);
+
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++)
+            if(mask1->mask[y][x] == 1 && mask2->mask[y][x] == 1) buff[y][x] = 1;
+    mr_result.mask = buff;
+    mr_result.img = get_mask_image(buff);
 }
 
 QImage imageMask::get_mask_image(QVector<QVector<int8_t> > &m)
@@ -586,7 +607,7 @@ void imageMask::execSlot(QPoint p)
     QStringList fsbs2 = mask2->formula_step_by_step;
 
     // get basic for one
-    int b_count_1 = fsbs1.count() - 1;
+    /*int b_count_1 = fsbs1.count() - 1;
     QStringList b_s_list_1;  for (int i=0; i < b_count_1; i++) b_s_list_1.append(fsbs1[i]);
 
     // get basic for two
@@ -598,6 +619,17 @@ void imageMask::execSlot(QPoint p)
 
     QStringList result;
     result.append(b_s_list_1);   result.append(b_s_list_2);
+    result.append(formula1);   result.append(formula2);*/
+
+    QStringList result;
+    int b_count_1 = fsbs1.count() - 1;
+    QStringList b_s_list_1;  for (int i=0; i < b_count_1; i++)
+        if(result.indexOf(fsbs1[i]) == -1) result.append(fsbs1[i]);
+    int b_count_2 = fsbs2.count() - 1;
+    QStringList b_s_list_2;  for (int i=0; i < b_count_2; i++)
+        if(result.indexOf(fsbs2[i]) == -1) result.append(fsbs2[i]);
+    QString formula1 = QString("%1::%2").arg(t1).arg(fsbs1[b_count_1]);
+    QString formula2 = QString("%1::%2").arg(t2).arg(fsbs2[b_count_2]);
     result.append(formula1);   result.append(formula2);
 
     switch (p.x()) {
@@ -645,6 +677,7 @@ void imageMask::m_save()
     J09::maskRecordType *mask_appended = new J09::maskRecordType;
     *mask_appended = mr_result;
     mask_appended->checked = true;
+    mask_appended->title = titleEdit->text();
     emit appendMask(mask_appended);
 }
 
