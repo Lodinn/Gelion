@@ -6,6 +6,7 @@
 #include <QSize>
 #include <QImage>
 #include <QDebug>
+#include <QListWidget>
 
 QT_BEGIN_NAMESPACE
 namespace J09 {
@@ -36,9 +37,17 @@ namespace J09 {
     int style;
   };  // spectralColorType
   struct indexType {
-      QString name;
-      QString formula;
-  };
+      QListWidgetItem *listwidget = nullptr;
+      QString name;  // наименование
+      QString formula;  // формула
+      bool rgb = false;
+      QVector<QVector<double> > rgb_r;  // rgb red
+      QVector<QVector<double> > rgb_g;  // rgb green
+      QVector<QVector<double> > rgb_b;  // rgb blue
+      QVector<QVector<double> > slice;  // индексный массив
+      QImage img;  // растровое изображение
+      J09::histogramType histogram;  // статистика гистограммы
+  };  // indexType
   struct globalSettingsType {
       bool load_resent_project = true;  // при запуске загружать последний проект
       bool save_project_settings = false;  // сохранять настройки проекта
@@ -74,10 +83,47 @@ namespace J09 {
 }
 QT_END_NAMESPACE
 
+class slice_magic : public QObject {
+public:
+    explicit slice_magic(QObject *parent = nullptr);
+//    void save(QDataStream &d_stream);
+//    void load(QDataStream &d_stream);
+    void set_slice(QVector<QVector<double> > sl);
+    void set_channel_num(int num);
+    int get_channel_num() { return ch_num; }
+    void set_wave_length(double wl);
+    void set_brightness(double br);
+    void createRGBslice();
+private:
+    QListWidgetItem *listwidget = nullptr;
+
+    QString ch_title;  // наименование канала в списке выбора listwidget
+    double wave_length;  // wave length
+    int ch_num; // номер канала
+
+    QString name;  // наименование индекса
+    QString formula;  // формула индекса
+
+    double brightness = 1.;  // яркость
+    double rotation = .0;  // previw picture rotate
+
+    QVector<QVector<double> > slice;  // индексный массив
+    QImage img;  // растровое изображение
+    bool rgb = false;
+    J09::RGB_CANNELS rgb_wl;  // default wave lengths
+    QVector<QVector<double> > rgb_r;  // rgb red
+    QVector<QVector<double> > rgb_g;  // rgb green
+    QVector<QVector<double> > rgb_b;  // rgb blue
+
+    J09::histogramType h;  // статистика гистограммы
+
+};
+
 class SpectralImage : public QObject {
   Q_OBJECT
 public:
   explicit SpectralImage(QObject *parent = nullptr);
+  ~SpectralImage();
   enum dataType { dtBase, dtRGB, dtFX10e };
   dataType datatype = dataType::dtBase;
   QString get_file_name() { return fname; }
@@ -111,18 +157,25 @@ public slots:
 
 
 private:
-
   // index order (from outer to inner): z, y, x
+
+  QVector<slice_magic *> bands;  // каналы
+  QVector<slice_magic *> indexes;  // RGB, индексные изображения
+  QVector<slice_magic *> masks;  // маски
+
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
-  QVector<J09::maskRecordType *> masks;  // массив масочных изображений 0 - нет, 1 - маска
+  QVector<J09::indexType> img_additional;  // массив индексных изображений , включая RGB
+  QVector<J09::maskRecordType *> a_masks;  // массив масочных изображений 0 - нет, 1 - маска
   int current_mask_index = -1;  // текущий номер маски
 
   QVector<double> wavelengths;
   QSize slice_size;
   uint32_t depth, height, width;
+
   QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
   QVector<QPair<QString, QString> > indexNameFormulaList;  // списко индексов "наименование,формула"
   QVector<double > indexBrightness;
+
   double default_brightness = 1.5;
   int current_slice = -1;
   QRgb get_rainbow_RGB(double Wavelength);
@@ -161,11 +214,8 @@ public:
   QImage current_mask_image();
   QImage get_mask_image(int num);
   QImage get_mask_image(J09::maskRecordType &msk);
-  int getMasksCount() { return masks.count(); }
+  int getMasksCount() { return a_masks.count(); }
   void deleteAllMasks();
-
-signals:
-
 };
 
 #endif // SPECTRALIMAGE_H

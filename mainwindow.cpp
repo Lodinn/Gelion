@@ -428,20 +428,20 @@ void MainWindow::createConstDockWidgets()
 //    action->setData(0);  show_index_list_acts.append(action);
     show_index_list_acts.append(histogramAct);
     action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
-    createContextAction(QIcon(":/icons/palette.png"), "Сохранить выделенные индексные изображения (*.index) ...", 1,  // save checked
+    createContextAction(QIcon(":/icons/palette.png"), "Сохранить выделенные индексные изображения  в *.index файл ...", 1,  // save checked
                         show_index_list_acts, SLOT(show_index_list()));
-    createContextAction(QIcon(":/icons/palette.png"), "Загрузить индексные изображения (*.index) ...", 2,  // load checked
+    createContextAction(QIcon(":/icons/palette.png"), "Загрузить индексные изображения из *.index файла ...", 2,  // load checked
                         show_index_list_acts, SLOT(show_index_list()));
 
     createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные индексы в файлы ...", 3,  // save checked pdf
                         show_index_list_acts, SLOT(show_index_list()));
     createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные индексы в Excel *.csv файлы ...", 4,  // save checked csv
                         show_index_list_acts, SLOT(show_index_list()));
-    createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить все индексные изображения (кроме RGB) ...", 5,  // delete ALL (rgb)
+    action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
+    createContextAction(QIcon(":/icons/delete-32.png"), "Удалить ВСЕ индексные изображения (кроме RGB) ...", 5,  // delete ALL (rgb)
                         show_index_list_acts, SLOT(show_index_list()));
-
-    connect(action, SIGNAL(triggered()), this, SLOT(show_index_list()));
-
+    createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить выделенные индексные изображения (кроме RGB) ...", 6,  // delete checked (rgb)
+                        show_index_list_acts, SLOT(show_index_list()));
 // Список Каналов
     int correct_ch_mask = 10;
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -1053,6 +1053,8 @@ void MainWindow::createDockWidgetForIndexes()
         lwItem->setIcon(QIcon(":/icons/palette.png"));
         QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
         lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
+        QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
+        lwItem->setFont(font);
     }  // if
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1592,14 +1594,6 @@ void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
     if (dataFileName.isEmpty()) return;
     QPoint globalPos = indexListWidget->mapToGlobal(pos);
     QMenu menu(this);
-//    menu.addAction(histogramAct);
-//    for (int i = 0; i < show_index_list_acts.count(); i++) {
-//        if (i == 0) {
-//            QString current_item = indexListWidget->currentItem()->text();
-//            show_index_list_acts[i]->setText(QString("Удалить индексное изображение %1").arg(current_item));
-//        }  // if
-//        menu.addAction(show_index_list_acts[i]);
-//    }  // for
     for (int i = 0; i < show_index_list_acts.count(); i++)
         menu.addAction(show_index_list_acts[i]);
 
@@ -1688,6 +1682,31 @@ void MainWindow::show_index_list()
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         int num = action->data().toInt();
+        switch (num) {
+        case 1 : {    // Сохранить выделенные индексные изображения  в *.index файл ...
+            // проверка на наличие выделенных индексных изображений
+            int count = 0;
+            for(int row=1; row<indexListWidget->count(); row++)  // исключая RGB
+                if(indexListWidget->item(row)->checkState() == Qt::Checked) count++;
+            if (!count) {
+                QMessageBox msgBox;
+                msgBox.setWindowIcon(icon256);
+                msgBox.setWindowTitle("Ошибка");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText(" Нет выделенных индексных изображений !");
+                msgBox.exec();
+                return;
+            }
+            auto proj_path = getDataSetPath();
+            QString fname = QFileDialog::getSaveFileName(
+                this, tr("Сохранение выделенных индексных изображений"), proj_path,
+                tr("Файлы индексных изображений (*.index)"));
+            if (fname.isEmpty()) return;
+
+            break;
+        }  // case 0
+        }  // switch
+
 //        switch (num) {
 //        case 0 : {    // Удалить индексное изображение
 //            QMessageBox msgBox;

@@ -13,6 +13,11 @@ SpectralImage::SpectralImage(QObject *parent) : QObject(parent) {
     //    img.clear();
 }
 
+SpectralImage::~SpectralImage()
+{
+    foreach(slice_magic *sm, bands) delete sm;
+}
+
 void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize &size)
 {
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
@@ -260,6 +265,13 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
 
   if (num > depth - 1) calculateHistogram(true, num);
 
+  slice_magic *sm = new slice_magic();  bands.append(sm);
+  sm->set_slice(slice);
+  sm->set_channel_num(bands.count());
+  int ch_num = sm->get_channel_num();
+  sm->set_wave_length(wavelengths[ch_num-1]);
+  sm->set_brightness(default_brightness);
+
 }
 
 void SpectralImage::calculateHistogram(bool full, uint16_t num)
@@ -505,26 +517,26 @@ QPair<QString, QString> SpectralImage::get_current_formula()
 
 void SpectralImage::append_mask(J09::maskRecordType *msk)
 {
-    masks.append(msk);
-    current_mask_index = masks.count() - 1;
+    a_masks.append(msk);
+    current_mask_index = a_masks.count() - 1;
 }
 
 int SpectralImage::setCurrentMaskIndex(int num)
 {
-    if (num < 0 || num > masks.count() - 1) return -1;
+    if (num < 0 || num > a_masks.count() - 1) return -1;
     current_mask_index = num;
     return current_mask_index;
 }
 
 J09::maskRecordType *SpectralImage::getCurrentMask()
 {
-    return masks.at(current_mask_index);
+    return a_masks.at(current_mask_index);
 }
 
 J09::maskRecordType *SpectralImage::getMask(int num)
 {
-    if (num < 0 || num > masks.count() - 1) return nullptr;
-    return masks.at(num);
+    if (num < 0 || num > a_masks.count() - 1) return nullptr;
+    return a_masks.at(num);
 }
 
 QImage SpectralImage::current_mask_image()
@@ -574,6 +586,37 @@ QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
 
 void SpectralImage::deleteAllMasks()
 {
-    foreach(J09::maskRecordType *m, masks) delete m;
-    masks.clear();
+    foreach(J09::maskRecordType *m, a_masks) delete m;
+    a_masks.clear();
+}
+
+slice_magic::slice_magic(QObject *parent)
+{
+
+}
+
+void slice_magic::set_slice(QVector<QVector<double> > sl)
+{
+    slice = sl;
+}
+
+void slice_magic::set_channel_num(int num)
+{
+    ch_num = num;
+}
+
+void slice_magic::set_wave_length(double wl)
+{
+    wave_length = wl;
+}
+
+void slice_magic::set_brightness(double br)
+{
+    brightness = br;  h.brightness = br;
+}
+
+void slice_magic::createRGBslice()
+{
+    rgb = true;
+
 }

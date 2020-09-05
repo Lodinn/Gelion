@@ -430,7 +430,6 @@ void ImageHandler::read_envi_hdr(QString fname) {
   image_list.append(image);
   index_current_dataset = image_list.count() - 1;
   emit finished();
-// connect(im_handler, SIGNAL(finished()), this, SLOT(add_envi_hdr_pixmap()));
   datfile.close();
 }
 
