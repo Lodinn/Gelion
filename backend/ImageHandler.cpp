@@ -37,18 +37,18 @@ QString ImageHandler::get_regular_expression(QString input)
 
 int ImageHandler::get_band_by_wave_length(double wavelength) {
 
-  SpectralImage* image = current_image();
-  QVector<double> wls = image->wls();
-  if (wavelength < wls[0]) return 0;
-  int result = wls.length() - 1;
-  for (int ch = 0; ch < wls.length() - 1; ch++) {
-    if ((wavelength >= wls[ch]) &&
-        (wavelength < wls[ch+1])) {
-      result = wavelength - wls[ch] < wls[ch+1] - wavelength ? ch : ch + 1;
-      return result;
-    }  // if
-  }  // for
-  return result; //if nothing was found, return the last channel
+    SpectralImage* image = current_image();
+    QVector<double> wls = image->wls();
+    if (wavelength < wls[0]) return 0;  // with left bound return first channel
+    int result = wls.length() - 1;
+    for (int ch = 0; ch < wls.length() - 1; ch++) {
+      if ((wavelength >= wls[ch]) &&
+          (wavelength < wls[ch+1])) {
+        result = wavelength - wls[ch] < wls[ch+1] - wavelength ? ch : ch + 1;
+        return result;
+      }  // if
+    }  // for
+    return result; //if nothing was found, return the last channel
 }
 
 QPixmap ImageHandler::changeBrightnessPixmap(QImage &img, qreal brightness)
@@ -220,9 +220,11 @@ void ImageHandler::append_index_raster(QString for_eval) {
     if (read_file_canceled) return;
     QApplication::processEvents();
   }  // for
-  current_image()->append_slice(output_array);
+//  current_image()->append_slice(output_array);
+//  emit index_finished(current_image()->get_raster()->length() - 1);
 
-  emit index_finished(current_image()->get_raster()->length() - 1);
+  int num = current_image()->append_index(output_array);
+  emit index_finished(num - 1);
 }
 
 void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)

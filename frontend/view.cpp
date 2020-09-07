@@ -47,8 +47,8 @@ gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
     channelListAct = new QAction(channelListIcon, "Список Каналов", this);
     channelListAct->setCheckable(true); channelListAct->setChecked(true);
 
-    const QIcon maskListIcon = QIcon::fromTheme("Список изображений-масок", QIcon(":/icons/theater.png"));
-    maskListAct = new QAction(maskListIcon, "Список изображений-масок", this);
+    const QIcon maskListIcon = QIcon::fromTheme("Маски", QIcon(":/icons/theater.png"));
+    maskListAct = new QAction(maskListIcon, "Маски", this);
     maskListAct->setCheckable(true); maskListAct->setChecked(true);
 
     const QIcon ShowAllIcon = QIcon::fromTheme("Показать все профили", QIcon(":/icons/profs_show.png"));

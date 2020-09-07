@@ -176,7 +176,8 @@ void MainWindow::createActions() {
   addSeparatorRecentFile = fileMenu->addSeparator();  // для дальнейшей вставки списка файлов
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
-  fileToolBar = addToolBar(fileMenu->title());  fileToolBar->setObjectName("fileToolBar");fileToolBar->setIconSize(tb_def_size);
+  fileToolBar = addToolBar(fileMenu->title());
+  fileToolBar->setObjectName("fileToolBar");fileToolBar->setIconSize(tb_def_size);
   fileToolBar->addAction(view->openAct);
   fileToolBar->addAction(view->localFolderAct);
   fileToolBar->addAction(view->saveAct);                        // main save
@@ -192,8 +193,8 @@ void MainWindow::createActions() {
   itemsMenu->addAction(view->polygonAct); itemsToolBar->addAction(view->polygonAct);
 // &&&index
     QMenu *indexMenu = menuBar()->addMenu(tr("&Индексы"));
-    QToolBar *indexToolBar = addToolBar(indexMenu->title());indexToolBar->setIconSize(tb_def_size);
-    indexToolBar->setObjectName("indexToolBar");
+    QToolBar *indexToolBar = addToolBar(indexMenu->title());
+    indexToolBar->setObjectName("indexToolBar");indexToolBar->setIconSize(tb_def_size);
     const QIcon indexIcon =
         QIcon::fromTheme("Добавить индексное изображение", QIcon(":/icons/MapleLeaf.png"));
     indexAct = new QAction(indexIcon, tr("&Добавить индексное изображение"), this);
@@ -227,7 +228,10 @@ void MainWindow::createActions() {
 
 // &&& windows
   QMenu *winMenu = menuBar()->addMenu("&Окна");
-  QToolBar *winToolBar = addToolBar(winMenu->title());
+  QToolBar *winToolBar = new QToolBar(winMenu->title());
+//  QToolBar *winToolBar = addToolBar(winMenu->title());
+  addToolBar(Qt::LeftToolBarArea, winToolBar);
+
   winToolBar->setObjectName("winToolBar");winToolBar->setIconSize(tb_def_size);
   winMenu->addAction(view->winZGraphListAct);   winToolBar->addAction(view->winZGraphListAct);
   winMenu->addAction(view->indexListAct);   winToolBar->addAction(view->indexListAct);
@@ -1465,6 +1469,8 @@ void MainWindow::restoreSettingsVersionTwo(QSettings *settings)
 
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 {
+    slider->setEnabled(true);
+
     indexListWidget->currentItem()->setSelected(false);  // конкурент
     QListWidgetItem *mlw = maskListWidget->currentItem();
     if(mlw) mlw->setSelected(false);  // конкурент
@@ -1480,6 +1486,8 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 {
+    slider->setEnabled(true);
+
     chListWidget->currentItem()->setSelected(false);  // конкурент
     QListWidgetItem *mlw = maskListWidget->currentItem();
     if(mlw) mlw->setSelected(false);  // конкурент
@@ -1497,6 +1505,8 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 
 void MainWindow::itemClickedMaskList(QListWidgetItem *lwItem)
 {
+    slider->setEnabled(false);
+
     chListWidget->currentItem()->setSelected(false);  // конкурент
     indexListWidget->currentItem()->setSelected(false);  // конкурент
     view->GlobalViewMode = 1;

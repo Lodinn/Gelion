@@ -89,33 +89,61 @@ public:
 //    void save(QDataStream &d_stream);
 //    void load(QDataStream &d_stream);
     void set_slice(QVector<QVector<double> > sl);
+    void set_mask(QVector<QVector<int8_t> > m);
+    QVector<QVector<double> > get_slice() { return slice; }
     void set_channel_num(int num);
     int get_channel_num() { return ch_num; }
     void set_wave_length(double wl);
     void set_brightness(double br);
-    void createRGBslice();
+    void set_rotation(double r) { rotation = r; }
+    void set_title(QString a_title);
+    void calculateHistogram(bool full);
+    J09::RGB_CANNELS get_RGB_defaults() { return rgb_wl; }  // default wave lengths
+    void set_LW_item(QListWidgetItem *item) { listwidget = item; }
+    void set_slice_size(double h, double w) { slice_size = QSize(w, h); }
+    void set_red(QVector<QVector<double> > r) { rgb_r = r; }
+    void set_green(QVector<QVector<double> > g) { rgb_g = g; }
+    void set_blue(QVector<QVector<double> > b) { rgb_b = b; }
+    void set_image(QImage im) {image = im; }
+    void set_RGB() { rgb = true; }
+    void set_MASK() { is_mask = true; }
+    QImage get_rgb(bool enhance_contrast);
+    QImage get_index_rgb(bool enhance_contrast, bool colorized);
+    void set_formula(QString f) { formula = f; }
+    void set_inverse(bool inv) { inverse = inv; }
+    void set_formula_step(QStringList strList) { formula_step_by_step = strList; }
+
 private:
     QListWidgetItem *listwidget = nullptr;
 
-    QString ch_title;  // наименование канала в списке выбора listwidget
+    QString title = "";  // наименование канала в списке выбора listwidget
     double wave_length;  // wave length
     int ch_num; // номер канала
 
-    QString name;  // наименование индекса
-    QString formula;  // формула индекса
+//    QString name;  // наименование индекса \ маски
 
     double brightness = 1.;  // яркость
     double rotation = .0;  // previw picture rotate
 
-    QVector<QVector<double> > slice;  // индексный массив
-    QImage img;  // растровое изображение
+    QVector<QVector<double> > slice;    // массив данных об изображении
+    QVector<QVector<double> > rgb_r;    // rgb red
+    QVector<QVector<double> > rgb_g;    // rgb green
+    QVector<QVector<double> > rgb_b;    // rgb blue
+    QVector<QVector<int8_t> > mask;  // маска
+    QImage image;                       // растровое изображение (черно\белое, при RGB цветное)
     bool rgb = false;
-    J09::RGB_CANNELS rgb_wl;  // default wave lengths
-    QVector<QVector<double> > rgb_r;  // rgb red
-    QVector<QVector<double> > rgb_g;  // rgb green
-    QVector<QVector<double> > rgb_b;  // rgb blue
+    bool index = false;
 
+    QString formula;  // формула индекса \ маски
+    // общая формула алгоритма составной маскиразбитая на составляющие
+    QStringList formula_step_by_step;
+
+    bool is_mask = false;
+    bool inverse = false;            // инверсное изображение \ маска
+    J09::RGB_CANNELS rgb_wl;  // default wave lengths
     J09::histogramType h;  // статистика гистограммы
+    QSize slice_size;
+    QRgb get_rainbow_RGB(double Wavelength);
 
 };
 
@@ -137,6 +165,11 @@ public:
   QString mainIconFileName = "/main.png";
 
 public slots:
+  void append_slice(QVector<QVector<double> > slice);
+  void append_RGB();
+  int append_index(QVector<QVector<double> > slice);
+  void append_mask(J09::maskRecordType *msk);
+
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
   QImage get_rgb(bool enhance_contrast = false, int red = 0, int green = 0, int blue = 0);
@@ -153,9 +186,6 @@ public slots:
     img.clear();
   }
   void set_wls(QVector<double> wls) { wavelengths = wls; }
-  void append_slice(QVector<QVector<double> > slice);
-
-
 private:
   // index order (from outer to inner): z, y, x
 
@@ -165,7 +195,7 @@ private:
 
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
   QVector<J09::indexType> img_additional;  // массив индексных изображений , включая RGB
-  QVector<J09::maskRecordType *> a_masks;  // массив масочных изображений 0 - нет, 1 - маска
+  QVector<J09::maskRecordType *> rec_masks;  // массив масочных изображений 0 - нет, 1 - маска
   int current_mask_index = -1;  // текущий номер маски
 
   QVector<double> wavelengths;
@@ -179,6 +209,7 @@ private:
   double default_brightness = 1.5;
   int current_slice = -1;
   QRgb get_rainbow_RGB(double Wavelength);
+  int get_band_by_wave_length(double wave_l);
 
 public:
   QVector<J09::histogramType> histogram;  // статистика гистограммы
@@ -206,7 +237,7 @@ public:
   double get_current_brightness();
   void set_current_brightness(double value);
   QPair<QString, QString> get_current_formula();
-  void append_mask(J09::maskRecordType *msk);
+
   int setCurrentMaskIndex(int num);
   int getCurrentMaskIndex() { return current_mask_index; }
   J09::maskRecordType *getCurrentMask();
@@ -214,7 +245,7 @@ public:
   QImage current_mask_image();
   QImage get_mask_image(int num);
   QImage get_mask_image(J09::maskRecordType &msk);
-  int getMasksCount() { return a_masks.count(); }
+  int getMasksCount() { return rec_masks.count(); }
   void deleteAllMasks();
 };
 

@@ -31,6 +31,7 @@ void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize &size)
 QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
   if(img.count() < band) return QVector<QVector<double> >();
   return img.at(band);
+//  return bands[band]->get_slice();
 }
 
 QImage SpectralImage::get_grayscale(bool enhance_contrast, uint16_t band) {
@@ -226,6 +227,20 @@ QRgb SpectralImage::get_rainbow_RGB(double Wavelength)
     return qRgb(r,g,b);
 }
 
+int SpectralImage::get_band_by_wave_length(double wave_l)
+{
+    if (wave_l < wavelengths[0]) return 0;  // with left bound return first channel
+    int result = wavelengths.length() - 1;
+    for (int ch = 0; ch < wavelengths.length() - 1; ch++) {
+      if ((wave_l >= wavelengths[ch]) &&
+          (wave_l < wavelengths[ch+1])) {
+        result = wave_l - wavelengths[ch] < wavelengths[ch+1] - wave_l ? ch : ch + 1;
+        return result;
+      }  // if
+    }  // for
+    return result; //if nothing was found, return the last channel
+}
+
 QVector<QPointF> SpectralImage::get_profile(QPoint p) {
   //Check if p is inside the image area
   QPolygon poly;
@@ -265,12 +280,91 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
 
   if (num > depth - 1) calculateHistogram(true, num);
 
+
   slice_magic *sm = new slice_magic();  bands.append(sm);
   sm->set_slice(slice);
+  sm->set_slice_size(height,width);
   sm->set_channel_num(bands.count());
   int ch_num = sm->get_channel_num();
   sm->set_wave_length(wavelengths[ch_num-1]);
   sm->set_brightness(default_brightness);
+  QImage im = sm->get_index_rgb(true,false);
+  sm->set_image(im);
+
+  if (ch_num > depth) sm->calculateHistogram(true);
+
+  sm->set_title("");
+
+}
+
+void SpectralImage::append_RGB()
+{
+    slice_magic *sm = new slice_magic();  indexes.append(sm);
+    sm->set_slice_size(height,width);
+    // 84 - 641nm 53 - 550nm 22 - 460nm
+    J09::RGB_CANNELS rgb_default = sm->get_RGB_defaults();
+    int num_red = this->get_band_by_wave_length(rgb_default.red);
+    int num_green = this->get_band_by_wave_length(rgb_default.green);
+    int num_blue = this->get_band_by_wave_length(rgb_default.blue);
+//    sm->create_RGB(bands[num_red],bands[num_green],bands[num_blue]);
+//    sm->set_image(get_rgb(true,num_red,num_green,num_blue));
+
+    sm->set_slice(bands[num_red]->get_slice());
+    sm->set_red(bands[num_red]->get_slice());
+    sm->set_green(bands[num_green]->get_slice());
+    sm->set_blue(bands[num_blue]->get_slice());
+    QImage im = sm->get_rgb(true);
+    sm->set_image(im);
+
+    sm->set_RGB();  sm->set_title("");
+
+    sm->set_channel_num(0);
+    sm->set_brightness(default_brightness);
+}
+
+int SpectralImage::append_index(QVector<QVector<double> > slice)
+{
+    img.append(slice);
+    indexBrightness.append(default_brightness);
+    J09::histogramType hg;  // статистика гистограммы
+    hg.brightness = default_brightness;
+    histogram.append(hg);
+    uint16_t num = img.count() - 1;
+
+    if (num > depth - 1) calculateHistogram(true, num);
+
+//    ***
+    slice_magic *sm = new slice_magic();  indexes.append(sm);
+    sm->set_slice(slice);
+    sm->set_slice_size(height,width);
+    sm->set_brightness(default_brightness);
+    sm->set_channel_num(indexes.count()-1);
+    QImage im = sm->get_index_rgb(true,true);
+    sm->set_image(im);
+    int i_num = sm->get_channel_num();
+    if (i_num > 0) sm->calculateHistogram(true);
+//    ***
+
+    return img.count();
+}
+
+void SpectralImage::append_mask(J09::maskRecordType *msk)
+{
+    rec_masks.append(msk);
+    current_mask_index = rec_masks.count() - 1;
+
+    slice_magic *sm = new slice_magic();  masks.append(sm);
+    sm->set_MASK();
+    sm->set_slice_size(height,width);
+    sm->set_mask(msk->mask);
+    sm->set_title(msk->title);
+    sm->set_formula(msk->formula);
+    sm->set_inverse(msk->invers);
+    sm->set_formula_step(msk->formula_step_by_step);
+    sm->set_image(msk->img);
+    sm->set_brightness(msk->brightness);
+    sm->set_rotation(msk->rotation);
+    current_mask_index = masks.count() - 1;
 
 }
 
@@ -515,28 +609,22 @@ QPair<QString, QString> SpectralImage::get_current_formula()
     return indexNameFormulaList.at(current_slice - depth);
 }
 
-void SpectralImage::append_mask(J09::maskRecordType *msk)
-{
-    a_masks.append(msk);
-    current_mask_index = a_masks.count() - 1;
-}
-
 int SpectralImage::setCurrentMaskIndex(int num)
 {
-    if (num < 0 || num > a_masks.count() - 1) return -1;
+    if (num < 0 || num > rec_masks.count() - 1) return -1;
     current_mask_index = num;
     return current_mask_index;
 }
 
 J09::maskRecordType *SpectralImage::getCurrentMask()
 {
-    return a_masks.at(current_mask_index);
+    return rec_masks.at(current_mask_index);
 }
 
 J09::maskRecordType *SpectralImage::getMask(int num)
 {
-    if (num < 0 || num > a_masks.count() - 1) return nullptr;
-    return a_masks.at(num);
+    if (num < 0 || num > rec_masks.count() - 1) return nullptr;
+    return rec_masks.at(num);
 }
 
 QImage SpectralImage::current_mask_image()
@@ -586,8 +674,8 @@ QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
 
 void SpectralImage::deleteAllMasks()
 {
-    foreach(J09::maskRecordType *m, a_masks) delete m;
-    a_masks.clear();
+    foreach(J09::maskRecordType *m, rec_masks) delete m;
+    rec_masks.clear();
 }
 
 slice_magic::slice_magic(QObject *parent)
@@ -598,6 +686,11 @@ slice_magic::slice_magic(QObject *parent)
 void slice_magic::set_slice(QVector<QVector<double> > sl)
 {
     slice = sl;
+}
+
+void slice_magic::set_mask(QVector<QVector<int8_t> > m)
+{
+    mask = m;
 }
 
 void slice_magic::set_channel_num(int num)
@@ -615,8 +708,226 @@ void slice_magic::set_brightness(double br)
     brightness = br;  h.brightness = br;
 }
 
-void slice_magic::createRGBslice()
+void slice_magic::set_title(QString a_title)
 {
-    rgb = true;
+    if (!rgb && !is_mask ) {
+        title = QString("номер %1 * %2 нм").arg(ch_num, 3).arg(wave_length, 7, 'f', 2);
+        return;
+    }
+    if (rgb) {
+        title = QString("R:%1нм G:%2 нм B:%3нм").arg(rgb_wl.red).arg(rgb_wl.green).arg(rgb_wl.blue);
+        return;
+    }
+    title = a_title;
+}
 
+void slice_magic::calculateHistogram(bool full)
+{
+//    QVector<QVector<double> > slice = get_band(num);
+//    J09::histogramType h = h;  // статистика гистограммы
+
+    int height = slice.count();  int width = slice.at(0).count();
+    if (full) {
+      h.max = INT_MIN;  h.min = INT_MAX;
+
+      for(int y = 0; y < height; y++) {
+        h.max = std::max(h.max, *std::max_element(slice[y].begin(), slice[y].end()));
+        h.min = std::min(h.min, *std::min_element(slice[y].begin(), slice[y].end()));
+      }  // for
+      if (h.max == INT_MIN || h.min == INT_MAX) {
+        qDebug() << "slice IS NOT CORRECT!!!";
+        return;
+      }  // error
+
+      h.lower = h.min;  h.upper = h.max;
+      h.sum = .0;  h.sum_of_part = 100.;
+      h.vx.resize(h.hcount);  h.vy.resize(h.hcount);  h.vy.fill(0.);
+      if (std::abs(h.max - h.min) < 0.000001) {
+        qDebug() << "slice IS NOT CORRECT - all the values are the same; min/max:" << h.min << h.max;
+        return;
+      }  // error
+
+      double k = (h.hcount-1.)/(h.max-h.min);
+      if (std::abs(k) < 0.000001) {
+        qDebug() << "slice IS NOT CORRECT!!!";
+        return;
+      }  // error
+
+      for (int i=0; i<h.hcount; i++) h.vx[i]=h.min+i/k;
+      for (int y=0; y<height; y++)
+          for (int x=0; x<width; x++){
+              int num_int = qRound((slice[y][x]-h.min)*k);
+              if (num_int < 0) num_int = 0;
+              if (num_int > h.hcount - 1) num_int = h.hcount - 1;
+              h.vy[num_int]++;
+              h.sum++;
+          }  // for
+      return;
+    }  // if (full)
+    h.sum_of_part = 0.;
+    for(int i=0;i<h.hcount-1;i++) {
+        if (h.vx[i] < h.lower) continue;
+        if (h.vx[i] > h.upper) continue;
+        h.sum_of_part += h.vy[i];
+    }  // for
+    if (qAbs(h.sum) < .000001) {
+        h.sum_of_part = .0;  return;
+    }  // if
+    h.sum_of_part = 100.*h.sum_of_part/h.sum;
+}
+
+QImage slice_magic::get_rgb(bool enhance_contrast) {
+
+  if(slice_size.width() <= 0 || slice_size.height() <= 0) return QImage();
+
+  if(rgb_b.isEmpty() || rgb_g.isEmpty() || rgb_r.isEmpty()) {
+    qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE RGB IMAGE";
+    return QImage();
+  }
+  if(rgb_b.count() != slice_size.height() || rgb_g.count() != slice_size.height() || rgb_r.count() != slice_size.height()) {
+    qDebug() << "CRITICAL - WRONG SLICE HEIGHT";
+    return QImage();
+  }
+  if(rgb_b[0].count() != slice_size.width() || rgb_g[0].count() != slice_size.width() || rgb_r[0].count() != slice_size.width()) {
+    qDebug() << "CRITICAL - WRONG SLICE WIDTH";
+    return QImage();
+  }
+
+  double max_r = INT_MIN, max_g = INT_MIN, max_b = INT_MIN,
+         min_r = INT_MAX, min_g = INT_MAX, min_b = INT_MAX;
+  for(int y = 0; y < slice_size.height(); y++) {
+    max_r = std::max(max_r, *std::max_element(rgb_r[y].begin(), rgb_r[y].end()));
+    max_g = std::max(max_g, *std::max_element(rgb_g[y].begin(), rgb_g[y].end()));
+    max_b = std::max(max_b, *std::max_element(rgb_b[y].begin(), rgb_b[y].end()));
+    min_r = std::min(min_r, *std::min_element(rgb_r[y].begin(), rgb_r[y].end()));
+    min_g = std::min(min_g, *std::min_element(rgb_g[y].begin(), rgb_g[y].end()));
+    min_b = std::min(min_b, *std::min_element(rgb_b[y].begin(), rgb_b[y].end()));
+  }
+  QImage img(slice_size, QImage::Format_RGB32);
+  for(int y = 0; y < slice_size.height(); y++) {
+    QRgb *im_scLine = reinterpret_cast<QRgb *>(img.scanLine(y));
+    for(int x = 0; x < slice_size.width(); x++) {
+      if(enhance_contrast) {
+        im_scLine[x] = qRgb(qRound((rgb_r[y][x] - min_r) / (max_r - min_r) * 255.0),
+                            qRound((rgb_g[y][x] - min_g) / (max_g - min_g) * 255.0),
+                            qRound((rgb_b[y][x] - min_b) / (max_b - min_b) * 255.0));
+      } else im_scLine[x] = qRgb(qRound(rgb_r[y][x] * 255.0), qRound(rgb_g[y][x] * 255.0), qRound(rgb_b[y][x] * 255.0));
+    }
+  }
+  return img;
+}
+
+QImage slice_magic::get_index_rgb(bool enhance_contrast, bool colorized)
+{
+    if(slice_size.width() <= 0 || slice_size.height() <= 0) return QImage();
+
+    if(slice.isEmpty()) {
+      qDebug() << "CRITICAL! AN EMPTY SLICE RETRIEVED WHILE CONSTRUCTING THE INDEX IMAGE";
+      return QImage();
+    }
+    if(slice.count() != slice_size.height() || slice[0].count() != slice_size.width()) {
+      qDebug() << "CRITICAL! - WRONG SLICE HEIGHT OR WIDTH";
+      return QImage();
+    }
+    double max_bw = INT_MIN, min_bw = INT_MAX;
+    for(int y = 0; y < slice_size.height(); y++) {
+      max_bw = std::max(max_bw, *std::max_element(slice[y].begin(), slice[y].end()));
+      min_bw = std::min(min_bw, *std::min_element(slice[y].begin(), slice[y].end()));
+    }
+
+    // NDVI -0.621685 0.915984
+
+    QImage index_img(slice_size, QImage::Format_RGB32);
+
+    if (colorized)  // с использованием цветовой схемы
+        for(int y = 0; y < slice_size.height(); y++) {
+            QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
+            for(int x = 0; x < slice_size.width(); x++) {
+                double virtual_wlen = h.wl380 + (slice[y][x] - min_bw)
+                        * (h.wl781 - h.wl380) / (max_bw - min_bw);
+                im_scLine[x] = get_rainbow_RGB(virtual_wlen);
+            }  // for int x
+        }  // for int y
+    else  // черно-белое изображение
+        for(int y = 0; y < slice_size.height(); y++) {
+            QRgb *im_scLine = reinterpret_cast<QRgb *>(index_img.scanLine(y));
+            for(int x = 0; x < slice_size.width(); x++) {
+                if(enhance_contrast) {
+                    double d = (slice[y][x] - min_bw) / (max_bw - min_bw) * 255.0;
+                    im_scLine[x] =  qRgb(qRound(d), qRound(d), qRound(d));
+                } else {
+                    double dd = slice[y][x] * 255.0;
+                    im_scLine[x] = qRgb(qRound(dd), qRound(dd), qRound(dd));
+                }  // if
+            }    // for int x
+        }  // for int y
+
+    return index_img;
+}
+
+QRgb slice_magic::get_rainbow_RGB(double Wavelength)
+{
+    static double Gamma = 0.80;
+    static double IntensityMax = 255;
+
+    double factor;
+    double Red,Green,Blue;
+
+    if((Wavelength >= 380) && (Wavelength<440)){
+        Red = -(Wavelength - 440) / (440 - 380);
+        Green = 0.0;
+        Blue = 1.0;
+    }else if((Wavelength >= 440) && (Wavelength<490)){
+        Red = 0.0;
+        Green = (Wavelength - 440) / (490 - 440);
+        Blue = 1.0;
+    }else if((Wavelength >= 490) && (Wavelength<510)){
+        Red = 0.0;
+        Green = 1.0;
+        Blue = -(Wavelength - 510) / (510 - 490);
+    }else if((Wavelength >= 510) && (Wavelength<580)){
+        Red = (Wavelength - 510) / (580 - 510);
+        Green = 1.0;
+        Blue = 0.0;
+    }else if((Wavelength >= 580) && (Wavelength<645)){
+        Red = 1.0;
+        Green = -(Wavelength - 645) / (645 - 580);
+        Blue = 0.0;
+    }else if((Wavelength >= 645) && (Wavelength<781)){
+        Red = 1.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }else{
+        Red = 0.0;
+        Green = 0.0;
+        Blue = 0.0;
+    }
+
+// Let the intensity fall off near the vision limits
+
+    if((Wavelength >= 380) && (Wavelength<420)){
+        factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+    }else if((Wavelength >= 420) && (Wavelength<701)){
+        factor = 1.0;
+    }else if((Wavelength >= 701) && (Wavelength<781)){
+        factor = 0.3 + 0.7*(780 - Wavelength)  / (780 - 700);
+    }else{
+        factor = 0.0;
+    }
+
+    int r = 0, g = 0, b = 0;
+
+// Don't want 0^x = 1 for x <> 0
+    const double zero = 0.00000001;
+    if (Red < zero) r = 0;
+    else r = qRound(IntensityMax * qPow(Red * factor, Gamma));
+    r = qMin(255, r);
+    if (Green < zero) g = 0;
+    else g = qRound(IntensityMax * qPow(Green * factor, Gamma));
+    g = qMin(255, g);
+    if (Blue < zero) b = 0;
+    else b = qRound(IntensityMax * qPow(Blue * factor, Gamma));
+    b = qMin(255, b);
+
+    return qRgb(r,g,b);
 }

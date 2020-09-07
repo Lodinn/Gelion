@@ -630,7 +630,9 @@ void imageMask::execSlot(QPoint p)
         if(result.indexOf(fsbs2[i]) == -1) result.append(fsbs2[i]);
     QString formula1 = QString("%1::%2").arg(t1).arg(fsbs1[b_count_1]);
     QString formula2 = QString("%1::%2").arg(t2).arg(fsbs2[b_count_2]);
-    result.append(formula1);   result.append(formula2);
+
+    if(result.indexOf(formula1) == -1)  result.append(formula1);
+    if(result.indexOf(formula2) == -1)  result.append(formula2);
 
     switch (p.x()) {
     case -2 : {                     // addition                      !сложение
