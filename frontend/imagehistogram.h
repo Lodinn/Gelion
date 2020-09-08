@@ -11,8 +11,9 @@ class imageHistogram : public QDockWidget
     Q_OBJECT
 public:
     imageHistogram(QWidget * parent = nullptr);
-    void updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
-                    J09::histogramType &hg);
+    void updateData(QString data_file_name, slice_magic *sm);
+//    void updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
+//                    J09::histogramType &hg);
     void setPreviewPixmap(QPixmap &mainRGB);
 private:
     void calculateHistogram(bool full);
@@ -59,7 +60,7 @@ private:
     QRgb get_rainbow_RGB(double Wavelength);
     void setHistogramToBracked();
     QPixmap changeBrightnessPixmap(QImage &img, double brightness);
-    double bracketTextIndent = .9;
+    double bracketTextIndent = .84;
     QCPGraph *graph;
     QPixmap *previewRGB;
     QCPItemPixmap *image_pixmap;

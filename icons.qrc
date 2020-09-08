@@ -51,5 +51,6 @@
         <file>icons/puzzle.png</file>
         <file>icons/ok.png</file>
         <file>icons/unchecked-checkbox.png</file>
+        <file>icons/rainbow_icon_cartoon_style.png</file>
     </qresource>
 </RCC>

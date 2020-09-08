@@ -9,21 +9,23 @@ imageHistogram::imageHistogram(QWidget *parent)
 
 }
 
-void imageHistogram::updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
-                                J09::histogramType &hg)
+//void imageHistogram::updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
+//                                J09::histogramType &hg)
+void imageHistogram::updateData(QString data_file_name, slice_magic *sm)
 {
     if (h_data != nullptr) getHistogramFromSliders();
 
     disconnectSlidersConnections();
 
-    QString plot_title = QString("Гистограмма - [ %1 \\ %2 ]").arg(name).arg(formula);
+    f_title = sm->get_title(); f_formula = sm->get_formula();
+    QString plot_title = QString("Гистограмма - [ %1 \\ %2 ]").arg(f_title).arg(f_formula);
     setWindowTitle(plot_title);
     title->setText(plot_title);
 
     f_data_file_name = data_file_name;
-    f_title = name; f_formula = formula;
-    slice = img;  main_size = QSize(slice[0].count(), slice.count());
-    h_data = &hg;
+
+    slice = sm->get_slice();  main_size = QSize(slice[0].count(), slice.count());
+    h_data = &sm->h;
 
     updatePreviewData();  // загрузка параметров изображения
 
@@ -42,7 +44,7 @@ void imageHistogram::updateData(QString data_file_name, QString name, QString fo
 
     setupSlidersConnections();
 
-    title_of_mask->setText(QString("%1 - %2").arg(name).arg(formula));
+    title_of_mask->setText(QString("%1 - %2").arg(f_title).arg(f_formula));
     formula_of_mask->setText(getMaskFormula());
 
 }
@@ -171,6 +173,7 @@ void imageHistogram::setupUi()
     gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
 
     centralGroupBox = new QGroupBox("Наименование \\ Формула");
+    centralGroupBox->setFixedHeight(25);
     centralGBLayout = new QVBoxLayout(centralGroupBox);
     title_of_mask = new QLineEdit("title", centralGroupBox);
     formula_of_mask = new QLineEdit("formula", centralGroupBox);

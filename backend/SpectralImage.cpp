@@ -290,6 +290,7 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   sm->set_brightness(default_brightness);
   QImage im = sm->get_index_rgb(true,false);
   sm->set_image(im);
+  sm->create_icon();
 
   if (ch_num > depth) sm->calculateHistogram(true);
 
@@ -299,6 +300,11 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
 
 void SpectralImage::append_RGB()
 {
+    for (int i=0; i<indexes.count(); i++) {
+        slice_magic *sm = indexes[i];
+        delete sm;
+    }
+    indexes.clear();
     slice_magic *sm = new slice_magic();  indexes.append(sm);
     sm->set_slice_size(height,width);
     // 84 - 641nm 53 - 550nm 22 - 460nm
@@ -306,8 +312,6 @@ void SpectralImage::append_RGB()
     int num_red = this->get_band_by_wave_length(rgb_default.red);
     int num_green = this->get_band_by_wave_length(rgb_default.green);
     int num_blue = this->get_band_by_wave_length(rgb_default.blue);
-//    sm->create_RGB(bands[num_red],bands[num_green],bands[num_blue]);
-//    sm->set_image(get_rgb(true,num_red,num_green,num_blue));
 
     sm->set_slice(bands[num_red]->get_slice());
     sm->set_red(bands[num_red]->get_slice());
@@ -315,9 +319,8 @@ void SpectralImage::append_RGB()
     sm->set_blue(bands[num_blue]->get_slice());
     QImage im = sm->get_rgb(true);
     sm->set_image(im);
-
     sm->set_RGB();  sm->set_title("");
-
+    sm->create_icon();
     sm->set_channel_num(0);
     sm->set_brightness(default_brightness);
 }
@@ -343,9 +346,26 @@ int SpectralImage::append_index(QVector<QVector<double> > slice)
     sm->set_image(im);
     int i_num = sm->get_channel_num();
     if (i_num > 0) sm->calculateHistogram(true);
+    sm->set_Index();
+    sm->create_icon();
 //    ***
 
-    return img.count();
+//    return img.count();
+    return depth + indexes.count() - 1;
+
+ /*   sm->set_slice(slice);
+    sm->set_slice_size(height,width);
+    sm->set_channel_num(bands.count());
+    int ch_num = sm->get_channel_num();
+    sm->set_wave_length(wavelengths[ch_num-1]);
+    sm->set_brightness(default_brightness);
+    QImage im = sm->get_index_rgb(true,false);
+    sm->set_image(im);
+    sm->create_icon();
+
+    if (ch_num > depth) sm->calculateHistogram(true);
+
+    sm->set_title("");*/
 }
 
 void SpectralImage::append_mask(J09::maskRecordType *msk)
@@ -454,9 +474,11 @@ void SpectralImage::append_additional_image(QImage image, QString index_name, QS
 
 QImage SpectralImage::get_additional_image(int num)
 {
-    if (num < 0 && num > indexImages.count() - 1)
+/*    if (num < 0 && num > indexImages.count() - 1)
         return QImage();
-    return indexImages.at(num);
+    return indexImages.at(num); */
+    if (num < 0 || num > indexes.count() - 1) return QImage();
+    return indexes[num]->get_image();
 }
 
 void SpectralImage::save_additional_slices(QString binfilename)
@@ -593,15 +615,41 @@ void SpectralImage::load_brightness(QString images_brightness)
 
 double SpectralImage::get_current_brightness()
 {
-    if (current_slice < 0) return 3.0;
+    if ( current_slice < 0 || current_slice > depth + indexes.count() - 1) return 3.0;
+    if ( current_slice < depth ) return bands[current_slice]->get_brightness();
+    return indexes[current_slice - depth]->get_brightness();
+
+/*    if (current_slice < 0) return 3.0;
     if (current_slice > indexBrightness.count() - 1) return 3.0;
-    return indexBrightness.at(current_slice);
+    return indexBrightness.at(current_slice); */
 }
+
+QImage SpectralImage::get_current_image()
+{
+    if ( current_slice < 0 || current_slice > depth + indexes.count() - 1) return QImage();
+    if ( current_slice < depth ) return bands[current_slice]->get_image();
+    return indexes[current_slice - depth]->get_image();
+}
+
+void SpectralImage::set_formula_for_index(double r, QString i_title, QString i_formula)
+{
+    indexes[current_slice - depth]->h.rotation = r;
+    indexes[current_slice - depth]->set_title(i_title);
+    indexes[current_slice - depth]->set_formula(i_formula);
+}
+
 
 void SpectralImage::set_current_brightness(double value)
 {
-    if (current_slice < 0 || current_slice > indexBrightness.count() - 1) return;
-    indexBrightness[current_slice] = value;
+    if ( current_slice < 0 || current_slice > depth + indexes.count() - 1) return;
+    if ( current_slice < depth ) {
+        bands[current_slice]->set_brightness(value);
+        return;
+    }
+    indexes[current_slice - depth]->set_brightness(value);
+
+/*    if (current_slice < 0 || current_slice > indexBrightness.count() - 1) return;
+    indexBrightness[current_slice] = value; */
 }
 
 QPair<QString, QString> SpectralImage::get_current_formula()
@@ -678,38 +726,28 @@ void SpectralImage::deleteAllMasks()
     rec_masks.clear();
 }
 
-slice_magic::slice_magic(QObject *parent)
+void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 {
+    lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+    lwItem->setCheckState(Qt::Unchecked);
+    slice_magic *sm;
+    if (num < depth) sm = bands[num];  // каналы
+    else sm = indexes[num - depth];  // RGB, индексные изображения
+    sm->set_LW_item(lwItem);
 
+    if (num == depth) {
+        QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
+        lwItem->setFont(font);
+    }  // if
 }
 
-void slice_magic::set_slice(QVector<QVector<double> > sl)
-{
-    slice = sl;
-}
-
-void slice_magic::set_mask(QVector<QVector<int8_t> > m)
-{
-    mask = m;
-}
-
-void slice_magic::set_channel_num(int num)
-{
-    ch_num = num;
-}
-
-void slice_magic::set_wave_length(double wl)
-{
-    wave_length = wl;
-}
-
-void slice_magic::set_brightness(double br)
-{
-    brightness = br;  h.brightness = br;
-}
+slice_magic::slice_magic(QObject *parent) {}
 
 void slice_magic::set_title(QString a_title)
 {
+    if (index) {
+        title = a_title;  return;
+    }
     if (!rgb && !is_mask ) {
         title = QString("номер %1 * %2 нм").arg(ch_num, 3).arg(wave_length, 7, 'f', 2);
         return;
@@ -865,6 +903,20 @@ QImage slice_magic::get_index_rgb(bool enhance_contrast, bool colorized)
     return index_img;
 }
 
+void slice_magic::create_icon()
+{
+    if (rgb) { icon = QIcon(":/icons/palette.png"); return; }
+    if (index) { icon = QIcon(":/icons/rainbow_icon_cartoon_style.png"); return; }
+    if (wave_length < 781) {  // видимый диапазон
+        QColor color(get_rainbow_RGB(wave_length));
+        QPixmap pixmap(16,16);
+        pixmap.fill(color);
+        QIcon tmp_ico(pixmap);
+        icon = tmp_ico;
+    } else
+        icon = QIcon(":/icons/color_NIR_32.png");
+}
+
 QRgb slice_magic::get_rainbow_RGB(double Wavelength)
 {
     static double Gamma = 0.80;
@@ -930,4 +982,17 @@ QRgb slice_magic::get_rainbow_RGB(double Wavelength)
     b = qMin(255, b);
 
     return qRgb(r,g,b);
+}
+
+void slice_magic::save(QDataStream &stream)
+{
+    stream << title << wave_length << ch_num << brightness << rotation;
+    stream << slice << rgb_r << rgb_g << rgb_b << mask;
+    stream << image << icon << rgb << index;
+    stream << formula << formula_step_by_step << is_mask << inverse  << slice_size;
+    stream << rgb_wl.red << rgb_wl.green << rgb_wl.blue;
+
+    stream << h.min << h.max << h.sum << h.hcount << h.vx << h.vy << h.lower
+           << h.wl380 << h.wl781 << h.brightness << h.___plotmouse << h.___sbrightness
+           << h.imgPreview << h.colorized << h.rotation << h.rgb_preview;
 }

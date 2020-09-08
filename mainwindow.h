@@ -41,12 +41,12 @@ class MainWindow : public QMainWindow {
   void channelListUpdate();
   void maskListUpdate();
 
-  void listWidgetClicked(QListWidgetItem *item);
+  void listWidgetClicked(QListWidgetItem *item);  // области интереса
   void listWidgetDoubleClicked(QListWidgetItem *item);
 
-  void itemClickedIndexList(QListWidgetItem *lwItem);
-  void itemClickedChannelList(QListWidgetItem *lwItem);
-  void itemClickedMaskList(QListWidgetItem *lwItem);
+  void itemClickedIndexList(QListWidgetItem *lwItem);  // индексы
+  void itemClickedChannelList(QListWidgetItem *lwItem);  // каналы
+  void itemClickedMaskList(QListWidgetItem *lwItem);  // маски
 
   void listWidgetDeleteItem(zGraph *item);
   void winZGraphProfilesShowAll();
@@ -152,6 +152,7 @@ protected:
   QDockWidget *dockZGraphList = new QDockWidget("Области интереса", this);
   QListWidget *zGraphListWidget = new QListWidget(dockZGraphList);
   QDockWidget *dockIndexList = new QDockWidget("Изображения", this);
+  QSize indexIconSize = QSize(24,24);
   QListWidget *indexListWidget = new QListWidget(dockIndexList);
   QDockWidget *dockChannelList = new QDockWidget("Список Каналов", this);
   QListWidget *chListWidget = new QListWidget(dockChannelList);

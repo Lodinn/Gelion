@@ -96,7 +96,7 @@ double ImageHandler::get_new_brightness(QSlider *slider, int value)
     double range = slider->maximum() - slider->minimum();
     double delta = value - range * zero_brightness_pos;
     double result = zero_brightness + delta * scale_brightness;
-    current_image()->set_current_brightness(result);
+//    current_image()->set_current_brightness(result);
     return result;
 }
 
@@ -224,7 +224,7 @@ void ImageHandler::append_index_raster(QString for_eval) {
 //  emit index_finished(current_image()->get_raster()->length() - 1);
 
   int num = current_image()->append_index(output_array);
-  emit index_finished(num - 1);
+  emit index_finished(num);
 }
 
 void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)

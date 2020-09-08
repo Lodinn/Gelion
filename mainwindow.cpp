@@ -19,8 +19,6 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
-//    this->setIconSize(tb_def_size);
-
   setWindowTitle(QString("%1").arg(appName));
   QApplication::setApplicationName(appName);
 
@@ -29,10 +27,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   SetupUi();
 
   im_handler->moveToThread(worker_thread);
-
-//  installEventFilter(this);
-//    QCoreApplication.setApplicationName(ORGANIZATION_NAME)
-//    QCoreApplication.setOrganizationDomain(ORGANIZATION_DOMAIN)
 
 }
 
@@ -130,7 +124,7 @@ void MainWindow::saveSettingsZ(QSettings &settings, bool save_checked_only)
 }
 
 void MainWindow::SetupUi() {
-  setWindowTitle("Gelion");
+  setWindowTitle(appName);
   QRect desktop = QApplication::desktop()->screenGeometry();
   int sw = desktop.width();  int sh = desktop.height();
   desktop_width = sw;  desktop_height = sh;
@@ -267,7 +261,7 @@ void MainWindow::createStatusBar() {
 void MainWindow::imgMasksUpdatePreviewPixmap()
 {
     uint32_t depth = im_handler->current_image()->get_bands_count();
-    double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
+    double brightness = im_handler->current_image()->get_index_brightness(0);  // RGB - slice
     QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
     mainPixmap = view->changeBrightnessPixmap(img, brightness);
     imgMasks->setPreviewPixmap(mainPixmap);
@@ -423,6 +417,7 @@ void MainWindow::createConstDockWidgets()
     dockIndexList->setFloating(true);  dockIndexList->setObjectName("dockIndexList");
     dockIndexList->setFixedSize(220,scrHeignt4-36);
     dockIndexList->setWidget(indexListWidget);
+    indexListWidget->setIconSize(indexIconSize);
     dockIndexList->move(rec.width() - 250,upperIndent+1*scrHeignt4);
     addDockWidget(Qt::BottomDockWidgetArea, dockIndexList);
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
@@ -469,6 +464,8 @@ void MainWindow::createConstDockWidgets()
     createContextAction(QIcon(":/icons/unchecked-checkbox.png"), "Снять выделение со всех каналов", 12,  // uncheck all
                         show_channel_list_acts, SLOT(show_channel_list()));
 
+    createContextAction(QIcon(":/icons/ok.png"), "Отображать только выделенные каналы", 14,  // check only show
+                        show_channel_list_acts, SLOT(show_channel_list()));
     action = new QAction(QIcon(":/icons/step2_channels.png"), "Отображать каналы с шагом 2", this);
     action->setData(2);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
@@ -479,8 +476,6 @@ void MainWindow::createConstDockWidgets()
     action->setData(10);  show_channel_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 
-    createContextAction(QIcon(":/icons/ok.png"), "Отображать только выделенные каналы", 14,  // check only show
-                        show_channel_list_acts, SLOT(show_channel_list()));
     action = new QAction(this);  action->setSeparator(true);  show_channel_list_acts.append(action);
     createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные каналы в файлы ...", 15,  // save checked pdf
                         show_channel_list_acts, SLOT(show_channel_list()));
@@ -750,12 +745,14 @@ void MainWindow::toggleViewAction(bool b)
     }  // for
     view->winZGraphListAct->setChecked(dockZGraphList->isVisible());
     view->indexListAct->setChecked(dockIndexList->isVisible());
+
     view->channelListAct->setChecked(dockChannelList->isVisible());
     view->maskListAct->setChecked(dockMaskImage->isVisible());
 
     histogramAct->setChecked(imgHistogram->isVisible());
     spectralAct->setChecked(imgSpectral->isVisible());
     maskAct->setChecked(imgMasks->isVisible());
+
 }
 
 void MainWindow::open() {
@@ -797,12 +794,10 @@ void MainWindow::open() {
 void MainWindow::add_envi_hdr_pixmap() {
   view->mainPixmap->setOpacity(1.0);
   view->resetMatrix();  view->resetTransform();
-// &&& sochi 2020
   view->GlobalScale = 1. / GLOBAL_SETTINGS.main_rgb_scale_start;
   view->GlobalRotate = - GLOBAL_SETTINGS.main_rgb_rotate_start;
   view->scale(1/view->GlobalScale, 1/view->GlobalScale);
   view->rotate(-view->GlobalRotate);
-// &&& sochi 2020
 // dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
   if (!dataFileName.isEmpty()) saveSettings();  // ****************************
   dataFileName = im_handler->current_image()->get_file_name();
@@ -830,9 +825,12 @@ void MainWindow::updateNewDataSet(bool index_update)
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     createDockWidgetForChannels();
     if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
+
     createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
+
     if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
-//    view->localFolderAct->setEnabled(true);
+
+
     slider->setEnabled(true);
     view->openAct->setEnabled(true);
 }
@@ -986,14 +984,23 @@ void MainWindow::spectralSlot() {
 void MainWindow::createDockWidgetForChannels()
 {
     chListWidget->clear();
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    for(int num=0; num<depth; num++) {
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        im_handler->current_image()->set_LW_item(lwItem, num);
+        chListWidget->addItem(lwItem);
+    }  // for
+    chListWidget->setCurrentRow(0);
+/*    chListWidget->clear();
     auto strlist = im_handler->current_image()->get_wl_list(2);  // две цифры после запятой
     auto wavelengths = im_handler->current_image()->wls();
     foreach(QString str, strlist) {
         QListWidgetItem *lwItem = new QListWidgetItem();
+        chListWidget->addItem(lwItem);
         lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
         lwItem->setCheckState(Qt::Unchecked);
         lwItem->setText(str);
-        chListWidget->addItem(lwItem);
+
         int lwnum = strlist.indexOf(str);
         qreal wlen = wavelengths[lwnum];
         if (wlen < 781) {  // видимый диапазон
@@ -1005,12 +1012,17 @@ void MainWindow::createDockWidgetForChannels()
         } else
             lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
      }  // for
-    chListWidget->setCurrentRow(0);
+    chListWidget->setCurrentRow(0); */
 }
 
 void MainWindow::create_default_RGB_image()
 {
-// 84 - 641nm 53 - 550nm 22 - 460nm
+    im_handler->current_image()->append_RGB();
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    view->GlobalChannelNum = depth;
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+
+/*// 84 - 641nm 53 - 550nm 22 - 460nm
     int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
     int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
     int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
@@ -1024,7 +1036,7 @@ void MainWindow::create_default_RGB_image()
     im_handler->current_image()->append_additional_image(img,rgb_str,rgb_str);
     uint32_t depth = im_handler->current_image()->get_bands_count();
     view->GlobalChannelNum = depth;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);*/
 }
 
 void MainWindow::restoreIndexListWidget() {
@@ -1046,27 +1058,32 @@ void MainWindow::restoreIndexListWidget() {
 
 void MainWindow::createDockWidgetForIndexes()
 {
+
     indexListWidget->clear();  slider->setEnabled(true);
     if (restoreSettingAtStartUp) restoreIndexListWidget();
     if (indexListWidget->count() == 0) {
         create_default_RGB_image();
         QListWidgetItem *lwItem = new QListWidgetItem();
+        im_handler->current_image()->set_LW_item(lwItem, view->GlobalChannelNum);
+        indexListWidget->addItem(lwItem);
+    }  // if
+
+/*        QListWidgetItem *lwItem = new QListWidgetItem();
+        indexListWidget->addItem(lwItem);
         lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
         lwItem->setCheckState(Qt::Unchecked);
-        indexListWidget->addItem(lwItem);
+
         lwItem->setIcon(QIcon(":/icons/palette.png"));
         QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
         lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
         QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
-        lwItem->setFont(font);
-    }  // if
+        lwItem->setFont(font); */
+
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
     set_abstract_index_pixmap();
-
     QSize size = im_handler->current_image()->get_raster_x_y_size();
     dockIndexList->setWindowTitle(QString("Изображения - [%1 x %2]").arg(size.width()).arg(size.height()));
-
 }
 
 QPointF MainWindow::getPointFromStr(QString str) {
@@ -2044,28 +2061,41 @@ void MainWindow::settingsDlgShow()
 void MainWindow::change_brightness(int value)
 {
     QPixmap pxm;
+    QImage img = im_handler->current_image()->get_current_image();
+    double brightness = im_handler->get_new_brightness(slider, value);
+    im_handler->current_image()->set_current_brightness(brightness);
+    pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm);
+
+/*    QPixmap pxm;
     QImage img = im_handler->get_REAL_current_image();
     double brightness = im_handler->get_new_brightness(slider, value);
     pxm = view->changeBrightnessPixmap(img, brightness);
-    view->mainPixmap->setPixmap(pxm) ;
+    view->mainPixmap->setPixmap(pxm); */
 }
 
 void MainWindow::add_index_pixmap(int num)
 {
     view->GlobalViewMode = 0;
-// num - номер максимального slice, этот номер на 1 меньше чем нужный current_slice
-    view->GlobalChannelNum = num + 1;  histogramAct->setEnabled(true);
-// ВНИМАНИЕ!!!  img SpectralImage отличается от indexImages тем , что под номером
-//  depth в indexImages находится RGB, и оно отсутствует в img SpectralImage
-    QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
-    im_handler->current_image()->append_additional_image(img,
-                                 view->index_title_str,view->index_formula_str);
+
+    view->GlobalChannelNum = num;  histogramAct->setEnabled(true);
+
+//    QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
+//    im_handler->current_image()->append_additional_image(img,
+//                                 view->index_title_str,view->index_formula_str);
     im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
-// &&& sochi 2020
-    im_handler->current_image()->histogram[view->GlobalChannelNum-1]
-            .rotation = GLOBAL_SETTINGS.main_rgb_rotate_start;
-// &&& sochi 2020
+
+//    im_handler->current_image()->histogram[view->GlobalChannelNum-1]
+//            .rotation = GLOBAL_SETTINGS.main_rgb_rotate_start;
+    im_handler->current_image()->set_formula_for_index(GLOBAL_SETTINGS.main_rgb_rotate_start,
+                                                       view->index_title_str,view->index_formula_str);
     QListWidgetItem *lwItem = new QListWidgetItem();
+    indexListWidget->addItem(lwItem);
+    im_handler->current_image()->set_LW_item(lwItem, view->GlobalChannelNum);
+    indexListWidget->setCurrentRow(indexListWidget->count() - 1);
+    chListWidget->currentItem()->setSelected(false);  // конкурент
+
+/*    QListWidgetItem *lwItem = new QListWidgetItem();
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
     lwItem->setCheckState(Qt::Unchecked);
     indexListWidget->addItem(lwItem);
@@ -2073,7 +2103,7 @@ void MainWindow::add_index_pixmap(int num)
     QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
     lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
     indexListWidget->setCurrentRow(indexListWidget->count() - 1);
-    chListWidget->currentItem()->setSelected(false);  // конкурент
+    chListWidget->currentItem()->setSelected(false);  // конкурент*/
 //    (r640-r680)/(640+r680)
 //----------------------------------------------------------
     set_abstract_index_pixmap();
@@ -2094,9 +2124,15 @@ void MainWindow::set_abstract_index_pixmap()
 {
     double brightness = im_handler->current_image()->get_current_brightness();
     im_handler->set_brightness_to_slider(slider, brightness);
-    QImage img = im_handler->get_REAL_current_image();
+    QImage img = im_handler->current_image()->get_current_image();
     QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
     view->mainPixmap->setPixmap(pxm);
+
+/*    double brightness = im_handler->current_image()->get_current_brightness();
+    im_handler->set_brightness_to_slider(slider, brightness);
+    QImage img = im_handler->get_REAL_current_image();
+    QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
+    view->mainPixmap->setPixmap(pxm); */
 }
 
 void MainWindow::set_abstract_mask_pixmap()
@@ -2114,7 +2150,16 @@ void MainWindow::show_histogram_widget() {
 
 void MainWindow::updateHistogram()
 {
-    uint32_t depth = im_handler->current_image()->get_bands_count();
+    double brightness = im_handler->current_image()->get_index_brightness(0);  // RGB - slice
+    QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
+    mainPixmap = view->changeBrightnessPixmap(img, brightness);
+    imgHistogram->setPreviewPixmap(mainPixmap);
+    imgHistogram->updateData(dataFileName, im_handler->current_image()->get_current_index());
+    if (histogramAct->isChecked()) imgHistogram->show();
+    else imgHistogram->hide();
+
+
+/*    uint32_t depth = im_handler->current_image()->get_bands_count();
     double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
     QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
     mainPixmap = view->changeBrightnessPixmap(img, brightness);
@@ -2126,5 +2171,5 @@ void MainWindow::updateHistogram()
     imgHistogram->updateData(dataFileName, name.first, name.second, slice_index,
                              im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
     if (histogramAct->isChecked()) imgHistogram->show();
-    else imgHistogram->hide();
+    else imgHistogram->hide(); */
 }
