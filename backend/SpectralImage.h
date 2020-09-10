@@ -87,7 +87,7 @@ class slice_magic : public QObject {
 public:
     explicit slice_magic(QObject *parent = nullptr);
     void save(QDataStream &stream);
-//    void load(QDataStream &stream);
+    void load(QDataStream &stream);
     void set_slice(QVector<QVector<double> > sl) { slice = sl; }
     QVector<QVector<double> > get_slice() { return slice; }
     void set_mask(QVector<QVector<int8_t> > m) { mask = m; }
@@ -98,16 +98,28 @@ public:
     void set_brightness(double br) { brightness = br;  h.brightness = br; }
     double get_brightness() { return brightness; }
     void set_rotation(double r) { rotation = r; }
+    double get_rotation() { return rotation; }
     void set_title(QString a_title);
     QString get_title() { return title; }
     void calculateHistogram(bool full);
     J09::RGB_CANNELS get_RGB_defaults() { return rgb_wl; }  // default wave lengths
+
     void set_LW_item(QListWidgetItem *lwItem) {
         listwidget = lwItem;
         listwidget->setText(get_title());
         if (index) listwidget->setToolTip(get_formula());
         listwidget->setIcon(get_icon());
-    }
+        listwidget->setCheckState(Qt::Unchecked);
+        set_check_state(false);
+        if (is_mask) {
+            listwidget->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
+            listwidget->setFlags(listwidget->flags() | Qt::ItemIsUserCheckable);
+            listwidget->setCheckState(Qt::Checked); }
+    }  // void set_LW_item
+
+    void set_check_state(bool state) { check_state = state; }
+    bool get_check_state() { return check_state; }
+
     void set_slice_size(double h, double w) { slice_size = QSize(w, h); }
     void set_red(QVector<QVector<double> > r) { rgb_r = r; }
     void set_green(QVector<QVector<double> > g) { rgb_g = g; }
@@ -122,14 +134,20 @@ public:
     void set_formula(QString f) { formula = f; }
     QString get_formula() { return formula; }
     void set_inverse(bool inv) { inverse = inv; }
+    bool get_inverse() { return inverse; }
     void set_formula_step(QStringList strList) { formula_step_by_step = strList; }
+    QStringList get_formula_step() { return formula_step_by_step; }
     void create_icon();
     QIcon get_icon() { return icon; }
     J09::histogramType h;  // статистика гистограммы
+    QVector<QVector<int8_t> > get_mask() { return mask; }  // маска
+    QVector<QVector<int8_t> > *get_mask_p() { return &mask; }  // маска
+    void convert_to_mask_from_record(J09::maskRecordType mr);
 private:
     QRgb get_rainbow_RGB(double Wavelength);
 
     QListWidgetItem *listwidget = nullptr;
+    bool check_state = false;
     QString title = "";  // наименование канала в списке выбора listwidget
     double wave_length;  // wave length
     int ch_num; // номер канала
@@ -177,7 +195,7 @@ public slots:
   void append_slice(QVector<QVector<double> > slice);
   void append_RGB();
   int append_index(QVector<QVector<double> > slice);
-  void append_mask(J09::maskRecordType *msk);
+  void append_mask(slice_magic *sm);
 
   QVector<QVector<double> > get_band(uint16_t band);
   QImage get_grayscale(bool enhance_contrast = false, uint16_t band = 0);
@@ -200,6 +218,9 @@ public:
   QImage get_current_image();
   void set_formula_for_index(double r, QString i_title, QString i_formula);
   slice_magic *get_current_index() { return indexes[current_slice - depth]; }
+  QImage get_current_mask_image();
+  int get_masks_count() { return masks.count(); }
+  void delete_all_masks();
 private:
   QVector<slice_magic *> bands;  // каналы
   QVector<slice_magic *> indexes;  // RGB, индексные изображения
@@ -251,15 +272,15 @@ public:
   void set_current_brightness(double value);
   QPair<QString, QString> get_current_formula();
 
-  int setCurrentMaskIndex(int num);
-  int getCurrentMaskIndex() { return current_mask_index; }
-  J09::maskRecordType *getCurrentMask();
-  J09::maskRecordType *getMask(int num);
-  QImage current_mask_image();
-  QImage get_mask_image(int num);
-  QImage get_mask_image(J09::maskRecordType &msk);
-  int getMasksCount() { return rec_masks.count(); }
-  void deleteAllMasks();
+  int set_current_mask_index(int num);                         // --- ok
+  int get_current_mask_index() { return current_mask_index; }  // --- ok
+  slice_magic *get_current_mask();                    // --- ??? 1 --
+  slice_magic *get_mask(int num);                    // --- ??? 2 --
+  void set_mask(int num, slice_magic *msk) { masks[num] = msk; }  // 3--- ??? --
+  QImage create_current_mask_image();                              // --- ??? 4 --
+  QImage get_mask_image(int num);                           // --- ??? 5 --
+  QImage create_mask_image(slice_magic *sm);          // --- ??? 6 --
+  J09::maskRecordType convert_to_record_from_mask(int num);
 };
 
 #endif // SPECTRALIMAGE_H

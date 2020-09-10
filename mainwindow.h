@@ -60,7 +60,7 @@ class MainWindow : public QMainWindow {
 
   void add_envi_hdr_pixmap();
   void add_index_pixmap(int);
-  void add_mask_pixmap(J09::maskRecordType *am);
+  void add_mask_pixmap(slice_magic *sm);
 
   void createDockWidgetForItem(zGraph *item);
   void setZGraphDockToggled(zGraph *item);

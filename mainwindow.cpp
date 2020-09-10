@@ -307,6 +307,7 @@ void MainWindow::createMainConnections()
     connect(view->maskListAct, SIGNAL(triggered()), this, SLOT(maskListUpdate()));  // маски
     connect(view->winZGraphListShowAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesShowAll()));
     connect(view->winZGraphListHideAllAct, SIGNAL(triggered()), this, SLOT(winZGraphProfilesHideAll()));
+// masks
 
 }
 
@@ -510,9 +511,9 @@ void MainWindow::createConstDockWidgets()
     createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить все маски", 8,  // delete all
                         show_mask_list_acts, SLOT(show_mask_list()));
     action = new QAction(this);  action->setSeparator(true);  show_mask_list_acts.append(action);
-    createContextAction(QIcon(":/icons/theater.png"), "Сохранить выделенные изображения маски (*.msk) ...", 4,  // save checked
+    createContextAction(QIcon(":/icons/theater.png"), "Сохранить выделенные изображения маски (*.mask) ...", 4,  // save checked
                         show_mask_list_acts, SLOT(show_mask_list()));
-    createContextAction(QIcon(":/icons/theater.png"), "Загрузить изображения маски (*.msk) ...", 5,  // load checked
+    createContextAction(QIcon(":/icons/theater.png"), "Загрузить изображения маски (*.mask) ...", 5,  // load checked
                         show_mask_list_acts, SLOT(show_mask_list()));
     createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные изображения в файлы ...", 6,  // save checked pdf
                         show_mask_list_acts, SLOT(show_mask_list()));
@@ -1642,15 +1643,15 @@ void MainWindow::show_mask_list()
         case 3 : { int count = imgMasks->set2MasksToForm();    // Загрузить 2 выделенные маски в калькулятор
             if (count > 0) imgMasks->show();  imgMasksUpdatePreviewPixmap();
             break; }
-        case 4 : {                                              // Сохранить выделенные изображения маски (*.msk)
+        case 4 : {                                              // Сохранить выделенные изображения маски (*.mask)
             auto proj_path = getDataSetPath();
             QString fname = QFileDialog::getSaveFileName(
                         this, tr("Сохранить выделенные изображения маски"), proj_path,
-                        tr("Файлы изображений масок (*.msk);;Файлы изображений масок (*.msk)"));
+                        tr("Файлы изображений масок (*.mask)"));
             if (fname.isEmpty()) return;
             imgMasks->saveMasksToFile(fname, maskListWidget);
             break; }
-        case 5 : {                                              // Загрузить изображения маски (*.msk)
+        case 5 : {                                              // Загрузить изображения маски (*.mask)
             auto proj_path = getDataSetPath();
             if (proj_path.isEmpty()) {
                 QMessageBox msgBox;
@@ -1665,7 +1666,7 @@ void MainWindow::show_mask_list()
             fd.move(dockMaskImage->pos() + QPoint(-fd.width(),dockMaskImage->height()));
             QString fname = fd.getOpenFileName(
                 this, tr("Загрузка изображений масок"), proj_path,
-                tr("Файлы изображений масок (*.msk);;Файлы изображений масок (*.msk)"));
+                tr("Файлы изображений масок (*.mask)"));
             if (fname.isEmpty()) return;
             imgMasks->loadMasksFromFile(fname);
             imgMasks->updateMaskListWidget();
@@ -2110,13 +2111,13 @@ void MainWindow::add_index_pixmap(int num)
     show_histogram_widget();  // histogram
 }
 
-void MainWindow::add_mask_pixmap(J09::maskRecordType *am)
+void MainWindow::add_mask_pixmap(slice_magic *sm)
 {
     view->GlobalViewMode = 1;
-    im_handler->current_image()->append_mask(am);
-    QListWidgetItem *item = imgMasks->createMaskWidgetItem(am, am->img);
+    im_handler->current_image()->append_mask(sm);
+    QListWidgetItem *item = imgMasks->createMaskWidgetItem(sm, sm->get_image());
     maskListWidget->addItem(item);
-    QPixmap pxm = QPixmap::fromImage(am->img);
+    QPixmap pxm = QPixmap::fromImage(sm->get_image());
     view->mainPixmap->setPixmap(pxm);
 }
 
@@ -2137,9 +2138,10 @@ void MainWindow::set_abstract_index_pixmap()
 
 void MainWindow::set_abstract_mask_pixmap()
 {
-    im_handler->current_image()->setCurrentMaskIndex(view->GlobalMaskNum);
-    J09::maskRecordType *am = im_handler->current_image()->getCurrentMask();
-    QPixmap pxm = QPixmap::fromImage(am->img);
+    im_handler->current_image()->set_current_mask_index(view->GlobalMaskNum);
+//    J09::maskRecordType *am = im_handler->current_image()->getCurrentMask();
+    QImage img = im_handler->current_image()->get_current_mask_image();
+    QPixmap pxm = QPixmap::fromImage(img);
     view->mainPixmap->setPixmap(pxm);
 }
 

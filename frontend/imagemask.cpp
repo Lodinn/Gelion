@@ -16,7 +16,7 @@ void imageMask::setPreviewPixmap(QPixmap &mainRGB)
 void imageMask::clearForAllObjects()
 {
     maskListWidget->clear();
-    imgHand->current_image()->deleteAllMasks();
+    imgHand->current_image()->delete_all_masks();
     clear();  hide();
 }
 
@@ -38,18 +38,17 @@ void imageMask::setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih)
     }  // foreach
 }
 
-QListWidgetItem *imageMask::createMaskWidgetItem(J09::maskRecordType *am, QImage &img)
+QListWidgetItem *imageMask::createMaskWidgetItem(slice_magic *sm, QImage img)
 {
     QListWidgetItem *item = new QListWidgetItem(maskListWidget);
-    item->setText(am->title); item->setToolTip(am->formula);
+    sm->set_MASK();
+    sm->set_LW_item(item);
+    item->setText(sm->get_title()); item->setToolTip(sm->get_formula());
 
-    QMatrix rm;    rm.rotate(am->rotation);
+    QMatrix rm;    rm.rotate(sm->get_rotation());
     item->setIcon(QIcon(QPixmap::fromImage(img).transformed(rm)));
 
-    item->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(Qt::Checked);
-
+//    item->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
     return item;
 }
 
@@ -57,13 +56,25 @@ int imageMask::set2MasksToForm()
 {
     int count = 0;
     for(int row=0; row<maskListWidget->count();row++) {
+        if (count == 2) break;
+        QListWidgetItem *item = maskListWidget->item(row);
+        if (item->checkState() != Qt::Checked) continue;
+        if (count < pixmapLabelsVector.count()) {
+            pixmapLabelsVector[count]->setNumA(row);  count++;
+        }  // if
+    }  // for
+    setEnabledOfMainGroupsWidgets(true,true,false);
+    return count;
+
+/*    int count = 0;
+    for(int row=0; row<maskListWidget->count();row++) {
         QListWidgetItem *item = maskListWidget->item(row);
         if (item->checkState() != Qt::Checked) continue;
         if (count>pixmapLabelsVector.count()-1) return count;
         pixmapLabelsVector[count]->setNumA(row);  count++;
     }  // for
     setEnabledOfMainGroupsWidgets(true,true,false);
-    return count;
+    return count; */
 }
 
 void imageMask::setupUi()
@@ -334,40 +345,51 @@ void imageMask::updateMainPreviewWithIconsPreviw()
 void imageMask::doAddition(int num)
 {
     QSize slice_size(mr_result.mask[0].count(), mr_result.mask.count());
-    J09::maskRecordType *mask_added = imgHand->current_image()->getMask(num);
+//    J09::maskRecordType *mask_added = imgHand->current_image()->get_mask(num);
+    slice_magic *mask_added = imgHand->current_image()->get_mask(num);
 
     QVector<int8_t> line(slice_size.width(), 1);
     QVector<QVector<int8_t> > buff(slice_size.height(), line);
 
     for(int y = 0; y < slice_size.height(); y++)
         for(int x = 0; x < slice_size.width(); x++)
-            if(mr_result.mask[y][x] == 0 && mask_added->mask[y][x] == 0) buff[y][x] = 0;
+            if(mr_result.mask[y][x] == 0 && mask_added->get_mask()[y][x] == 0) buff[y][x] = 0;
     mr_result.mask = buff;
 }
 
 void imageMask::doSubtraction(int num)
 {
     QSize slice_size(mr_result.mask[0].count(), mr_result.mask.count());
-    J09::maskRecordType *mask_added = imgHand->current_image()->getMask(num);
+    //    J09::maskRecordType *mask_added = imgHand->current_image()->get_mask(num);
+    slice_magic *mask_added = imgHand->current_image()->get_mask(num);
 
     QVector<int8_t> line(slice_size.width(), 0);
     QVector<QVector<int8_t> > buff(slice_size.height(), line);
 
     for(int y = 0; y < slice_size.height(); y++)
         for(int x = 0; x < slice_size.width(); x++)
-            if(mr_result.mask[y][x] == 1 && mask_added->mask[y][x] == 0) buff[y][x] = 1;
+            if(mr_result.mask[y][x] == 1 && mask_added->get_mask()[y][x] == 0) buff[y][x] = 1;
     mr_result.mask = buff;
 }
 
 void imageMask::updateResult(int num)
 {
-    J09::maskRecordType *m = imgHand->current_image()->getMask(num);
+    slice_magic *m = imgHand->current_image()->get_mask(num);
+    QString firstTitle = mr_result.title;
+    mr_result.title += formulaLabel->text() + m->get_title();
+    mr_result.formula = QString("%1: %2\n%3 %4").arg(firstTitle).arg(mr_result.formula).
+            arg(m->get_title()).arg(m->get_formula());
+    mr_result.img = imgHand->current_image()->create_mask_image(m);
+    show_mode = 1;
+    updatePreviewImage();
+
+/*    J09::maskRecordType *m = imgHand->current_image()->get_mask(num);
     QString firstTitle = mr_result.title;
     mr_result.title += formulaLabel->text() + m->title;
     mr_result.formula = QString("%1: %2\n%3 %4").arg(firstTitle).arg(mr_result.formula).arg(m->title).arg(m->formula);
-    mr_result.img = imgHand->current_image()->get_mask_image(mr_result);
+    mr_result.img = imgHand->current_image()->create_current_mask_image(mr_result);
     show_mode = 1;
-    updatePreviewImage();
+    updatePreviewImage(); */
 }
 
 QString imageMask::getMaskDataFileName(QString data_file_name)
@@ -382,7 +404,7 @@ QString imageMask::getMaskDataFileName(QString data_file_name)
 
 void imageMask::setMaskToMainPixmap(int num)
 {
-    mr_result = *imgHand->current_image()->getMask(num);
+    mr_result = imgHand->current_image()->convert_to_record_from_mask(num);
     QMatrix rm;    rm.rotate(mr_result.rotation);
     QPixmap pixmap = QPixmap::fromImage(mr_result.img).transformed(rm);
     image_pixmap->setPixmap(pixmap);
@@ -391,6 +413,9 @@ void imageMask::setMaskToMainPixmap(int num)
     plot->rescaleAxes();
     plot->replot();
     formulaLabel->setText(mr_result.title);
+
+/*    mr_result = *imgHand->current_image()->get_mask(num);
+     */
 }
 
 void imageMask::setEnabledOfMainGroupsWidgets(bool e_left, bool e_right, bool e_save)
@@ -422,47 +447,56 @@ void imageMask::setButtonsEnabled(bool enabled)
     clearButton->setEnabled(enabled);
 }
 
-void imageMask::addition_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+void imageMask::addition_calculate(slice_magic *mask1, slice_magic *mask2)
 {
     // "1 + 1 = 1\n1 + 0 = 1\n0 + 1 = 1\n0 + 0 = 0"
-    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
+    QSize slice_size(mask1->get_mask()[0].count(), mask1->get_mask().count());
 
     QVector<int8_t> line(slice_size.width(), 1);
     QVector<QVector<int8_t> > buff(slice_size.height(), line);
 
+    QVector<QVector<int8_t> > *m1 = mask1->get_mask_p();
+    QVector<QVector<int8_t> > *m2 = mask2->get_mask_p();
+
     for(int y = 0; y < slice_size.height(); y++)
         for(int x = 0; x < slice_size.width(); x++)
-            if(mask1->mask[y][x] == 0 && mask2->mask[y][x] == 0) buff[y][x] = 0;
+            if(m1->at(y).at(x) == 0 && m2->at(y).at(x) == 0) buff[y][x] = 0;
     mr_result.mask = buff;
     mr_result.img = get_mask_image(buff);
 }
 
-void imageMask::subtraction_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+void imageMask::subtraction_calculate(slice_magic *mask1, slice_magic *mask2)
 {
     // "1 - 1 = 0\n1 - 0 = 1\n0 - 1 = 0\n0 - 0 = 0"
-    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
+    QSize slice_size(mask1->get_mask()[0].count(), mask1->get_mask().count());
 
     QVector<int8_t> line(slice_size.width(), 0);
     QVector<QVector<int8_t> > buff(slice_size.height(), line);
 
+    QVector<QVector<int8_t> > *m1 = mask1->get_mask_p();
+    QVector<QVector<int8_t> > *m2 = mask2->get_mask_p();
+
     for(int y = 0; y < slice_size.height(); y++)
         for(int x = 0; x < slice_size.width(); x++)
-            if(mask1->mask[y][x] == 1 && mask2->mask[y][x] == 0) buff[y][x] = 1;
+            if(m1->at(y).at(x) == 1 && m2->at(y).at(x) == 0) buff[y][x] = 1;
     mr_result.mask = buff;
     mr_result.img = get_mask_image(buff);
 }
 
-void imageMask::clipping_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2)
+void imageMask::clipping_calculate(slice_magic *mask1, slice_magic *mask2)
 {
     // "1 cl 1 = 1\n1 cl 0 = 0\n0 cl 1 = 0\n0 cl 0 = 0"
-    QSize slice_size(mask1->mask[0].count(), mask1->mask.count());
+    QSize slice_size(mask1->get_mask()[0].count(), mask1->get_mask().count());
 
     QVector<int8_t> line(slice_size.width(), 0);
     QVector<QVector<int8_t> > buff(slice_size.height(), line);
 
+    QVector<QVector<int8_t> > *m1 = mask1->get_mask_p();
+    QVector<QVector<int8_t> > *m2 = mask2->get_mask_p();
+
     for(int y = 0; y < slice_size.height(); y++)
         for(int x = 0; x < slice_size.width(); x++)
-            if(mask1->mask[y][x] == 1 && mask2->mask[y][x] == 1) buff[y][x] = 1;
+            if(m1->at(y).at(x) == 1 && m2->at(y).at(x) == 1) buff[y][x] = 1;
     mr_result.mask = buff;
     mr_result.img = get_mask_image(buff);
 }
@@ -520,22 +554,25 @@ void imageMask::execSlot(QPoint p)
 
         setEnabledOfMainGroupsWidgets(true,true,false);
         show_mode = 1;  infoLabel->setText(getResultShowModesString());
-        J09::maskRecordType *mask = imgHand->current_image()->getMask(p.x());
+//        J09::maskRecordType *mask = imgHand->current_image()->get_mask(p.x());
+        slice_magic *mask = imgHand->current_image()->get_mask(p.x());
 
-        QMatrix rm;    rm.rotate(mask->rotation);
-        QPixmap pixmap = QPixmap::fromImage(mask->img).transformed(rm);
+        QMatrix rm;    rm.rotate(mask->get_rotation());
+        QPixmap pixmap = QPixmap::fromImage(mask->get_image()).transformed(rm);
 
-        mr_result.img = mask->img;
+/*        mr_result.img = mask->img;
         mr_result.rotation = mask->rotation;
         mr_result.title = mask->title;
-        mr_result.formula_step_by_step = mask->formula_step_by_step;
+        mr_result.formula_step_by_step = mask->formula_step_by_step;*/
+
+        mr_result = imgHand->current_image()->convert_to_record_from_mask(p.x());
 
         setPixmapToPlot(pixmap,true);
 
-        titleEdit->setText(mask->title);
+        titleEdit->setText(mr_result.title);
 
         formulaEdit->clear();
-        foreach(QString str, mask->formula_step_by_step)
+        foreach(QString str, mr_result.formula_step_by_step)
             formulaEdit->append(str);
 
         return;
@@ -600,11 +637,17 @@ void imageMask::execSlot(QPoint p)
     QString t1 = plv1->title->text();
     QString t2 = plv2->title->text();
 
-    J09::maskRecordType *mask1 = imgHand->current_image()->getMask(plv1->getNumA());
-    J09::maskRecordType *mask2 = imgHand->current_image()->getMask(plv2->getNumA());
+/*    J09::maskRecordType *mask1 = imgHand->current_image()->get_mask(plv1->getNumA());
+    J09::maskRecordType *mask2 = imgHand->current_image()->get_mask(plv2->getNumA());
 
     QStringList fsbs1 = mask1->formula_step_by_step;
-    QStringList fsbs2 = mask2->formula_step_by_step;
+    QStringList fsbs2 = mask2->formula_step_by_step;    */
+
+    slice_magic *mask1 = imgHand->current_image()->get_mask(plv1->getNumA());
+    slice_magic *mask2 = imgHand->current_image()->get_mask(plv2->getNumA());
+
+    QStringList fsbs1 = mask1->get_formula_step();
+    QStringList fsbs2 = mask2->get_formula_step();
 
     // get basic for one
     /*int b_count_1 = fsbs1.count() - 1;
@@ -676,11 +719,16 @@ void imageMask::execSlot(QPoint p)
 
 void imageMask::m_save()
 {
-    J09::maskRecordType *mask_appended = new J09::maskRecordType;
-    *mask_appended = mr_result;
-    mask_appended->checked = true;
-    mask_appended->title = titleEdit->text();
+    slice_magic *mask_appended = new slice_magic();
+    mask_appended->set_MASK();
+    mask_appended->convert_to_mask_from_record(mr_result);
+    mask_appended->set_title(titleEdit->text());
+
     emit appendMask(mask_appended);
+
+/*    *mask_appended = mr_result;
+    mask_appended->checked = true;
+    mask_appended->title = titleEdit->text();*/
 }
 
 void imageMask::loadMasksFromFile(QString fname)
@@ -695,11 +743,9 @@ void imageMask::loadMasksFromFile(QString fname)
     int count;
     datstream >> count;
     for(int i=0; i<count; i++) {
-        J09::maskRecordType *am = new J09::maskRecordType;
-        imgHand->current_image()->append_mask(am);
-        datstream >> am->checked >> am->title >> am->formula >> am->invers;
-        datstream >> am->formula_step_by_step >> am->img >> am->brightness >> am->rotation;
-        datstream >> am->mask;
+        slice_magic *sm = new slice_magic();
+        sm->load(datstream);
+        imgHand->current_image()->append_mask(sm);
     }
     datfile.close();
 }
@@ -707,10 +753,10 @@ void imageMask::loadMasksFromFile(QString fname)
 void imageMask::updateMaskListWidget()
 {
     maskListWidget->clear();
-    int count = imgHand->current_image()->getMasksCount();
+    int count = imgHand->current_image()->get_masks_count();
     for(int i=0; i<count; i++) {
-        J09::maskRecordType *am = imgHand->current_image()->getMask(i);
-        QListWidgetItem *item = this->createMaskWidgetItem(am, am->img);
+        slice_magic *sm = imgHand->current_image()->get_mask(i);
+        QListWidgetItem *item = this->createMaskWidgetItem(sm, sm->get_image());
         maskListWidget->addItem(item);
     }
 }
@@ -732,17 +778,12 @@ void imageMask::saveMasksToFile(QString fname, QListWidget *mlw)
 
     datstream << count;
 
-    count = imgHand->current_image()->getMasksCount();
-
-    int c = 0;
+    count = imgHand->current_image()->get_masks_count();
     for(int i=0; i<count; i++) {
         if (mlw->item(i)->checkState() != Qt::Checked) continue;
-        J09::maskRecordType *m = imgHand->current_image()->getMask(i);
-        datstream << m->checked << m->title << m->formula << m->invers;
-        datstream << m->formula_step_by_step << m->img << m->brightness << m->rotation;
-        datstream << m->mask;
-        c++;
-    }
+        imgHand->current_image()->get_mask(i)->save(datstream);
+    }  // for
+
     datfile.close();
 }
 
@@ -815,15 +856,15 @@ void DropArea::setNumA(int n)
     }
     empty = false;
 
-    J09::maskRecordType *mask = imgHand->current_image()->getMask(num);
+    slice_magic *mask = imgHand->current_image()->get_mask(num);
 
-    QMatrix rm;    rm.rotate(mask->rotation);
-    pixmap = QPixmap::fromImage(mask->img).transformed(rm);
+    QMatrix rm;    rm.rotate(mask->get_rotation());
+    pixmap = QPixmap::fromImage(mask->get_image()).transformed(rm);
 
     int h=this->height();
     int w=this->width();
     this->setPixmap(pixmap.scaled(w,h,Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 
-    title->setText(mask->title);
-    setToolTip(mask->formula);
+    title->setText(mask->get_title());
+    setToolTip(mask->get_formula());
 }

@@ -368,13 +368,16 @@ int SpectralImage::append_index(QVector<QVector<double> > slice)
     sm->set_title("");*/
 }
 
-void SpectralImage::append_mask(J09::maskRecordType *msk)
+void SpectralImage::append_mask(slice_magic *sm)
 {
-    rec_masks.append(msk);
-    current_mask_index = rec_masks.count() - 1;
+/*    rec_masks.append(msk);
+    current_mask_index = rec_masks.count() - 1; */
 
-    slice_magic *sm = new slice_magic();  masks.append(sm);
-    sm->set_MASK();
+//    slice_magic *sm = new slice_magic();
+    masks.append(sm);
+    current_mask_index = masks.count() - 1;
+
+/*    sm->set_MASK();
     sm->set_slice_size(height,width);
     sm->set_mask(msk->mask);
     sm->set_title(msk->title);
@@ -383,9 +386,7 @@ void SpectralImage::append_mask(J09::maskRecordType *msk)
     sm->set_formula_step(msk->formula_step_by_step);
     sm->set_image(msk->img);
     sm->set_brightness(msk->brightness);
-    sm->set_rotation(msk->rotation);
-    current_mask_index = masks.count() - 1;
-
+    sm->set_rotation(msk->rotation); */
 }
 
 void SpectralImage::calculateHistogram(bool full, uint16_t num)
@@ -631,6 +632,12 @@ QImage SpectralImage::get_current_image()
     return indexes[current_slice - depth]->get_image();
 }
 
+QImage SpectralImage::get_current_mask_image()
+{
+    if ( current_mask_index < 0 || current_mask_index > masks.count() - 1) return QImage();
+    return masks[current_mask_index]->get_image();
+}
+
 void SpectralImage::set_formula_for_index(double r, QString i_title, QString i_formula)
 {
     indexes[current_slice - depth]->h.rotation = r;
@@ -657,27 +664,41 @@ QPair<QString, QString> SpectralImage::get_current_formula()
     return indexNameFormulaList.at(current_slice - depth);
 }
 
-int SpectralImage::setCurrentMaskIndex(int num)
+int SpectralImage::set_current_mask_index(int num)
 {
-    if (num < 0 || num > rec_masks.count() - 1) return -1;
+//    if (num < 0 || num > rec_masks.count() - 1) return -1;
+    if (num < 0 || num > masks.count() - 1) return -1;
     current_mask_index = num;
     return current_mask_index;
 }
 
-J09::maskRecordType *SpectralImage::getCurrentMask()
+slice_magic *SpectralImage::get_current_mask()
 {
-    return rec_masks.at(current_mask_index);
+//    return rec_masks.at(current_mask_index);
+    return masks.at(current_mask_index);
 }
 
-J09::maskRecordType *SpectralImage::getMask(int num)
+slice_magic *SpectralImage::get_mask(int num)
 {
-    if (num < 0 || num > rec_masks.count() - 1) return nullptr;
-    return rec_masks.at(num);
+//    if (num < 0 || num > rec_masks.count() - 1) return nullptr;
+//    return rec_masks.at(num);
+
+    if (num < 0 || num > masks.count() - 1) return nullptr;
+    return masks.at(num);
 }
 
-QImage SpectralImage::current_mask_image()
+QImage SpectralImage::create_current_mask_image()
 {
-    J09::maskRecordType *cm = getCurrentMask();
+    slice_magic *sm = get_current_mask();
+    QImage mask_img(slice_size, QImage::Format_Mono);
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++) {
+            mask_img.setPixel(x, y, sm->get_mask()[y][x]);
+        }  // for
+
+    return mask_img;
+
+/*    J09::maskRecordType *cm = get_current_mask();
     QSize slice_size(cm->mask[0].count(), cm->mask.count());
     QImage mask_img(slice_size, QImage::Format_Mono);
 
@@ -686,12 +707,15 @@ QImage SpectralImage::current_mask_image()
                 mask_img.setPixel(x, y, cm->mask[y][x]);
             }  // for
 
-        return mask_img;
+        return mask_img; */
+
 }
 
 QImage SpectralImage::get_mask_image(int num)
 {
-    J09::maskRecordType *mask = getMask(num);
+    return get_mask(num)->get_image();
+
+/*    J09::maskRecordType *mask = get_mask(num);
     if (mask == nullptr) {
         qDebug() << "MASK READING PROBLEM !!!";
         return QImage();
@@ -704,12 +728,20 @@ QImage SpectralImage::get_mask_image(int num)
                 mask_img.setPixel(x, y, mask->mask[y][x]);
             }  // for
 
-        return mask_img;
+        return mask_img; */
 }
 
-QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
+QImage SpectralImage::create_mask_image(slice_magic *sm)
 {
-    QSize slice_size(msk.mask[0].count(), msk.mask.count());
+    QImage mask_img(slice_size, QImage::Format_Mono);
+    for(int y = 0; y < slice_size.height(); y++)
+        for(int x = 0; x < slice_size.width(); x++) {
+            mask_img.setPixel(x, y, sm->get_mask()[y][x]);
+        }  // for
+
+    return mask_img;
+
+/*    QSize slice_size(msk.mask[0].count(), msk.mask.count());
     QImage mask_img(slice_size, QImage::Format_Mono);
 
         for(int y = 0; y < slice_size.height(); y++)
@@ -717,13 +749,31 @@ QImage SpectralImage::get_mask_image(J09::maskRecordType &msk)
                 mask_img.setPixel(x, y, msk.mask[y][x]);
             }  // for
 
-        return mask_img;
+        return mask_img;*/
 }
 
-void SpectralImage::deleteAllMasks()
+J09::maskRecordType SpectralImage::convert_to_record_from_mask(int num)
 {
-    foreach(J09::maskRecordType *m, rec_masks) delete m;
-    rec_masks.clear();
+    slice_magic *sm = get_mask(num);
+    J09::maskRecordType mr;
+    mr.checked = sm->get_check_state();
+    mr.title = sm->get_title();  // наименование
+    mr.formula = sm->get_formula();  // общая формула алгоритма
+    mr.invers = false;  // инверсное изображение
+    mr.formula_step_by_step = sm->get_formula_step();  // общая формула алгоритма разбитая на составляющие
+    mr.mask = sm->get_mask();  // маска
+    mr.img = sm->get_image();
+    mr.brightness = sm->get_brightness();
+    mr.rotation = sm->get_rotation();
+    return mr;
+}
+
+void SpectralImage::delete_all_masks()
+{
+/*    foreach(J09::maskRecordType *m, rec_masks) delete m;
+    rec_masks.clear(); */
+    foreach(slice_magic *m, masks) delete m;
+    masks.clear();
 }
 
 void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
@@ -756,7 +806,7 @@ void slice_magic::set_title(QString a_title)
         title = QString("R:%1нм G:%2 нм B:%3нм").arg(rgb_wl.red).arg(rgb_wl.green).arg(rgb_wl.blue);
         return;
     }
-    title = a_title;
+    if (is_mask) title = a_title;
 }
 
 void slice_magic::calculateHistogram(bool full)
@@ -917,6 +967,19 @@ void slice_magic::create_icon()
         icon = QIcon(":/icons/color_NIR_32.png");
 }
 
+void slice_magic::convert_to_mask_from_record(J09::maskRecordType mr)
+{
+    set_check_state(mr.checked);
+    set_title(mr.title);  // наименование
+    set_formula(mr.formula);  // общая формула алгоритма
+    set_inverse(mr.invers);  // инверсное изображение
+    set_formula_step(mr.formula_step_by_step);  // общая формула алгоритма разбитая на составляющие
+    set_mask(mr.mask);  // маска
+    set_image(mr.img);
+    set_brightness(mr.brightness);
+    set_rotation(mr.rotation);
+}
+
 QRgb slice_magic::get_rainbow_RGB(double Wavelength)
 {
     static double Gamma = 0.80;
@@ -986,6 +1049,7 @@ QRgb slice_magic::get_rainbow_RGB(double Wavelength)
 
 void slice_magic::save(QDataStream &stream)
 {
+    stream << check_state;
     stream << title << wave_length << ch_num << brightness << rotation;
     stream << slice << rgb_r << rgb_g << rgb_b << mask;
     stream << image << icon << rgb << index;
@@ -995,4 +1059,18 @@ void slice_magic::save(QDataStream &stream)
     stream << h.min << h.max << h.sum << h.hcount << h.vx << h.vy << h.lower
            << h.wl380 << h.wl781 << h.brightness << h.___plotmouse << h.___sbrightness
            << h.imgPreview << h.colorized << h.rotation << h.rgb_preview;
+}
+
+void slice_magic::load(QDataStream &stream)
+{
+    stream >> check_state;
+    stream >> title >> wave_length >> ch_num >> brightness >> rotation;
+    stream >> slice >> rgb_r >> rgb_g >> rgb_b >> mask;
+    stream >> image >> icon >> rgb >> index;
+    stream >> formula >> formula_step_by_step >> is_mask >> inverse  >> slice_size;
+    stream >> rgb_wl.red >> rgb_wl.green >> rgb_wl.blue;
+
+    stream >> h.min >> h.max >> h.sum >> h.hcount >> h.vx >> h.vy >> h.lower
+           >> h.wl380 >> h.wl781 >> h.brightness >> h.___plotmouse >> h.___sbrightness
+           >> h.imgPreview >> h.colorized >> h.rotation >> h.rgb_preview;
 }

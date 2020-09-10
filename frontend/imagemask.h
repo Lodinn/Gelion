@@ -62,7 +62,7 @@ class imageMask : public QDockWidget
 public:
     imageMask(QWidget * parent = nullptr);
     void setLWidgetAndIHandler(QListWidget *lw, ImageHandler *ih);
-    QListWidgetItem *createMaskWidgetItem(J09::maskRecordType *am, QImage &img);
+    QListWidgetItem *createMaskWidgetItem(slice_magic *sm, QImage img);
     int set2MasksToForm();
     J09::globalSettingsType *gsettings;
     void saveMasksToFile(QString fname, QListWidget *mlw);
@@ -130,9 +130,9 @@ private:
     QRadioButton *addition;
     QRadioButton *subtraction;
     QRadioButton *clipping;
-    void addition_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);      // сложение
-    void subtraction_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);   // вычитание
-    void clipping_calculate(J09::maskRecordType *mask1, J09::maskRecordType *mask2);      // отсечение
+    void addition_calculate(slice_magic *mask1, slice_magic *mask2);      // сложение
+    void subtraction_calculate(slice_magic *mask1, slice_magic *mask2);   // вычитание
+    void clipping_calculate(slice_magic *mask1, slice_magic *mask2);      // отсечение
     QImage get_mask_image(QVector<QVector<int8_t> > &m);
 
     bool down_to_up = false;
@@ -156,7 +156,7 @@ private slots:
 
 signals:
    void m_exec(QPoint p);
-   void appendMask(J09::maskRecordType *am);
+   void appendMask(slice_magic *sm);
 };
 
 #endif // IMAGEMASK_H

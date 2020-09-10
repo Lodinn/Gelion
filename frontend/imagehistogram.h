@@ -69,10 +69,10 @@ private:
     QString f_data_file_name, f_title, f_formula;
     QString getMaskFormula();
     QString getMaskTitle();
-    J09::maskRecordType *mask_appended;
+    slice_magic *mask_appended;
     QString getWritableLocation();
     QVector<QVector<int8_t> > calculateMask(bool inv);  // маска
-    QImage get_mask_image(QVector<QVector<int8_t> > &mask);
+    QImage get_mask_image(QVector<QVector<int8_t> > mask);
     QGroupBox *centralGroupBox;
     QVBoxLayout *centralGBLayout;
     QLineEdit *title_of_mask;
@@ -99,7 +99,7 @@ private slots:
     void saveMaskToCsv();
     void saveInvMaskToCsv();
 signals:
-    void appendMask(J09::maskRecordType *am);
+    void appendMask(slice_magic *sm);
 };
 
 #endif // IMAGEHISTOGRAM_H

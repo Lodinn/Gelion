@@ -679,9 +679,26 @@ void imageHistogram::axisRescale()
 
 void imageHistogram::maskSave()
 {
+    mask_appended = new slice_magic();
+    mask_appended->set_MASK();
+    mask_appended->set_check_state(false);
+
+    mask_appended->set_title(title_of_mask->text());
+    mask_appended->set_formula(formula_of_mask->text());
+    mask_appended->set_formula_step(QStringList() << mask_appended->get_formula());
+
+    mask_appended->set_inverse(h_data->rgb_preview == 3);
+
+    mask_appended->set_mask(calculateMask( mask_appended->get_inverse() ));
+    mask_appended->set_image(get_mask_image( mask_appended->get_mask() ));
+    mask_appended->set_brightness(3.);
+    mask_appended->set_rotation(h_data->rotation);
+
+    emit appendMask(mask_appended);
+
 //    QString title(title_of_mask->text());
 //    QString formula(formula_of_mask->text());
-    mask_appended = new J09::maskRecordType;
+/*    mask_appended = new J09::maskRecordType;
     mask_appended->checked = true;
 
     mask_appended->title = title_of_mask->text();
@@ -695,7 +712,7 @@ void imageHistogram::maskSave()
     mask_appended->brightness = 3.;
     mask_appended->rotation = h_data->rotation;
 
-    emit appendMask(mask_appended);
+    emit appendMask(mask_appended); */
 
 }
 
@@ -786,7 +803,7 @@ QVector<QVector<int8_t> > imageHistogram::calculateMask(bool inv)
     return result;
 }
 
-QImage imageHistogram::get_mask_image(QVector<QVector<int8_t> > &mask)
+QImage imageHistogram::get_mask_image(QVector<QVector<int8_t> > mask)
 {
     QSize slice_size(mask[0].count(), mask.count());
     QImage mask_img(slice_size, QImage::Format_Mono);
