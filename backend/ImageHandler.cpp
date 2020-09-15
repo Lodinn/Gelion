@@ -136,6 +136,25 @@ QIcon ImageHandler::load_icon_from_file(QString &fname, double rotation)
     return QIcon(pixmap.transformed(rm));
 }
 
+QString ImageHandler::getWritableLocation()
+{
+    QFileInfo info(current_image()->get_file_name());  // файл данных
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
+}
+
+void ImageHandler::showWarningMessageBox(QMessageBox *mb, QString text)
+{
+
+    mb->setWindowTitle("Ошибка");
+    mb->setIcon(QMessageBox::Information);
+    mb->setText(text);
+    mb->exec();
+}
+
 
 void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 {

@@ -88,6 +88,7 @@ public:
     explicit slice_magic(QObject *parent = nullptr);
     void save(QDataStream &stream);
     void load(QDataStream &stream);
+    J09::histogramType h;  // статистика гистограммы
     void set_slice(QVector<QVector<double> > sl) { slice = sl; }
     QVector<QVector<double> > get_slice() { return slice; }
     void set_mask(QVector<QVector<int8_t> > m) { mask = m; }
@@ -116,6 +117,8 @@ public:
             listwidget->setFlags(listwidget->flags() | Qt::ItemIsUserCheckable);
             listwidget->setCheckState(Qt::Checked); }
     }  // void set_LW_item
+    QListWidgetItem *get_lw_item() { return listwidget; }
+    void set_NULL_lw() { listwidget = nullptr; }
 
     void set_check_state(bool state) { check_state = state; }
     bool get_check_state() { return check_state; }
@@ -139,10 +142,10 @@ public:
     QStringList get_formula_step() { return formula_step_by_step; }
     void create_icon();
     QIcon get_icon() { return icon; }
-    J09::histogramType h;  // статистика гистограммы
     QVector<QVector<int8_t> > get_mask() { return mask; }  // маска
     QVector<QVector<int8_t> > *get_mask_p() { return &mask; }  // маска
     void convert_to_mask_from_record(J09::maskRecordType mr);
+
 private:
     QRgb get_rainbow_RGB(double Wavelength);
 
@@ -169,6 +172,13 @@ private:
     bool inverse = false;            // инверсное изображение \ маска
     J09::RGB_CANNELS rgb_wl;  // default wave lengths
     QSize slice_size;
+    QString fname;
+public:
+    void set_data_file_name(QString fn) { fname = fn; }
+    void save_index_to_CSV_file(QString data_file_name);
+    void save_mask_to_CSV_file_from_slice(QString data_file_name, bool inv);
+    void save_mask_to_CSV_file(QString data_file_name);
+
 };
 
 class SpectralImage : public QObject {
@@ -221,10 +231,23 @@ public:
   QImage get_current_mask_image();
   int get_masks_count() { return masks.count(); }
   void delete_all_masks();
+  void delete_all_indexes();
+  void delete_checked_indexes();
+  void save_checked_indexes(QString indexfilename);
+  int load_indexes_from_file(QString indexfilename, QListWidget *ilw);
+  slice_magic *get_index(int num) { return indexes[num]; }
+  slice_magic *get_mask(int num) { if (num < 0 || num > masks.count() - 1) return nullptr;
+      return masks.at(num);  }
+  void save_list_checked_bands(QString lstfilename);
+  int load_list_checked_bands(QString lstfilename);
+  void save_checked_indexes_separately_img(QString png);
+  void save_checked_indexes_separately_csv();
+
 private:
   QVector<slice_magic *> bands;  // каналы
   QVector<slice_magic *> indexes;  // RGB, индексные изображения
   QVector<slice_magic *> masks;  // маски
+
 // index order (from outer to inner): z, y, x
   QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
   QVector<J09::indexType> img_additional;  // массив индексных изображений , включая RGB
@@ -275,7 +298,7 @@ public:
   int set_current_mask_index(int num);                         // --- ok
   int get_current_mask_index() { return current_mask_index; }  // --- ok
   slice_magic *get_current_mask();                    // --- ??? 1 --
-  slice_magic *get_mask(int num);                    // --- ??? 2 --
+
   void set_mask(int num, slice_magic *msk) { masks[num] = msk; }  // 3--- ??? --
   QImage create_current_mask_image();                              // --- ??? 4 --
   QImage get_mask_image(int num);                           // --- ??? 5 --

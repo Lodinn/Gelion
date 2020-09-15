@@ -6,6 +6,7 @@ imageMask::imageMask(QWidget *parent)
     setupUi();
     move(750,200); resize(800,600);
     installEventFilter(this);
+    empty = true;
 }
 
 void imageMask::setPreviewPixmap(QPixmap &mainRGB)
@@ -220,6 +221,8 @@ bool imageMask::eventFilter(QObject *object, QEvent *event)
 
 void imageMask::setDefaultRGB()
 {
+    empty = true;
+
     image_pixmap->topLeft->setCoords(0,defaultRGB.height());
     image_pixmap->bottomRight->setCoords(defaultRGB.width(),0);
 
@@ -234,6 +237,8 @@ void imageMask::setDefaultRGB()
 
 void imageMask::setPixmapToPlot(QPixmap &pixmap, bool setRange)
 {
+    empty = false;
+
     image_pixmap->topLeft->setCoords(0,pixmap.height());
     image_pixmap->bottomRight->setCoords(pixmap.width(),0);
 
@@ -518,32 +523,58 @@ QImage imageMask::get_mask_image(QVector<QVector<int8_t> > &m)
     return mask_img;
 }
 
-/*if (down_to_up) {
-        plv1 = pixmapLabelsVector[1]; plv2 = pixmapLabelsVector[0];
-    } else {
-        plv1 = pixmapLabelsVector[0]; plv2 = pixmapLabelsVector[1];
-    }*/
-
 void imageMask::contextMenuRequest(QPoint pos)
 {
+    if (empty) return;
+
     QMenu *menu = new QMenu(plot);
     menu->setAttribute(Qt::WA_DeleteOnClose);
     QAction *act = menu->addAction("Сохранить изображение маски ...", this, &imageMask::saveMaskToPdfJpgPng);
     act->setIcon(QIcon(":/icons/theater.png"));
-    act = menu->addAction("Сохранить маску в Excel *.csv файл ...", this, &imageMask::saveMaskToCsv);
-    act->setIcon(QIcon(":/icons/theater.png"));
+    act = menu->addAction("Сохранить маску в Excel CSV файл ...", this, &imageMask::saveMaskToCsv);
+    act->setIcon(QIcon(":/icons/csv2.png"));
 
     menu->popup(plot->mapToGlobal(pos));
 }
 
 void imageMask::saveMaskToPdfJpgPng()
 {
+    QString writableLocation = imgHand->getWritableLocation();
+    QString img_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить изображение маски"), writableLocation,
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы JPEG (*.jpeg);;Файлы BMP (*.bmp)"));
+    if (img_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
+    QMatrix rm;    rm.rotate(mr_result.rotation);
+    QImage img = mr_result.img.transformed(rm);
 
+    QFileInfo info(img_file_name);
+    if (info.suffix().toLower() == "png") img.save(img_file_name, "PNG");
+    if (info.suffix().toLower() == "jpg") img.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "jpeg") img.save(img_file_name, "JPEG");
+    if (info.suffix().toLower() == "bmp") img.save(img_file_name, "BMP");
 }
 
 void imageMask::saveMaskToCsv()
 {
+    QString writableLocation = imgHand->getWritableLocation();
+    QString csv_file_name = QFileDialog::getSaveFileName(
+        this, tr("Сохранить маску в Excel CSV файл"), writableLocation,
+        tr("Excel CSV файлы (*.csv)"));
+    if (csv_file_name.isEmpty()) {
+        qDebug() << "wrong file name";
+        return; }
 
+    fname = imgHand->current_image()->get_file_name();  // наименование файла данных
+    slice_magic *sm = new slice_magic();
+    sm->set_data_file_name(fname);
+    sm->set_MASK();
+    sm->convert_to_mask_from_record(mr_result);
+    sm->set_slice_size(mr_result.mask.count(),mr_result.mask[0].count());
+    sm->set_title(titleEdit->text());
+    sm->save_mask_to_CSV_file(csv_file_name);
+    delete sm;
 }
 
 void imageMask::execSlot(QPoint p)
@@ -554,16 +585,11 @@ void imageMask::execSlot(QPoint p)
 
         setEnabledOfMainGroupsWidgets(true,true,false);
         show_mode = 1;  infoLabel->setText(getResultShowModesString());
-//        J09::maskRecordType *mask = imgHand->current_image()->get_mask(p.x());
+
         slice_magic *mask = imgHand->current_image()->get_mask(p.x());
 
         QMatrix rm;    rm.rotate(mask->get_rotation());
         QPixmap pixmap = QPixmap::fromImage(mask->get_image()).transformed(rm);
-
-/*        mr_result.img = mask->img;
-        mr_result.rotation = mask->rotation;
-        mr_result.title = mask->title;
-        mr_result.formula_step_by_step = mask->formula_step_by_step;*/
 
         mr_result = imgHand->current_image()->convert_to_record_from_mask(p.x());
 
@@ -586,6 +612,7 @@ void imageMask::execSlot(QPoint p)
             QPixmap pixmap = previewRGB->transformed(rm);
             setPixmapToPlot(pixmap,false);
             titleEdit->setText("RGB");  formulaEdit->clear();
+            empty = true;
             break; }
         case 2 : {  show_mode = 1;  infoLabel->setText(getResultShowModesString());     // ' C '-mask
             setEnabledOfMainGroupsWidgets(true,true,false);
@@ -596,6 +623,7 @@ void imageMask::execSlot(QPoint p)
             formulaEdit->clear();
             foreach(QString str, mr_result.formula_step_by_step)
                 formulaEdit->append(str);
+            empty = false;
             break; }
         case 3 : {  // А по часовой
             mr_result.rotation += 90.;  qDebug() << "3 mr_result.rotation" << mr_result.rotation;
@@ -637,12 +665,6 @@ void imageMask::execSlot(QPoint p)
     QString t1 = plv1->title->text();
     QString t2 = plv2->title->text();
 
-/*    J09::maskRecordType *mask1 = imgHand->current_image()->get_mask(plv1->getNumA());
-    J09::maskRecordType *mask2 = imgHand->current_image()->get_mask(plv2->getNumA());
-
-    QStringList fsbs1 = mask1->formula_step_by_step;
-    QStringList fsbs2 = mask2->formula_step_by_step;    */
-
     slice_magic *mask1 = imgHand->current_image()->get_mask(plv1->getNumA());
     slice_magic *mask2 = imgHand->current_image()->get_mask(plv2->getNumA());
 
@@ -650,20 +672,6 @@ void imageMask::execSlot(QPoint p)
     QStringList fsbs2 = mask2->get_formula_step();
 
     // get basic for one
-    /*int b_count_1 = fsbs1.count() - 1;
-    QStringList b_s_list_1;  for (int i=0; i < b_count_1; i++) b_s_list_1.append(fsbs1[i]);
-
-    // get basic for two
-    int b_count_2 = fsbs2.count() - 1;
-    QStringList b_s_list_2;  for (int i=0; i < b_count_2; i++) b_s_list_2.append(fsbs2[i]);
-
-    QString formula1 = QString("%1::%2").arg(t1).arg(fsbs1[b_count_1]);
-    QString formula2 = QString("%1::%2").arg(t2).arg(fsbs2[b_count_2]);
-
-    QStringList result;
-    result.append(b_s_list_1);   result.append(b_s_list_2);
-    result.append(formula1);   result.append(formula2);*/
-
     QStringList result;
     int b_count_1 = fsbs1.count() - 1;
     QStringList b_s_list_1;  for (int i=0; i < b_count_1; i++)
@@ -726,9 +734,6 @@ void imageMask::m_save()
 
     emit appendMask(mask_appended);
 
-/*    *mask_appended = mr_result;
-    mask_appended->checked = true;
-    mask_appended->title = titleEdit->text();*/
 }
 
 void imageMask::loadMasksFromFile(QString fname)

@@ -5,6 +5,8 @@
 #include "ui_inputindexdlg.h"
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
+#include "saveflistdlg.h"
+#include "ui_saveflistdlg.h"
 
 #include <QMenu>
 #include <QToolBar>
@@ -355,7 +357,7 @@ void MainWindow::createConstDockWidgets()
 {
     QRect rec = QApplication::desktop()->screenGeometry();
     int scrHeignt4 = qRound(rec.height() / 4.5);
-// Области интереса
+// ОБЛАСТИ ИНТЕРЕСА
     dockZGraphList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(dockZGraphList, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenuZGraphList(QPoint)));
@@ -397,20 +399,8 @@ void MainWindow::createConstDockWidgets()
     action = new QAction(QIcon(":/icons/save.png"), "Сохранить выделенные области интереса в *.roi файл ...", this);
     action->setData(7);  show_zgraph_list_acts.append(action);
     connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-// работа с изображениями - масками
-//    action = new QAction(this);  action->setSeparator(true);  show_zgraph_list_acts.append(action);
-//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Создать маску из областей интереса ...", this);
-//    action->setData(8);  show_zgraph_list_acts.append(action);  // mask - 6
-//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
 
-//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Sun", this);
-//    action->setData(9);  mask_list_acts.append(action);  // mask - 7
-//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-//    action = new QAction(QIcon(":/icons/theater-roi.png"), "Shadow", this);
-//    action->setData(10);  mask_list_acts.append(action);  // mask - 8
-//    connect(action, SIGNAL(triggered()), this, SLOT(show_zgraph_list()));
-
-// Изображения
+// ИЗОБРАЖЕНИЯ
     dockIndexList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(dockIndexList, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenuDockIndexList(QPoint)));
@@ -424,25 +414,30 @@ void MainWindow::createConstDockWidgets()
     connect(indexListWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClickedIndexList(QListWidgetItem*)));
     connect(dockIndexList->toggleViewAction(),SIGNAL(toggled(bool)),this,SLOT(toggleViewAction(bool)));
 // контекстное меню для индексных изображений
-//    action = new QAction(QIcon(":/icons/delete-32.png"), "Удалить индексное изображение", this);
-//    action->setData(0);  show_index_list_acts.append(action);
     show_index_list_acts.append(histogramAct);
-    action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
-    createContextAction(QIcon(":/icons/palette.png"), "Сохранить выделенные индексные изображения  в *.index файл ...", 1,  // save checked
+
+    createContextAction(QIcon(":/icons/ok.png"), "Выделить все индексные изображения", 7,  // check all
                         show_index_list_acts, SLOT(show_index_list()));
-    createContextAction(QIcon(":/icons/palette.png"), "Загрузить индексные изображения из *.index файла ...", 2,  // load checked
+    createContextAction(QIcon(":/icons/unchecked-checkbox.png"), "Снять выделение со всех индексных изображений", 8,  // uncheck all
+                        show_index_list_acts, SLOT(show_index_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
+
+    createContextAction(QIcon(":/icons/rainbow_icon_cartoon_style.png"), "Сохранить выделенные индексные изображения  в *.index файл ...", 1,  // save checked
+                        show_index_list_acts, SLOT(show_index_list()));
+    createContextAction(QIcon(":/icons/rainbow_icon_cartoon_style.png"), "Загрузить индексные изображения из *.index файла ...", 2,  // load
                         show_index_list_acts, SLOT(show_index_list()));
 
-    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные индексы в файлы ...", 3,  // save checked pdf
+    createContextAction(QIcon(":/icons/save.png"), "Сохранить выделенные индексы в файлы ...", 3,  // save checked pdf
                         show_index_list_acts, SLOT(show_index_list()));
-    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные индексы в Excel *.csv файлы ...", 4,  // save checked csv
-                        show_index_list_acts, SLOT(show_index_list()));
+//    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные индексы в Excel CSV файлы ...", 4,  // save checked csv
+//                        show_index_list_acts, SLOT(show_index_list()));
     action = new QAction(this);  action->setSeparator(true);  show_index_list_acts.append(action);
     createContextAction(QIcon(":/icons/delete-32.png"), "Удалить ВСЕ индексные изображения (кроме RGB) ...", 5,  // delete ALL (rgb)
                         show_index_list_acts, SLOT(show_index_list()));
     createContextAction(QIcon(":/icons/delete-32-1.png"), "Удалить выделенные индексные изображения (кроме RGB) ...", 6,  // delete checked (rgb)
                         show_index_list_acts, SLOT(show_index_list()));
-// Список Каналов
+
+// СПИСОК КАНАЛОВ
     int correct_ch_mask = 10;
     chListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(chListWidget, SIGNAL(customContextMenuRequested(QPoint)),
@@ -464,6 +459,11 @@ void MainWindow::createConstDockWidgets()
                         show_channel_list_acts, SLOT(show_channel_list()));
     createContextAction(QIcon(":/icons/unchecked-checkbox.png"), "Снять выделение со всех каналов", 12,  // uncheck all
                         show_channel_list_acts, SLOT(show_channel_list()));
+    createContextAction(QIcon(":/icons/open.png"), "Загрузить и отобразить список каналов ...", 17,  // load checked
+                        show_channel_list_acts, SLOT(show_channel_list()));
+    createContextAction(QIcon(":/icons/save.png"), "Сохранить список выделенных каналов ...", 18,  // save checked
+                        show_channel_list_acts, SLOT(show_channel_list()));
+    action = new QAction(this);  action->setSeparator(true);  show_channel_list_acts.append(action);
 
     createContextAction(QIcon(":/icons/ok.png"), "Отображать только выделенные каналы", 14,  // check only show
                         show_channel_list_acts, SLOT(show_channel_list()));
@@ -478,10 +478,10 @@ void MainWindow::createConstDockWidgets()
     connect(action, SIGNAL(triggered()), this, SLOT(show_channel_list()));
 
     action = new QAction(this);  action->setSeparator(true);  show_channel_list_acts.append(action);
-    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные каналы в файлы ...", 15,  // save checked pdf
+    createContextAction(QIcon(":/icons/save.png"), "Сохранить выделенные каналы в файлы ...", 15,  // save checked pdf png jpg jpeg csv
                         show_channel_list_acts, SLOT(show_channel_list()));
-    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные каналы в Excel *.csv файлы ...", 16,  // save checked csv
-                        show_channel_list_acts, SLOT(show_channel_list()));
+//    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные каналы в Excel CSV файлы ...", 16,  // save checked csv
+//                        show_channel_list_acts, SLOT(show_channel_list()));
 
 
 // СПЕКТРАЛЬНЫЙ АНАЛИЗ
@@ -515,10 +515,10 @@ void MainWindow::createConstDockWidgets()
                         show_mask_list_acts, SLOT(show_mask_list()));
     createContextAction(QIcon(":/icons/theater.png"), "Загрузить изображения маски (*.mask) ...", 5,  // load checked
                         show_mask_list_acts, SLOT(show_mask_list()));
-    createContextAction(QIcon(":/icons/pdf.png"), "Сохранить выделенные изображения в файлы ...", 6,  // save checked pdf
+    createContextAction(QIcon(":/icons/save.png"), "Сохранить выделенные маски в файлы ...", 6,  // save checked pdf png jpg jpeg csv
                         show_mask_list_acts, SLOT(show_mask_list()));
-    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные изображения в Excel *.csv файлы ...", 7,  // save checked csv
-                        show_mask_list_acts, SLOT(show_mask_list()));
+//    createContextAction(QIcon(":/icons/csv2.png"), "Сохранить выделенные изображения в Excel CSV файлы ...", 7,  // save checked csv
+//                        show_mask_list_acts, SLOT(show_mask_list()));
 
 
     dockMaskImage->resize(450,scrHeignt4+18+correct_ch_mask);
@@ -762,12 +762,10 @@ void MainWindow::open() {
       tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg *.jpeg);;Файлы PNG (*.png);;Файлы TIFF (*.tif *.tiff)"));
   if (fname.isEmpty()) return;
   if(!QFileInfo::exists(fname)) {  // Файл не найден
-      QMessageBox msgBox;
-      msgBox.setWindowIcon(icon256);
-      msgBox.setWindowTitle("Ошибка");
-      msgBox.setIcon(QMessageBox::Information);
-      msgBox.setText(QString("Файл %1 не найден !").arg(fname));
-      msgBox.exec();
+      QMessageBox *msgBox = new QMessageBox;
+      msgBox->setWindowIcon(icon256);
+      im_handler->showWarningMessageBox(msgBox,
+                  QString("Файл %1 не найден !").arg(fname));
       return;
   }  // if
 
@@ -896,12 +894,10 @@ QString MainWindow::makeWritableLocation()
 void MainWindow::save()
 {
     if (dataFileName.isEmpty()) {
-        QMessageBox msgBox;
-        msgBox.setWindowIcon(icon256);
-        msgBox.setWindowTitle("Ошибка");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Для сохранения необходимо загрузить данные !");
-        msgBox.exec();
+        QMessageBox *msgBox = new QMessageBox;
+        msgBox->setWindowIcon(icon256);
+        im_handler->showWarningMessageBox(msgBox,
+                    "Для сохранения необходимо загрузить данные !");
         return;
     }  // if
 
@@ -1068,17 +1064,6 @@ void MainWindow::createDockWidgetForIndexes()
         im_handler->current_image()->set_LW_item(lwItem, view->GlobalChannelNum);
         indexListWidget->addItem(lwItem);
     }  // if
-
-/*        QListWidgetItem *lwItem = new QListWidgetItem();
-        indexListWidget->addItem(lwItem);
-        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
-        lwItem->setCheckState(Qt::Unchecked);
-
-        lwItem->setIcon(QIcon(":/icons/palette.png"));
-        QPair<QString, QString> formula = im_handler->current_image()->get_current_formula();
-        lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
-        QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
-        lwItem->setFont(font); */
 
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1594,10 +1579,8 @@ void MainWindow::showContextMenuChannelList(const QPoint &pos)
 {
     QPoint globalPos = chListWidget->mapToGlobal(pos);
     QMenu menu(this);
-    for (int i = 0; i < show_channel_list_acts.count(); i++) {
+    for (int i = 0; i < show_channel_list_acts.count(); i++)
         menu.addAction(show_channel_list_acts[i]);
-        if (i == 2 ) menu.addSeparator();
-    }  // for
     menu.exec(globalPos);
 }
 
@@ -1654,12 +1637,10 @@ void MainWindow::show_mask_list()
         case 5 : {                                              // Загрузить изображения маски (*.mask)
             auto proj_path = getDataSetPath();
             if (proj_path.isEmpty()) {
-                QMessageBox msgBox;
-                msgBox.setWindowIcon(icon256);
-                msgBox.setWindowTitle("Ошибка");
-                msgBox.setIcon(QMessageBox::Information);
-                msgBox.setText(" Нет загруженного проекта !");
-                msgBox.exec();
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет загруженного проекта !");
                 return;
             }
             QFileDialog fd;
@@ -1673,16 +1654,29 @@ void MainWindow::show_mask_list()
             maskAct->setEnabled(true);  maskAct->setChecked(true);
             imgMasks->show();  imgMasksUpdatePreviewPixmap();
             break; }
+        case 6 : {            // Сохранить выделенные маски в файлы ...", 6,  // save checked pdf png jpg jpeg csv
+            int count = 0;
+            for(int row=0; row<maskListWidget->count(); row++)  // исключая RGB
+                if(maskListWidget->item(row)->checkState() == Qt::Checked) count++;
+            if (!count) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных масок !");
+                 return;
+            }  // if
+            SaveFListDlg *dlg = new SaveFListDlg();
+            dlg->setWindowTitle("Сохранение выделенных масок в файлы");
+            dlg->ui->labelfCount->setText(QString("Выбрано %1 файлов").arg(count));
+            QPoint pos = dockMaskImage->pos(); QPoint mv(-dlg->width()/2,-dlg->height());
+            dlg->move(pos + mv);
+            if (dlg->exec() == QDialog::Accepted) {}
+            break;
+        }  // 6
         case 8 : {                                              // Удалить все маски
             QMessageBox msgBox;
-            msgBox.setWindowTitle("Удаление всех масок");
-            msgBox.setText("Вы подтверждаете удаление всех масок ?\nВосстановить удаление будет невозможно !");
-            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-            msgBox.buttons().at(0)->setText("Да");
-            msgBox.buttons().at(1)->setText("Отмена");
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.setWindowIcon(icon256);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
+            updateDeleteItemsBoxWarning(msgBox, "Удаление всех масок",
+              "Вы подтверждаете удаление всех масок ?\nВосстановить удаление будет невозможно !");
             QPoint pos = dockMaskImage->pos(); QPoint mv(-300,0); msgBox.move(pos + mv);
 
             int res = msgBox.exec();
@@ -1693,8 +1687,8 @@ void MainWindow::show_mask_list()
                 view->GlobalViewMode = 0;
                 view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
                 im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
-            //----------------------------------------------------------------
                 set_abstract_index_pixmap();
+            //----------------------------------------------------------------
                 imgHistogram->hide(); histogramAct->setEnabled(false);
                 chListWidget->currentItem()->setSelected(false);  // конкурент
                 indexListWidget->setCurrentRow(0);
@@ -1717,53 +1711,147 @@ void MainWindow::show_index_list()
             for(int row=1; row<indexListWidget->count(); row++)  // исключая RGB
                 if(indexListWidget->item(row)->checkState() == Qt::Checked) count++;
             if (!count) {
-                QMessageBox msgBox;
-                msgBox.setWindowIcon(icon256);
-                msgBox.setWindowTitle("Ошибка");
-                msgBox.setIcon(QMessageBox::Information);
-                msgBox.setText(" Нет выделенных индексных изображений !");
-                msgBox.exec();
-                return;
-            }
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных индексных изображений !");
+                 return;
+            }  // if
             auto proj_path = getDataSetPath();
             QString fname = QFileDialog::getSaveFileName(
                 this, tr("Сохранение выделенных индексных изображений"), proj_path,
                 tr("Файлы индексных изображений (*.index)"));
             if (fname.isEmpty()) return;
 
+            im_handler->current_image()->save_checked_indexes(fname);
+
             break;
-        }  // case 0
+        }  // case 1
+        case 2 : {    // Загрузить индексные изображения из *.index файла ...", 2,  // load
+            auto proj_path = getDataSetPath();
+            if (proj_path.isEmpty()) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет загруженного проекта !");
+                return;
+            }
+            QFileDialog fd;
+            QString fname = fd.getOpenFileName(
+                this, tr("Загрузка индексных изображений"), proj_path,
+                tr("Файлы индексных изображений (*.index)"));
+            if (fname.isEmpty()) return;
+
+            int new_num = im_handler->current_image()->load_indexes_from_file(fname, indexListWidget);
+            if (new_num == 0) return;
+
+            uint32_t depth = im_handler->current_image()->get_bands_count();
+            indexListWidget->setCurrentRow(new_num - depth);
+            view->GlobalChannelNum = new_num;  histogramAct->setEnabled(true);
+
+            view->GlobalViewMode = 0;
+            im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+            set_abstract_index_pixmap();
+            show_histogram_widget();  // histogram
+            chListWidget->currentItem()->setSelected(false);  // конкурент
+
+            break;
+        }  // case 2
+        case 3 : {   // Сохранить выделенные индексы в файлы ...", 3,  // save checked pdf png jpg csv
+            int count = 0;
+            for(int row=1; row<indexListWidget->count(); row++)  // исключая RGB
+                if(indexListWidget->item(row)->checkState() == Qt::Checked) count++;
+            if (!count) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных индексных изображений !");
+                 return;
+            }  // if
+            SaveFListDlg *dlg = new SaveFListDlg();
+            dlg->setWindowTitle("Сохранение выделенных индексов в файлы");
+            dlg->ui->labelfCount->setText(QString("Выбрано %1 файлов").arg(count));
+            QPoint pos = dockIndexList->pos(); QPoint mv(-dlg->width(),-dlg->height()/2);
+            dlg->move(pos + mv);
+            if (dlg->exec() == QDialog::Accepted) {
+                if(dlg->ui->checkBoxPng->isChecked()) im_handler->current_image()->save_checked_indexes_separately_img("png");
+                if(dlg->ui->checkBoxJpg->isChecked()) im_handler->current_image()->save_checked_indexes_separately_img("jpg");
+                if(dlg->ui->checkBoxJpeg->isChecked()) im_handler->current_image()->save_checked_indexes_separately_img("jpeg");
+                if(dlg->ui->checkBoxCsv->isChecked()) im_handler->current_image()->save_checked_indexes_separately_csv();
+            }  // QDialog::Accepted
+            break;
+        }  // case 3
+        case 5 : {   // Удалить ВСЕ индексные изображения (кроме RGB) ...", 5,  // delete ALL (!rgb)
+            QMessageBox msgBox;
+            updateDeleteItemsBoxWarning(msgBox, "Удаление всех индексных изображений (кроме RGB)",
+              "Вы подтверждаете удаление всех индексных изображений ?\nВосстановить удаление будет невозможно !");
+            QPoint pos = dockIndexList->pos(); QPoint mv(-500,0); msgBox.move(pos + mv);
+            int res = msgBox.exec();
+            if (res == QMessageBox::Ok) {   // нажата кнопка Да
+                // режим отображения устанавливаем в RGB
+                view->GlobalViewMode = 0;
+                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+                set_abstract_index_pixmap();
+
+                im_handler->current_image()->delete_all_indexes();
+
+                QList<QListWidgetItem*> items;
+                for(int row=1; row<indexListWidget->count(); row++)
+                    items.append(indexListWidget->item(row));
+                foreach(QListWidgetItem *item, items)
+                    delete indexListWidget->takeItem(indexListWidget->row(item));
+                imgHistogram->hide();
+            }  // if QMessageBox::Ok
+            break;
+        }  // case 5
+        case 6 : {   // Удалить выделенные индексные изображения (кроме RGB) ...", 6,  // delete checked (!rgb)
+            QMessageBox msgBox;
+            updateDeleteItemsBoxWarning(msgBox, "Удаление выделенных индексных изображений (кроме RGB)",
+              "Вы подтверждаете удаление выделенных индексных изображений ?\nВосстановить удаление будет невозможно !");
+            QPoint pos = dockIndexList->pos(); QPoint mv(-500,0); msgBox.move(pos + mv);
+            int res = msgBox.exec();
+            if (res == QMessageBox::Ok) {   // нажата кнопка Да
+                // режим отображения устанавливаем в RGB
+                view->GlobalViewMode = 0;
+                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+                set_abstract_index_pixmap();
+
+                im_handler->current_image()->delete_checked_indexes();
+
+                QList<QListWidgetItem*> items;
+                for(int row=1; row<indexListWidget->count(); row++)
+                    if (indexListWidget->item(row)->checkState() == Qt::Checked)
+                        items.append(indexListWidget->item(row));
+                foreach(QListWidgetItem *item, items)
+                    delete indexListWidget->takeItem(indexListWidget->row(item));
+                imgHistogram->hide();
+            }  // if QMessageBox::Ok
+            break;
+        }  // case 6
+        case 7 : { for(int row=1; row<indexListWidget->count(); row++)  // Выделить все индексные изображения", 7
+                indexListWidget->item(row)->setCheckState(Qt::Checked);
+                break;
+        }  // case 7
+        case 8 : { for(int row=1; row<indexListWidget->count(); row++)  // Снять выделение со всех индексных изображений", 8
+                indexListWidget->item(row)->setCheckState(Qt::Unchecked);
+                break;
+        }  // case 8
         }  // switch
-
-//        switch (num) {
-//        case 0 : {    // Удалить индексное изображение
-//            QMessageBox msgBox;
-//            msgBox.setWindowTitle("Удаление индексного изображения");
-//            msgBox.setText(QString("Вы подтверждаете удаление индексного изображения %1 ?\nВосстановить удаление будет невозможно !")
-//                           .arg(indexListWidget->currentItem()->text()));
-//            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-//            msgBox.buttons().at(0)->setText("Да");
-//            msgBox.buttons().at(1)->setText("Отмена");
-//            msgBox.setIcon(QMessageBox::Critical);
-//            msgBox.setWindowIcon(icon256);
-//            msgBox.setDefaultButton(QMessageBox::Cancel);
-//            QPoint pos = dockIndexList->pos();
-//            QPoint mv(-300,200);
-//            msgBox.move(pos + mv);
-
-//            int res = msgBox.exec();
-
-//            if (res == QMessageBox::Ok) {   // нажата кнопка Да
-//                view->clearForAllObjects();
-//                zGraphListWidget->clear();
-//                spectralAct->setEnabled(false);
-//                imgSpectral->hide();
-//            }  // if QMessageBox::Ok
-
-//            return;
-//        }  // case 0
-//        }  // switch
     }  // if
+}
+
+void MainWindow::updateDeleteItemsBoxWarning(QMessageBox &mb, QString title, QString text)
+{
+    mb.setWindowTitle(title);
+    mb.setText(text);
+    mb.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    mb.buttons().at(0)->setText("Да");
+    mb.buttons().at(1)->setText("Нет");
+    mb.setIcon(QMessageBox::Critical);
+    mb.setWindowIcon(icon256);
+    mb.setDefaultButton(QMessageBox::Cancel);
 }
 
 void MainWindow::show_channel_list_update() {
@@ -1805,7 +1893,72 @@ void MainWindow::show_channel_list()
         case 11 : show_channel_list_special_update(1); break;
         case 12 : show_channel_list_special_update(2); break;
         case 14 : show_channel_list_special_update(3); break;
-        }
+        case 15 : {  // Сохранить выделенные каналы в файлы ...", 15,  // save checked pdf png jpg jpeg csv
+            int count = 0;
+            for(int row=0; row<chListWidget->count(); row++)  // исключая RGB
+                if(chListWidget->item(row)->checkState() == Qt::Checked) count++;
+            if (!count) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных каналов !");
+                 return;
+            }  // if
+            SaveFListDlg *dlg = new SaveFListDlg();
+            dlg->setWindowTitle("Сохранение выделенных каналов в файлы");
+            dlg->ui->labelfCount->setText(QString("Выбрано %1 файлов").arg(count));
+            QPoint pos = dockChannelList->pos(); QPoint mv(-dlg->width(),-dlg->height()/2);
+            dlg->move(pos + mv);
+            if (dlg->exec() == QDialog::Accepted) {}
+            break;
+        }  // 15
+        case 17 : {  // Загрузить и отобразить список каналов ...", 17,  // load checked
+            auto proj_path = getDataSetPath();
+            if (proj_path.isEmpty()) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет загруженного проекта !");
+                return;
+            }
+            QFileDialog fd;
+            QString fname = fd.getOpenFileName(
+                this, tr("Загрузка списка каналов"), proj_path,
+                tr("Файлы спектральных каналов (*.splst)"));
+            if (fname.isEmpty()) return;
+
+            view->GlobalViewMode = 0;
+            view->GlobalChannelNum = im_handler->current_image()->load_list_checked_bands(fname);
+            im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+            set_abstract_index_pixmap();
+            chListWidget->setCurrentRow(view->GlobalChannelNum);
+            indexListWidget->currentItem()->setSelected(false);  // конкурент
+
+            break;
+        }  // 17
+        case 18 : {  // Сохранить список выделенных каналов ...", 18,  // save checked
+            // проверка на наличие выделенных каналов
+            int count = 0;
+            for(int row=0; row<chListWidget->count(); row++)  // спектральных каналов
+                if(chListWidget->item(row)->checkState() == Qt::Checked) count++;
+            if (!count) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных спектральных каналов !");
+                return;
+            }
+            auto proj_path = getDataSetPath();
+            QString fname = QFileDialog::getSaveFileName(
+                this, tr("Сохранение списка выделенных каналов"), proj_path,
+                tr("Файлы спектральных каналов (*.splst)"));
+            if (fname.isEmpty()) return;
+
+            im_handler->current_image()->save_list_checked_bands(fname);
+
+            break;
+        }  // 18
+        }  // switch
     }  // if
 }
 
@@ -1883,12 +2036,10 @@ void MainWindow::show_zgraph_list()
         case 6 : {    // Загрузить области интереса из файла ...
             auto proj_path = getDataSetPath();
             if (proj_path.isEmpty()) {
-                QMessageBox msgBox;
-                msgBox.setWindowIcon(icon256);
-                msgBox.setWindowTitle("Ошибка");
-                msgBox.setIcon(QMessageBox::Information);
-                msgBox.setText(" Нет загруженного проекта !");
-                msgBox.exec();
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет загруженного проекта !");
                 return;
             }
             QFileDialog fd;
@@ -1915,25 +2066,21 @@ void MainWindow::show_zgraph_list()
         case 7 : {    // Сохранить выделенные области интереса в файл ...
             auto proj_path = getDataSetPath();
             if (proj_path.isEmpty()) {
-                QMessageBox msgBox;
-                msgBox.setWindowIcon(icon256);
-                msgBox.setWindowTitle("Ошибка");
-                msgBox.setIcon(QMessageBox::Information);
-                msgBox.setText(" Нет загруженного проекта !");
-                msgBox.exec();
-                return;
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет загруженного проекта !");
+                 return;
             }
 // проверка на наличие сохраняемых областей интереса
             auto graphList = view->getZGraphItemsList();
             int count = 0;
             foreach(zGraph *item, graphList) if (item->isVisible()) count++;
             if (!count) {
-                QMessageBox msgBox;
-                msgBox.setWindowIcon(icon256);
-                msgBox.setWindowTitle("Ошибка");
-                msgBox.setIcon(QMessageBox::Information);
-                msgBox.setText(" Нет выделенных областей интереса !");
-                msgBox.exec();
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных областей интереса !");
                 return;
             }
             QString fname = QFileDialog::getSaveFileName(
@@ -1949,14 +2096,8 @@ void MainWindow::show_zgraph_list()
         }  // case 7
         case 11 : {    // Удалить все области интереса ...
             QMessageBox msgBox;
-            msgBox.setWindowTitle("Удаление всех областей интереса");
-            msgBox.setText("Вы подтверждаете удаление всех областей интереса ?\nВосстановить удаление будет невозможно !");
-            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-            msgBox.buttons().at(0)->setText("Да");
-            msgBox.buttons().at(1)->setText("Отмена");
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.setWindowIcon(icon256);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
+            updateDeleteItemsBoxWarning(msgBox, "Удаление всех областей интереса",
+              "Вы подтверждаете удаление всех областей интереса ?\nВосстановить удаление будет невозможно !");
             QPoint pos = dockZGraphList->pos();
             QPoint mv(-300,200);
             msgBox.move(pos + mv);

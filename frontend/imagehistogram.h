@@ -12,8 +12,6 @@ class imageHistogram : public QDockWidget
 public:
     imageHistogram(QWidget * parent = nullptr);
     void updateData(QString data_file_name, slice_magic *sm);
-//    void updateData(QString data_file_name, QString name, QString formula, QVector<QVector<double> > img,
-//                    J09::histogramType &hg);
     void setPreviewPixmap(QPixmap &mainRGB);
 private:
     void calculateHistogram(bool full);
@@ -54,6 +52,7 @@ private:
     int histogramPlotTrigger = 0;
     bool histogramPlotPAN = false;
     QVector<QVector<double> > slice;
+    slice_magic *sm_buff;
     QSize main_size;
     QImage get_index_rgb_ext(QVector<QVector<double> > &slice, bool colorized);
     QImage get_mask_image(QVector<QVector<double> > &slice, bool inversion);

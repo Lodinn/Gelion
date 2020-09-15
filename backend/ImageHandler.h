@@ -6,6 +6,7 @@
 #include <QList>
 #include <QSlider>
 #include <QIcon>
+#include <QMessageBox>
 #include "SpectralImage.h"
 
 class ImageHandler : public QObject {
@@ -29,6 +30,8 @@ public:
     void save_settings_all_images(QStringList &save_file_names);
     QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
     QIcon load_icon_from_file(QString &fname, double rotation);
+    QString getWritableLocation();  // активный каталог проекта
+    void showWarningMessageBox(QMessageBox *mb, QString text);
 protected:
     int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > >* raster;

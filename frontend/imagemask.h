@@ -71,6 +71,8 @@ public:
     void setPreviewPixmap(QPixmap &mainRGB);
     void clearForAllObjects();
 private:
+    bool empty;
+
     QString defMaskFileDataName = "masks.dat";
     enum inputMode { imNone, imAddition, imSubtraction };
     inputMode im = imageMask::imNone;
@@ -83,6 +85,7 @@ private:
     bool eventFilter(QObject *object, QEvent *event);
     QCustomPlot *plot = nullptr;
     QCPItemPixmap *image_pixmap = nullptr;
+    QString fname;  // наименование файла данных
     QPixmap *previewRGB;
     QListWidget *maskListWidget = nullptr;
     ImageHandler *imgHand = nullptr;

@@ -26,6 +26,7 @@ void imageHistogram::updateData(QString data_file_name, slice_magic *sm)
 
     slice = sm->get_slice();  main_size = QSize(slice[0].count(), slice.count());
     h_data = &sm->h;
+    sm_buff = sm;
 
     updatePreviewData();  // загрузка параметров изображения
 
@@ -736,11 +737,11 @@ void imageHistogram::contextMenuRequest(QPoint pos)
     menu->setAttribute(Qt::WA_DeleteOnClose);
     QAction *act = menu->addAction("Сохранить изображение гистограммы...", this, &imageHistogram::savePlotToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
-    act = menu->addAction("Сохранить гистограмму в Excel *.csv файл ...", this, &imageHistogram::saveHistogramToCsv);
+    act = menu->addAction("Сохранить гистограмму в Excel CSV файл ...", this, &imageHistogram::saveHistogramToCsv);
     act->setIcon(QIcon(":/icons/csv2.png"));
     menu->addSeparator();
     act = menu->addAction("Сохранить изображение индекса...", this, &imageHistogram::saveIndexToPdfJpgPng);
-    act->setIcon(QIcon(":/icons/palette.png"));
+    act->setIcon(QIcon(":/icons/rainbow_icon_cartoon_style.png"));
     act = menu->addAction("Сохранить изображение маски ...", this, &imageHistogram::saveMaskToPdfJpgPng);
     act->setIcon(QIcon(":/icons/theater.png"));
     act = menu->addAction("Сохранить изображение инвертированной маски ...", this, &imageHistogram::saveInvMaskToPdfJpgPng);
@@ -748,11 +749,11 @@ void imageHistogram::contextMenuRequest(QPoint pos)
     act = menu->addAction("Сохранить RGB изображение ...", this, &imageHistogram::saveRGBToPdfJpgPng);
     act->setIcon(QIcon(":/icons/pdf.png"));
     menu->addSeparator();
-    act = menu->addAction("Сохранить индекс в Excel *.csv файл ...", this, &imageHistogram::saveIndexToCsv);
-    act->setIcon(QIcon(":/icons/palette.png"));
-    act = menu->addAction("Сохранить маску в Excel *.csv файл ...", this, &imageHistogram::saveMaskToCsv);
+    act = menu->addAction("Сохранить индекс в Excel CSV файл ...", this, &imageHistogram::saveIndexToCsv);  // -
+    act->setIcon(QIcon(":/icons/rainbow_icon_cartoon_style.png"));
+    act = menu->addAction("Сохранить маску в Excel CSV файл ...", this, &imageHistogram::saveMaskToCsv);  // -
     act->setIcon(QIcon(":/icons/theater.png"));
-    act = menu->addAction("Сохранить инвертированную маску в Excel *.csv файл ...", this, &imageHistogram::saveInvMaskToCsv);
+    act = menu->addAction("Сохранить инвертированную маску в Excel CSV файл ...", this, &imageHistogram::saveInvMaskToCsv); // -
     act->setIcon(QIcon(":/icons/theater.png"));
 
 
@@ -821,7 +822,7 @@ void imageHistogram::savePlotToPdfJpgPng()
     QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить изображение гистограммы"), writableLocation,
-        tr("Файлы PDF (*.pdf);;Файлы PNG (*.png);;Файлы JPG (*.jpg)"));
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
@@ -829,7 +830,6 @@ void imageHistogram::savePlotToPdfJpgPng()
     if (info.suffix().toLower() == "png") plot->savePng(img_file_name);
     if (info.suffix().toLower() == "pdf") plot->savePdf(img_file_name);
     if (info.suffix().toLower() == "jpg") plot->saveJpg(img_file_name);
-
 }
 
 void imageHistogram::saveHistogramToCsv()
@@ -874,7 +874,7 @@ void imageHistogram::saveIndexToPdfJpgPng()
     QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить изображение индекса"), writableLocation,
-        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы JPEG (*.jpeg);;Файлы BMP (*.bmp)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
@@ -882,6 +882,7 @@ void imageHistogram::saveIndexToPdfJpgPng()
     QFileInfo info(img_file_name);
     if (info.suffix().toLower() == "png") pixmap.save(img_file_name, "PNG");
     if (info.suffix().toLower() == "jpg") pixmap.save(img_file_name, "JPG");
+    if (info.suffix().toLower() == "jpeg") pixmap.save(img_file_name, "JPEG");
     if (info.suffix().toLower() == "bmp") pixmap.save(img_file_name, "BMP");
 
 }
@@ -936,7 +937,7 @@ void imageHistogram::saveRGBToPdfJpgPng()
     QString writableLocation = getWritableLocation();
     QString img_file_name = QFileDialog::getSaveFileName(
         this, tr("Сохранить RGB изображение"), writableLocation,
-        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы BMP (*.bmp)"));
+        tr("Файлы PNG (*.png);;Файлы JPG (*.jpg);;Файлы JPEG (*.jpeg);;Файлы BMP (*.bmp)"));
     if (img_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
@@ -945,6 +946,7 @@ void imageHistogram::saveRGBToPdfJpgPng()
     if (info.suffix().toLower() == "png") pixmap.save(img_file_name, "PNG");
     if (info.suffix().toLower() == "jpg") pixmap.save(img_file_name, "JPG");
     if (info.suffix().toLower() == "bmp") pixmap.save(img_file_name, "BMP");
+    if (info.suffix().toLower() == "jpeg") pixmap.save(img_file_name, "JPEG");
 
 }
 
@@ -952,99 +954,47 @@ void imageHistogram::saveIndexToCsv()
 {
     QString writableLocation = getWritableLocation();
     QString csv_file_name = QFileDialog::getSaveFileName(
-        this, tr("Сохранить индекс в Excel *.csv файл"), writableLocation,
-        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+        this, tr("Сохранить индекс в Excel CSV файл"), writableLocation,
+        tr("Excel CSV файлы (*.csv)"));
     if (csv_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
-    QStringList csv_list;
+    sm_buff->set_title(title_of_mask->text());
+    sm_buff->set_formula(formula_of_mask->text());
+    sm_buff->save_index_to_CSV_file(csv_file_name);
 
-    QSize slice_size(slice[0].count(), slice.count());
-    for(int y = 0; y < slice_size.height(); y++) {
-        QString str;
-        for(int x = 0; x < slice_size.width(); x++)
-            if (x == slice_size.width() - 1) str.append(QString("%1").arg(slice[y][x]));
-            else str.append(QString("%1;").arg(slice[y][x]));
-        csv_list.append(str.replace('.', ','));
-    }  // for
-
-    QFile file(csv_file_name);
-    file.remove();
-    file.open( QIODevice::WriteOnly | QIODevice::Text );
-    QTextStream stream(&file);
-    stream.setCodec("UTF-8");
-    stream.setGenerateByteOrderMark(true);
-    foreach(QString str, csv_list) stream << str << endl;
-    stream.flush();
-    file.close();
 }
 
 void imageHistogram::saveMaskToCsv()
 {
     QString writableLocation = getWritableLocation();
     QString csv_file_name = QFileDialog::getSaveFileName(
-        this, tr("Сохранить маску в Excel *.csv файл"), writableLocation,
-        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+        this, tr("Сохранить маску в Excel CSV файл"), writableLocation,
+        tr("Excel CSV файлы (*.csv)"));
     if (csv_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
-    QStringList csv_list;
 
-    QSize slice_size(slice[0].count(), slice.count());
-    for(int y = 0; y < slice_size.height(); y++) {
-        QString str;
-        for(int x = 0; x < slice_size.width(); x++) {
-            if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
-                str.append("1");
-            else
-                str.append("0");
-            if (x < slice_size.width() - 1) str.append(";");
-        }  // for
-        csv_list.append(str.replace('.', ','));
-    }  // for
+    sm_buff->set_title(title_of_mask->text());
+    sm_buff->set_formula(formula_of_mask->text());
+    sm_buff->save_mask_to_CSV_file_from_slice(csv_file_name, false);
 
-    QFile file(csv_file_name);
-    file.remove();
-    file.open( QIODevice::WriteOnly | QIODevice::Text );
-    QTextStream stream(&file);
-    stream.setCodec("UTF-8");
-    stream.setGenerateByteOrderMark(true);
-    foreach(QString str, csv_list) stream << str << endl;
-    stream.flush();
-    file.close();
 }
 
 void imageHistogram::saveInvMaskToCsv()
 {
     QString writableLocation = getWritableLocation();
     QString csv_file_name = QFileDialog::getSaveFileName(
-        this, tr("Сохранить инвертированную маску в Excel *.csv файл"), writableLocation,
-        tr("Excel файлы (*.csv);;CSV Files (*.scv)"));
+        this, tr("Сохранить инвертированную маску в Excel CSV файл"), writableLocation,
+        tr("Excel CSV файлы (*.csv)"));
     if (csv_file_name.isEmpty()) {
         qDebug() << "wrong file name";
         return; }
-    QStringList csv_list;
 
-    QSize slice_size(slice[0].count(), slice.count());
-    for(int y = 0; y < slice_size.height(); y++) {
-        QString str;
-        for(int x = 0; x < slice_size.width(); x++) {
-            if (slice[y][x] >= h_data->lower && slice[y][x] <= h_data->upper)
-                str.append("0");
-            else
-                str.append("1");
-            if (x < slice_size.width() - 1) str.append(";");
-        }  // for
-        csv_list.append(str.replace('.', ','));
-    }  // for
+    sm_buff->set_title(title_of_mask->text());
+    QString f = formula_of_mask->text();
+    if (f.indexOf("inv") == -1) f.append("inv");
+    sm_buff->set_formula(f);
+    sm_buff->save_mask_to_CSV_file_from_slice(csv_file_name, true);
 
-    QFile file(csv_file_name);
-    file.remove();
-    file.open( QIODevice::WriteOnly | QIODevice::Text );
-    QTextStream stream(&file);
-    stream.setCodec("UTF-8");
-    stream.setGenerateByteOrderMark(true);
-    foreach(QString str, csv_list) stream << str << endl;
-    stream.flush();
-    file.close();
 }

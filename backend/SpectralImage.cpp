@@ -281,7 +281,7 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   if (num > depth - 1) calculateHistogram(true, num);
 
 
-  slice_magic *sm = new slice_magic();  bands.append(sm);
+  slice_magic *sm = new slice_magic();  bands.append(sm);  sm->set_data_file_name(fname);
   sm->set_slice(slice);
   sm->set_slice_size(height,width);
   sm->set_channel_num(bands.count());
@@ -305,7 +305,7 @@ void SpectralImage::append_RGB()
         delete sm;
     }
     indexes.clear();
-    slice_magic *sm = new slice_magic();  indexes.append(sm);
+    slice_magic *sm = new slice_magic();  indexes.append(sm);  sm->set_data_file_name(fname);
     sm->set_slice_size(height,width);
     // 84 - 641nm 53 - 550nm 22 - 460nm
     J09::RGB_CANNELS rgb_default = sm->get_RGB_defaults();
@@ -337,7 +337,7 @@ int SpectralImage::append_index(QVector<QVector<double> > slice)
     if (num > depth - 1) calculateHistogram(true, num);
 
 //    ***
-    slice_magic *sm = new slice_magic();  indexes.append(sm);
+    slice_magic *sm = new slice_magic();  indexes.append(sm);  sm->set_data_file_name(fname);
     sm->set_slice(slice);
     sm->set_slice_size(height,width);
     sm->set_brightness(default_brightness);
@@ -374,7 +374,7 @@ void SpectralImage::append_mask(slice_magic *sm)
     current_mask_index = rec_masks.count() - 1; */
 
 //    slice_magic *sm = new slice_magic();
-    masks.append(sm);
+    masks.append(sm);  sm->set_data_file_name(fname);
     current_mask_index = masks.count() - 1;
 
 /*    sm->set_MASK();
@@ -678,14 +678,14 @@ slice_magic *SpectralImage::get_current_mask()
     return masks.at(current_mask_index);
 }
 
-slice_magic *SpectralImage::get_mask(int num)
+/*slice_magic *SpectralImage::get_mask(int num)
 {
 //    if (num < 0 || num > rec_masks.count() - 1) return nullptr;
 //    return rec_masks.at(num);
 
     if (num < 0 || num > masks.count() - 1) return nullptr;
     return masks.at(num);
-}
+}*/
 
 QImage SpectralImage::create_current_mask_image()
 {
@@ -776,6 +776,147 @@ void SpectralImage::delete_all_masks()
     masks.clear();
 }
 
+void SpectralImage::delete_all_indexes()
+{
+    for(int i=1; i<indexes.count(); i++) delete indexes[i];
+    slice_magic *sm = indexes[0];
+    indexes.clear();
+    indexes.append(sm);
+}
+
+void SpectralImage::delete_checked_indexes()
+{
+    QList<slice_magic *> ql;    ql.append(indexes[0]);
+    for(int i=1; i<indexes.count(); i++)
+        if (indexes[i]->get_lw_item()->checkState() == Qt::Checked) delete indexes[i];
+        else ql.append(indexes[i]);
+    indexes.clear();
+    foreach(slice_magic *sm, ql) indexes.append(sm);
+}
+
+void SpectralImage::save_checked_indexes(QString indexfilename)
+{
+    if (indexfilename.isEmpty()) return;
+    // определяем количество отмеченных индексов
+    int count = 0;
+    for(int i=1; i<indexes.count(); i++)
+        if (get_index(i)->get_lw_item()->checkState() == Qt::Checked) count++;
+    if (!count) return;
+
+    QFile datfile(indexfilename);
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    datstream << count;
+
+    for(int i=1; i<indexes.count(); i++)
+        if (get_index(i)->get_lw_item()->checkState() == Qt::Checked) get_index(i)->save(datstream);
+
+    datfile.close();
+}
+
+int SpectralImage::load_indexes_from_file(QString indexfilename, QListWidget *ilw)
+{
+    if (indexfilename.isEmpty()) return 0;
+
+    QFile datfile(indexfilename);
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+    int ilw_count = ilw->count();
+    int count;
+    datstream >> count;
+    if (count == 0) return 0;
+    for(int i=0; i<count; i++) {
+        slice_magic *sm = new slice_magic();
+        indexes.append(sm);  sm->load(datstream);
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        ilw->addItem(lwItem);
+        set_LW_item(lwItem, indexes.count()-1+depth);
+    }
+    datfile.close();
+
+    return depth + ilw_count;
+}
+
+void SpectralImage::save_list_checked_bands(QString lstfilename)
+{
+    if (lstfilename.isEmpty()) return;
+    QFile datfile(lstfilename);
+    datfile.open(QIODevice::WriteOnly);
+    QTextStream txtstream( &datfile );
+    txtstream.setCodec("UTF-8");
+    for(int i=0; i<depth; i++)
+        if (bands[i]->get_lw_item()->checkState() == Qt::Checked)
+            txtstream << i << '\n';
+    datfile.close();
+}
+
+int SpectralImage::load_list_checked_bands(QString lstfilename)
+{
+    if (lstfilename.isEmpty()) return 0;
+    QList<int> ch_list;
+    QFile datfile(lstfilename);
+    datfile.open(QIODevice::ReadOnly);
+    QTextStream txtstream( &datfile );
+    txtstream.setCodec("UTF-8");
+    while (!txtstream.atEnd()) {
+        QString rl = txtstream.readLine();
+        ch_list.append(rl.toInt());
+      }
+    datfile.close();
+    if (ch_list.isEmpty()) return 0;
+    // unchecked ALL
+    for(int i=0; i<depth; i++) {
+        bands[i]->get_lw_item()->setCheckState(Qt::Unchecked);
+        bands[i]->get_lw_item()->setHidden(true);
+    }
+    // checked only for reading from file
+    foreach(int num, ch_list) {
+        bands[num]->get_lw_item()->setCheckState(Qt::Checked);
+        bands[num]->get_lw_item()->setHidden(false);
+    }
+    return ch_list[0];
+}
+
+void SpectralImage::save_checked_indexes_separately_img(QString png)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, indexes) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        // \ / : * ? "" < > |       \ / : * ? "" < > |
+        QString m_title = sm->get_title().replace('\\','_').replace('/','_').replace(':','_').replace('*','_')
+                .replace('?','_').replace('""','_').replace('<','_').replace('>','_').replace('|','_');
+        QString fn = base_fname + m_title + "." + png;
+        QMatrix rm;    rm.rotate(sm->h.rotation);
+        QImage img = sm->get_image().transformed(rm);
+        if(png == "png") img.save(fn, "png");
+        if(png == "jpg") img.save(fn, "jpg");
+        if(png == "jpeg") img.save(fn, "jpeg");
+    }  // if
+}
+
+void SpectralImage::save_checked_indexes_separately_csv()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, indexes) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        // \ / : * ? "" < > |       \ / : * ? "" < > |
+        QString m_title = sm->get_title().replace('\\','_').replace('/','_').replace(':','_').replace('*','_')
+                .replace('?','_').replace('""','_').replace('<','_').replace('>','_').replace('|','_');
+        QString fn = base_fname + m_title + ".csv";
+        sm->save_index_to_CSV_file(fn);
+    }  // if
+}
+
 void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 {
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
@@ -788,6 +929,9 @@ void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
     if (num == depth) {
         QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
         lwItem->setFont(font);
+// попытка выделить RGB из списка индексов
+        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
+        lwItem->setCheckState(Qt::PartiallyChecked);
     }  // if
 }
 
@@ -980,6 +1124,97 @@ void slice_magic::convert_to_mask_from_record(J09::maskRecordType mr)
     set_rotation(mr.rotation);
 }
 
+void slice_magic::save_index_to_CSV_file(QString data_file_name)
+{
+    if (!index) return;
+    QStringList csv_list;
+    QFileInfo fi(fname);
+    csv_list.append(QString("Файл;;;;%1").arg(fi.completeBaseName()));
+    csv_list.append(QString("Наименование индекса;;;;%1").arg(get_title()));
+    csv_list.append(QString("Формула индекса;;;;%1").arg(get_formula()));
+    QString max_min = QString("%1;%2").arg(h.max).arg(h.min).replace('.', ',');
+    csv_list.append(QString("Масимум\\минимум индекса;;;;%1").arg(max_min));
+
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++)
+            if (x == slice_size.width() - 1) str.append(QString("%1").arg(slice[y][x]));
+            else str.append(QString("%1;").arg(slice[y][x]));
+        csv_list.append(str.replace('.', ','));
+    }  // for
+    QFile file(data_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+ }
+
+void slice_magic::save_mask_to_CSV_file_from_slice(QString data_file_name, bool inv)
+{
+    if (!index) return;
+    QStringList csv_list;
+    QFileInfo fi(fname);
+    csv_list.append(QString("Файл;;;;%1").arg(fi.completeBaseName()));
+    csv_list.append(QString("Наименование маски;;;;%1").arg(get_title()));
+    csv_list.append(QString("Формула маски;;;;%1").arg(get_formula()));
+
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++) {
+            QString s0("0"), s1("1");
+            if (inv) { s0 = "1";  s1 = "0"; }
+            if (slice[y][x] >= h.lower && slice[y][x] <= h.upper) str.append(s1);
+            else str.append(s0);
+            if (x < slice_size.width() - 1) str.append(";");
+        }  // for
+        csv_list.append(str.replace('.', ','));
+    }  // for
+
+    QFile file(data_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+}
+
+void slice_magic::save_mask_to_CSV_file(QString data_file_name)
+{
+    if (!is_mask) return;
+    QStringList csv_list;
+    QFileInfo fi(fname);
+    csv_list.append(QString("Файл;;;;%1").arg(fi.completeBaseName()));
+    csv_list.append(QString("Наименование маски;;;;%1").arg(get_title()));
+    QStringList gfs = get_formula_step();
+    for (int i=0; i<gfs.count(); i++)
+        if (i==0) csv_list.append(QString("Формула маски;;;;%1").arg(gfs[i]));
+        else csv_list.append(QString(";;;;%1").arg(gfs[i]));
+
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++)
+            if (x == slice_size.width() - 1) str.append(QString("%1").arg(mask[y][x]));
+            else str.append(QString("%1;").arg(mask[y][x]));
+        csv_list.append(str.replace('.', ','));
+    }  // for
+    QFile file(data_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+}
+
 QRgb slice_magic::get_rainbow_RGB(double Wavelength)
 {
     static double Gamma = 0.80;
@@ -1051,13 +1286,14 @@ void slice_magic::save(QDataStream &stream)
 {
     stream << check_state;
     stream << title << wave_length << ch_num << brightness << rotation;
-    stream << slice << rgb_r << rgb_g << rgb_b << mask;
-    stream << image << icon << rgb << index;
-    stream << formula << formula_step_by_step << is_mask << inverse  << slice_size;
-    stream << rgb_wl.red << rgb_wl.green << rgb_wl.blue;
+    stream << slice << rgb_r << rgb_g << rgb_b << mask << image << icon;                         // иконка для списка выбора
+    stream << rgb << index << is_mask << formula << formula_step_by_step
+           << inverse  << rgb_wl.red << rgb_wl.green << rgb_wl.blue
+           << slice_size << fname;
 
-    stream << h.min << h.max << h.sum << h.hcount << h.vx << h.vy << h.lower
-           << h.wl380 << h.wl781 << h.brightness << h.___plotmouse << h.___sbrightness
+    stream << h.min << h.max << h.sum << h.hcount << h.vx << h.vy
+           << h.lower << h.upper << h.sum_of_part << h.wl380 << h.wl781
+           << h.brightness << h.___plotmouse << h.___sbrightness
            << h.imgPreview << h.colorized << h.rotation << h.rgb_preview;
 }
 
@@ -1065,12 +1301,13 @@ void slice_magic::load(QDataStream &stream)
 {
     stream >> check_state;
     stream >> title >> wave_length >> ch_num >> brightness >> rotation;
-    stream >> slice >> rgb_r >> rgb_g >> rgb_b >> mask;
-    stream >> image >> icon >> rgb >> index;
-    stream >> formula >> formula_step_by_step >> is_mask >> inverse  >> slice_size;
-    stream >> rgb_wl.red >> rgb_wl.green >> rgb_wl.blue;
+    stream >> slice >> rgb_r >> rgb_g >> rgb_b >> mask >> image >> icon;                         // иконка для списка выбора
+    stream >> rgb >> index >> is_mask >> formula >> formula_step_by_step
+           >> inverse  >> rgb_wl.red >> rgb_wl.green >> rgb_wl.blue
+           >> slice_size >> fname;
 
-    stream >> h.min >> h.max >> h.sum >> h.hcount >> h.vx >> h.vy >> h.lower
-           >> h.wl380 >> h.wl781 >> h.brightness >> h.___plotmouse >> h.___sbrightness
+    stream >> h.min >> h.max >> h.sum >> h.hcount >> h.vx >> h.vy
+           >> h.lower >> h.upper >> h.sum_of_part >> h.wl380 >> h.wl781
+           >> h.brightness >> h.___plotmouse >> h.___sbrightness
            >> h.imgPreview >> h.colorized >> h.rotation >> h.rgb_preview;
 }

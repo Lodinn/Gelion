@@ -143,6 +143,7 @@ private:
   QCustomPlot *wPlot;
   QVector<QCustomPlot *> plots;
   J09::RGB_CANNELS rgb_default;
+  void updateDeleteItemsBoxWarning(QMessageBox &mb, QString title, QString text);
 
 signals:
  void read_file(QString);
@@ -183,10 +184,12 @@ private slots:
   void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
   void showContextMenuDockIndexList(const QPoint &pos);
-  void show_mask_list();
+
+  void show_zgraph_list();
   void show_index_list();
   void show_channel_list();
-  void show_zgraph_list();
+  void show_mask_list();
+
   void inputIndexDlgShow();
   void predefined_index_menu();
   void settingsDlgShow();
