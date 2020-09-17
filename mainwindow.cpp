@@ -985,6 +985,7 @@ void MainWindow::createDockWidgetForChannels()
     for(int num=0; num<depth; num++) {
         QListWidgetItem *lwItem = new QListWidgetItem();
         im_handler->current_image()->set_LW_item(lwItem, num);
+        im_handler->current_image()->set_item_rotation(GLOBAL_SETTINGS.main_rgb_rotate_start, num);
         chListWidget->addItem(lwItem);
     }  // for
     chListWidget->setCurrentRow(0);
@@ -1653,6 +1654,15 @@ void MainWindow::show_mask_list()
             imgMasks->updateMaskListWidget();
             maskAct->setEnabled(true);  maskAct->setChecked(true);
             imgMasks->show();  imgMasksUpdatePreviewPixmap();
+
+            slider->setEnabled(false);
+            chListWidget->currentItem()->setSelected(false);  // конкурент
+            indexListWidget->currentItem()->setSelected(false);  // конкурент
+            view->GlobalViewMode = 1;
+            view->GlobalChannelNum = -1;  view->GlobalMaskNum = 0;
+            maskListWidget->setCurrentRow(view->GlobalMaskNum);
+            set_abstract_mask_pixmap();
+
             break; }
         case 6 : {            // Сохранить выделенные маски в файлы ...", 6,  // save checked pdf png jpg jpeg csv
             int count = 0;
@@ -1670,7 +1680,12 @@ void MainWindow::show_mask_list()
             dlg->ui->labelfCount->setText(QString("Выбрано %1 файлов").arg(count));
             QPoint pos = dockMaskImage->pos(); QPoint mv(-dlg->width()/2,-dlg->height());
             dlg->move(pos + mv);
-            if (dlg->exec() == QDialog::Accepted) {}
+            if (dlg->exec() == QDialog::Accepted) {
+                if(dlg->ui->checkBoxPng->isChecked()) im_handler->current_image()->save_checked_masks_separately_img("png");
+                if(dlg->ui->checkBoxJpg->isChecked()) im_handler->current_image()->save_checked_masks_separately_img("jpg");
+                if(dlg->ui->checkBoxJpeg->isChecked()) im_handler->current_image()->save_checked_masks_separately_img("jpeg");
+                if(dlg->ui->checkBoxCsv->isChecked()) im_handler->current_image()->save_checked_masks_separately_csv();
+            }  // QDialog::Accepted
             break;
         }  // 6
         case 8 : {                                              // Удалить все маски
@@ -1715,6 +1730,8 @@ void MainWindow::show_index_list()
                 msgBox->setWindowIcon(icon256);
                 im_handler->showWarningMessageBox(msgBox,
                             " Нет выделенных индексных изображений !");
+//                im_handler->showWarningMessageBox(msgBox,
+//                            im_handler->get_hidden_folder());
                  return;
             }  // if
             auto proj_path = getDataSetPath();
@@ -1909,7 +1926,12 @@ void MainWindow::show_channel_list()
             dlg->ui->labelfCount->setText(QString("Выбрано %1 файлов").arg(count));
             QPoint pos = dockChannelList->pos(); QPoint mv(-dlg->width(),-dlg->height()/2);
             dlg->move(pos + mv);
-            if (dlg->exec() == QDialog::Accepted) {}
+            if (dlg->exec() == QDialog::Accepted) {
+                if(dlg->ui->checkBoxPng->isChecked()) im_handler->current_image()->save_checked_bands_separately_img("png");
+                if(dlg->ui->checkBoxJpg->isChecked()) im_handler->current_image()->save_checked_bands_separately_img("jpg");
+                if(dlg->ui->checkBoxJpeg->isChecked()) im_handler->current_image()->save_checked_bands_separately_img("jpeg");
+                if(dlg->ui->checkBoxCsv->isChecked()) im_handler->current_image()->save_checked_bands_separately_csv();
+            }  // QDialog::Accepted
             break;
         }  // 15
         case 17 : {  // Загрузить и отобразить список каналов ...", 17,  // load checked

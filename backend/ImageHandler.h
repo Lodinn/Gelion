@@ -32,6 +32,7 @@ public:
     QIcon load_icon_from_file(QString &fname, double rotation);
     QString getWritableLocation();  // активный каталог проекта
     void showWarningMessageBox(QMessageBox *mb, QString text);
+    QString get_hidden_folder();
 protected:
     int script_y, script_x; // например, в ImageHandler.h
     QVector<QVector<QVector<double> > >* raster;
@@ -56,6 +57,8 @@ private:
   QString dataFX10eEnvi = "FX10e data";
   void createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name);
   double rgb_to_float = 255.;
+  QString hidden_folder = "/do not change this folder/";
+
 signals:
   void numbands_obtained(int);
   void reading_progress(int);

@@ -169,7 +169,7 @@ void imageHistogram::setupUi()
     buttonAxisRescale = new QPushButton("Восстановить умолчания");
     buttonAxisRescale->setMinimumHeight(25);
     gridLayout->addWidget(buttonAxisRescale, 2, 1, Qt::AlignLeft);
-    buttonMaskSave = new QPushButton("Добавить в список Маски ...");
+    buttonMaskSave = new QPushButton("Добавить в список Маски");
     buttonMaskSave->setMinimumHeight(25);
     gridLayout->addWidget(buttonMaskSave, 2, 2, Qt::AlignLeft);
 
@@ -189,6 +189,7 @@ void imageHistogram::setupUi()
 
     vertLayout = new QVBoxLayout;
     plot = new QCustomPlot();
+
     plot->plotLayout()->insertRow(0);
     title = new QCPTextElement(plot, "Гистограмма");
     plot->plotLayout()->addElement(0, 0, title);
@@ -691,6 +692,7 @@ void imageHistogram::maskSave()
     mask_appended->set_inverse(h_data->rgb_preview == 3);
 
     mask_appended->set_mask(calculateMask( mask_appended->get_inverse() ));
+    mask_appended->h.rotation = h_data->rotation;
     mask_appended->set_image(get_mask_image( mask_appended->get_mask() ));
     mask_appended->set_brightness(3.);
     mask_appended->set_rotation(h_data->rotation);

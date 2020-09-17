@@ -292,8 +292,9 @@ void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   sm->set_image(im);
   sm->create_icon();
 
-  if (ch_num > depth) sm->calculateHistogram(true);
+//  if (ch_num > depth) sm->calculateHistogram(true);
 
+  sm->set_Band();
   sm->set_title("");
 
 }
@@ -375,6 +376,7 @@ void SpectralImage::append_mask(slice_magic *sm)
 
 //    slice_magic *sm = new slice_magic();
     masks.append(sm);  sm->set_data_file_name(fname);
+    sm->set_MASK();
     current_mask_index = masks.count() - 1;
 
 /*    sm->set_MASK();
@@ -890,9 +892,8 @@ void SpectralImage::save_checked_indexes_separately_img(QString png)
     QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
     foreach(slice_magic *sm, indexes) {
         if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
-        // \ / : * ? "" < > |       \ / : * ? "" < > |
-        QString m_title = sm->get_title().replace('\\','_').replace('/','_').replace(':','_').replace('*','_')
-                .replace('?','_').replace('""','_').replace('<','_').replace('>','_').replace('|','_');
+        if (!sm->get_Index()) continue;
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
         QString fn = base_fname + m_title + "." + png;
         QMatrix rm;    rm.rotate(sm->h.rotation);
         QImage img = sm->get_image().transformed(rm);
@@ -909,11 +910,75 @@ void SpectralImage::save_checked_indexes_separately_csv()
     QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
     foreach(slice_magic *sm, indexes) {
         if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
-        // \ / : * ? "" < > |       \ / : * ? "" < > |
-        QString m_title = sm->get_title().replace('\\','_').replace('/','_').replace(':','_').replace('*','_')
-                .replace('?','_').replace('""','_').replace('<','_').replace('>','_').replace('|','_');
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
         QString fn = base_fname + m_title + ".csv";
         sm->save_index_to_CSV_file(fn);
+    }  // if
+}
+
+QString SpectralImage::replace_fimpossible_symbol(QString fn)
+{  // \ / : * ? "" < > |       \ / : * ? "" < > |
+    return fn.replace('\\','_').replace('/','_').replace(':','_').replace('*','_')
+            .replace('?','_').replace('""','_').replace('<','_').replace('>','_').replace('|','_');
+}
+
+void SpectralImage::save_checked_bands_separately_img(QString png)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, bands) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
+        QString fn = base_fname + m_title + "." + png;
+        QMatrix rm;    rm.rotate(sm->h.rotation);
+        QImage img = sm->get_image().transformed(rm);
+        if(png == "png") img.save(fn, "png");
+        if(png == "jpg") img.save(fn, "jpg");
+        if(png == "jpeg") img.save(fn, "jpeg");
+    }  // if
+}
+
+void SpectralImage::save_checked_bands_separately_csv()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, bands) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
+        QString fn = base_fname + m_title + ".csv";
+        sm->save_band_to_CSV_file(fn);
+    }  // if
+}
+
+void SpectralImage::save_checked_masks_separately_img(QString png)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, masks) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
+        QString fn = base_fname + m_title + "." + png;
+        QMatrix rm;    rm.rotate(sm->h.rotation);
+        QImage img = sm->get_image().transformed(rm);
+        if(png == "png") img.save(fn, "png");
+        if(png == "jpg") img.save(fn, "jpg");
+        if(png == "jpeg") img.save(fn, "jpeg");
+    }  // if
+}
+
+void SpectralImage::save_checked_masks_separately_csv()
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(get_file_name());
+    QString base_fname = writableLocation + "/" + info.completeBaseName() + "/";
+    foreach(slice_magic *sm, masks) {
+        if(sm->get_lw_item()->checkState() != Qt::Checked) continue;
+        QString m_title = replace_fimpossible_symbol(sm->get_title());
+        QString fn = base_fname + m_title + ".csv";
+        sm->save_mask_to_CSV_file(fn);
     }  // if
 }
 
@@ -1124,6 +1189,33 @@ void slice_magic::convert_to_mask_from_record(J09::maskRecordType mr)
     set_rotation(mr.rotation);
 }
 
+void slice_magic::save_band_to_CSV_file(QString data_file_name)
+{
+    if (!band) return;
+    QStringList csv_list;
+    QFileInfo fi(fname);
+    csv_list.append(QString("Файл;;%1").arg(fi.completeBaseName()));
+    csv_list.append(QString("Номер канала;;%1").arg(ch_num));
+    csv_list.append(QString("Длина волны;;%1").arg(wave_length, 7, 'f', 2).replace('.', ','));
+
+    for(int y = 0; y < slice_size.height(); y++) {
+        QString str;
+        for(int x = 0; x < slice_size.width(); x++)
+            if (x == slice_size.width() - 1) str.append(QString("%1").arg(slice[y][x]));
+            else str.append(QString("%1;").arg(slice[y][x]));
+        csv_list.append(str.replace('.', ','));
+    }  // for
+    QFile file(data_file_name);
+    file.remove();
+    file.open( QIODevice::WriteOnly | QIODevice::Text );
+    QTextStream stream(&file);
+    stream.setCodec("UTF-8");
+    stream.setGenerateByteOrderMark(true);
+    foreach(QString str, csv_list) stream << str << endl;
+    stream.flush();
+    file.close();
+}
+
 void slice_magic::save_index_to_CSV_file(QString data_file_name)
 {
     if (!index) return;
@@ -1287,7 +1379,7 @@ void slice_magic::save(QDataStream &stream)
     stream << check_state;
     stream << title << wave_length << ch_num << brightness << rotation;
     stream << slice << rgb_r << rgb_g << rgb_b << mask << image << icon;                         // иконка для списка выбора
-    stream << rgb << index << is_mask << formula << formula_step_by_step
+    stream << band << rgb << index << is_mask << formula << formula_step_by_step
            << inverse  << rgb_wl.red << rgb_wl.green << rgb_wl.blue
            << slice_size << fname;
 
@@ -1302,7 +1394,7 @@ void slice_magic::load(QDataStream &stream)
     stream >> check_state;
     stream >> title >> wave_length >> ch_num >> brightness >> rotation;
     stream >> slice >> rgb_r >> rgb_g >> rgb_b >> mask >> image >> icon;                         // иконка для списка выбора
-    stream >> rgb >> index >> is_mask >> formula >> formula_step_by_step
+    stream >> band >> rgb >> index >> is_mask >> formula >> formula_step_by_step
            >> inverse  >> rgb_wl.red >> rgb_wl.green >> rgb_wl.blue
            >> slice_size >> fname;
 

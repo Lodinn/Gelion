@@ -91,14 +91,13 @@ public:
     J09::histogramType h;  // статистика гистограммы
     void set_slice(QVector<QVector<double> > sl) { slice = sl; }
     QVector<QVector<double> > get_slice() { return slice; }
-    void set_mask(QVector<QVector<int8_t> > m) { mask = m; }
+    void set_mask(QVector<QVector<int8_t> > m) { mask = m; slice_size = QSize(m[0].count(), m.count()); }
     void set_channel_num(int num) { ch_num = num; }
-
     int get_channel_num() { return ch_num; }
     void set_wave_length(double wl) { wave_length = wl; }
     void set_brightness(double br) { brightness = br;  h.brightness = br; }
     double get_brightness() { return brightness; }
-    void set_rotation(double r) { rotation = r; }
+    void set_rotation(double r) { rotation = r; h.rotation = r; }
     double get_rotation() { return rotation; }
     void set_title(QString a_title);
     QString get_title() { return title; }
@@ -129,8 +128,10 @@ public:
     void set_blue(QVector<QVector<double> > b) { rgb_b = b; }
     void set_image(QImage im) {image = im; }
     QImage get_image() { return image; }
+    void set_Band() { band = true; }
     void set_RGB() { rgb = true; }
     void set_Index() { index = true; }
+    bool get_Index() { return index; }
     void set_MASK() { is_mask = true; }
     QImage get_rgb(bool enhance_contrast);
     QImage get_index_rgb(bool enhance_contrast, bool colorized);
@@ -161,8 +162,9 @@ private:
     QVector<QVector<double> > rgb_g;    // rgb green
     QVector<QVector<double> > rgb_b;    // rgb blue
     QVector<QVector<int8_t> > mask;  // маска
-    QImage image;                       // растровое изображение (черно\белое, при RGB цветное)
-    QIcon icon;                         // иконка для списка выбора
+    QImage image;   // растровое изображение (черно\белое, при RGB цветное)
+    QIcon icon;    // иконка для списка выбора
+    bool band = false;
     bool rgb = false;
     bool index = false;
     bool is_mask = false;
@@ -175,6 +177,7 @@ private:
     QString fname;
 public:
     void set_data_file_name(QString fn) { fname = fn; }
+    void save_band_to_CSV_file(QString data_file_name);
     void save_index_to_CSV_file(QString data_file_name);
     void save_mask_to_CSV_file_from_slice(QString data_file_name, bool inv);
     void save_mask_to_CSV_file(QString data_file_name);
@@ -225,6 +228,7 @@ public slots:
   void set_wls(QVector<double> wls) { wavelengths = wls; }
 public:
   void set_LW_item(QListWidgetItem *lwItem, int num);
+  void set_item_rotation(double r, int num) { bands[num]->h.rotation = r; }
   QImage get_current_image();
   void set_formula_for_index(double r, QString i_title, QString i_formula);
   slice_magic *get_current_index() { return indexes[current_slice - depth]; }
@@ -242,6 +246,11 @@ public:
   int load_list_checked_bands(QString lstfilename);
   void save_checked_indexes_separately_img(QString png);
   void save_checked_indexes_separately_csv();
+  QString replace_fimpossible_symbol(QString fn);
+  void save_checked_bands_separately_img(QString png);
+  void save_checked_bands_separately_csv();
+  void save_checked_masks_separately_img(QString png);
+  void save_checked_masks_separately_csv();
 
 private:
   QVector<slice_magic *> bands;  // каналы

@@ -212,6 +212,14 @@ void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 
 }
 
+QString ImageHandler::get_hidden_folder()
+{
+    QString wl = getWritableLocation();
+    QDir dir(wl + hidden_folder);
+    if (!dir.exists()) dir.mkpath(".");
+    return wl + hidden_folder;
+}
+
 double ImageHandler::getByWL(double wl) {
   int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
   return current_image()->get_raster()->at(bn).at(script_y).at(script_x);
