@@ -942,8 +942,10 @@ void gQGraphicsView::contextMenuEvent(QContextMenuEvent *event)
 
     menu.addAction(openAct);
     // resent files
-    QMenu *menu_resent_files = menu.addMenu("Недавние файлы");
-    foreach(QAction *act, resentFilesActions) menu_resent_files->addAction(act);
+    if (resentFilesActions.count() > 0) {
+        QMenu *menu_resent_files = menu.addMenu("Недавние файлы");
+        foreach(QAction *act, resentFilesActions) menu_resent_files->addAction(act);
+    }  // if
 
     menu.addSeparator();
     menu.addAction(pointAct);

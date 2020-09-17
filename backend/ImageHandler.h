@@ -43,6 +43,7 @@ public slots:
   void append_index_raster(QString for_eval);
   void set_read_file_canceled();
   SpectralImage* current_image() { return image_list[index_current_dataset]; }
+  int get_images_count() { return image_list.count(); }
   QStringList get_image_file_names() {
     QStringList strlist;
     foreach(SpectralImage *img, image_list) strlist.append(img->get_file_name());

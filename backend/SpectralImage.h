@@ -121,6 +121,8 @@ public:
 
     void set_check_state(bool state) { check_state = state; }
     bool get_check_state() { return check_state; }
+    void set_visible(bool v) { visible = v; }
+    bool get_visible() { return visible; }
 
     void set_slice_size(double h, double w) { slice_size = QSize(w, h); }
     void set_red(QVector<QVector<double> > r) { rgb_r = r; }
@@ -152,6 +154,7 @@ private:
 
     QListWidgetItem *listwidget = nullptr;
     bool check_state = false;
+    bool visible = true;
     QString title = "";  // наименование канала в списке выбора listwidget
     double wave_length;  // wave length
     int ch_num; // номер канала
@@ -251,6 +254,11 @@ public:
   void save_checked_bands_separately_csv();
   void save_checked_masks_separately_img(QString png);
   void save_checked_masks_separately_csv();
+  // save for restore project state
+//  void save_zobjects_for_restore(QString hidden_dir);
+  void save_indexes_for_restore(QString hidden_dir);
+//  void save_bands_for_restore(QString hidden_dir);
+//  void save__masks_for_restore(QString hidden_dir);
 
 private:
   QVector<slice_magic *> bands;  // каналы

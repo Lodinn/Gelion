@@ -84,6 +84,7 @@ private:
   void restoreSettingsVersionTwo(QSettings *settings);
   void addRecentFile();
   void saveGLOBALSettings();
+  void saveToHiddenFolder();
   QString getGlobalIniFileName();
   void calculateIndexAndStoreToIndexList(QString title, QString formula);
 
@@ -109,6 +110,7 @@ private:
   QString save_brightness = "_brightness_.bin";
   QStringList save_file_names = QStringList() << save_slices << save_images
                                               << save_formulas << save_brightness;
+  QStringList actual_resent_files;
 private:
 // Event handlers
   void closeEvent(QCloseEvent *event);
@@ -168,6 +170,7 @@ protected:
   QDockWidget *dockMaskImage = new QDockWidget("Маски", this);
   QListWidget *maskListWidget = new QListWidget(dockMaskImage);
   imageMask *imgMasks = new imageMask(this);  // окно КАЛЬКУЛЯТОРА МАСОК
+
   void imgMasksUpdatePreviewPixmap();
 
   void set_abstract_index_pixmap();

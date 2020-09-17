@@ -93,11 +93,16 @@ void MainWindow::saveSettings()
     settings.setValue("rotation", view->GlobalRotate);
     settings.setValue("channelNum", view->GlobalChannelNum);
     settings.setValue("channelStep", view->GlobalChannelStep);
+
+    settings.setValue("maskNum", view->GlobalMaskNum);
+    settings.setValue("viewMode", view->GlobalViewMode);
     settings.setValue("horizontal", view->horizontalScrollBar()->value());
     settings.setValue("vertical", view->verticalScrollBar()->value());
+
     settings.setValue("dockZGraphList", dockZGraphList->isVisible());
     settings.setValue("dockChannelList", dockChannelList->isVisible());
     settings.setValue("dockIndexList", dockIndexList->isVisible());
+    settings.setValue("dockMaskImage", dockMaskImage->isVisible());
     settings.setValue("indexCount", indexListWidget->count());  // количество расчетных изображений
 
     saveSettingsZ(settings, false);
@@ -335,9 +340,10 @@ void MainWindow::createResentFilesList()
         fileToolBar->addAction(recentAct);
         connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
         recentFileNames.append(fname);
+        actual_resent_files.append(fname);
         fileMenu->insertAction(addSeparatorRecentFile, recentAct);
         view->resentFilesActions.append(recentAct);
-    }
+    }  // foreach
 
     settings.endGroup();
 
@@ -822,13 +828,13 @@ void MainWindow::updateNewDataSet(bool index_update)
     imgMasks->hide();  maskAct->setEnabled(false); maskAct->setChecked(false);
 
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
+    actual_resent_files.append(dataFileName);
     createDockWidgetForChannels();
     if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
 
     createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
 
     if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
-
 
     slider->setEnabled(true);
     view->openAct->setEnabled(true);
@@ -1193,15 +1199,27 @@ void MainWindow::saveMainSettings()
     // recent files
     settings.remove("Resent files");
     settings.beginGroup( "Resent files" );
-    int count = 1;
+/*    int count = 1;
     for(int i=0; i<recentFileNames.count(); i++) {
         if (count > GLOBAL_SETTINGS.resent_files_count) break;
         QString key(QString("file%1").arg(count));
         settings.setValue( key , recentFileNames[i] );
         count++;
-    }
+    } */
+    QStringList appended_files;
+    int count = 1;
+    for(int i=0; i<actual_resent_files.count(); i++) {
+        if (count > GLOBAL_SETTINGS.resent_files_count) break;
+        QString key(QString("file%1").arg(count));
+        int num = actual_resent_files.count() - i - 1;
+        if (appended_files.indexOf(actual_resent_files[num]) == -1) {
+            settings.setValue( key , actual_resent_files[num] );
+            count++;
+            appended_files.append(actual_resent_files[num]);
+        }  // if
+    }  // for
     settings.endGroup();
-
+    saveToHiddenFolder();
 }
 
 QString MainWindow::getMainSettingsFileName()
@@ -1547,6 +1565,13 @@ void MainWindow::saveGLOBALSettings()
 
 }
 
+void MainWindow::saveToHiddenFolder()
+{
+    return;
+    if (im_handler->get_images_count() == 0) return;  // надо по всем сетам !
+    im_handler->current_image()->save_indexes_for_restore(im_handler->get_hidden_folder());
+}
+
 QString MainWindow::getGlobalIniFileName()
 {
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
@@ -1650,6 +1675,7 @@ void MainWindow::show_mask_list()
                 this, tr("Загрузка изображений масок"), proj_path,
                 tr("Файлы изображений масок (*.mask)"));
             if (fname.isEmpty()) return;
+            int gmc = im_handler->current_image()->get_masks_count();
             imgMasks->loadMasksFromFile(fname);
             imgMasks->updateMaskListWidget();
             maskAct->setEnabled(true);  maskAct->setChecked(true);
@@ -1659,7 +1685,7 @@ void MainWindow::show_mask_list()
             chListWidget->currentItem()->setSelected(false);  // конкурент
             indexListWidget->currentItem()->setSelected(false);  // конкурент
             view->GlobalViewMode = 1;
-            view->GlobalChannelNum = -1;  view->GlobalMaskNum = 0;
+            view->GlobalChannelNum = -1;  view->GlobalMaskNum = gmc;
             maskListWidget->setCurrentRow(view->GlobalMaskNum);
             set_abstract_mask_pixmap();
 
@@ -1730,8 +1756,6 @@ void MainWindow::show_index_list()
                 msgBox->setWindowIcon(icon256);
                 im_handler->showWarningMessageBox(msgBox,
                             " Нет выделенных индексных изображений !");
-//                im_handler->showWarningMessageBox(msgBox,
-//                            im_handler->get_hidden_folder());
                  return;
             }  // if
             auto proj_path = getDataSetPath();
@@ -2283,6 +2307,9 @@ void MainWindow::add_mask_pixmap(slice_magic *sm)
     QPixmap pxm = QPixmap::fromImage(sm->get_image());
     view->mainPixmap->setPixmap(pxm);
     maskAct->setEnabled(true);
+    maskListWidget->setCurrentRow(maskListWidget->count()-1);
+    indexListWidget->currentItem()->setSelected(false);  // конкурент
+    chListWidget->currentItem()->setSelected(false);  // конкурент
 }
 
 void MainWindow::set_abstract_index_pixmap()

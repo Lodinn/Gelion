@@ -982,6 +982,26 @@ void SpectralImage::save_checked_masks_separately_csv()
     }  // if
 }
 
+void SpectralImage::save_indexes_for_restore(QString hidden_dir)
+{
+    QFile datfile( hidden_dir + "index.index" );
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    datstream << indexes.count();
+
+    for(int i=0; i<indexes.count(); i++) {
+        if (indexes[i]->get_lw_item()->checkState() == Qt::Checked) indexes[i]->set_check_state(true);
+        else indexes[i]->set_check_state(false);
+        indexes[i]->save(datstream);
+    }  // for
+
+    datfile.close();
+}
+
 void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 {
     lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
@@ -1376,7 +1396,7 @@ QRgb slice_magic::get_rainbow_RGB(double Wavelength)
 
 void slice_magic::save(QDataStream &stream)
 {
-    stream << check_state;
+    stream << check_state << visible;
     stream << title << wave_length << ch_num << brightness << rotation;
     stream << slice << rgb_r << rgb_g << rgb_b << mask << image << icon;                         // иконка для списка выбора
     stream << band << rgb << index << is_mask << formula << formula_step_by_step
@@ -1391,7 +1411,7 @@ void slice_magic::save(QDataStream &stream)
 
 void slice_magic::load(QDataStream &stream)
 {
-    stream >> check_state;
+    stream >> check_state >> visible;
     stream >> title >> wave_length >> ch_num >> brightness >> rotation;
     stream >> slice >> rgb_r >> rgb_g >> rgb_b >> mask >> image >> icon;                         // иконка для списка выбора
     stream >> band >> rgb >> index >> is_mask >> formula >> formula_step_by_step
