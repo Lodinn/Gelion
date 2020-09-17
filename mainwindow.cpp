@@ -2282,6 +2282,7 @@ void MainWindow::add_mask_pixmap(slice_magic *sm)
     maskListWidget->addItem(item);
     QPixmap pxm = QPixmap::fromImage(sm->get_image());
     view->mainPixmap->setPixmap(pxm);
+    maskAct->setEnabled(true);
 }
 
 void MainWindow::set_abstract_index_pixmap()
