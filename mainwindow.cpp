@@ -44,7 +44,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event)
   if (saveSettingAtCloseApp) {
       saveSettings();
-      im_handler->save_settings_all_images(save_file_names);
+//      im_handler->save_settings_all_images(save_file_names);
   }  // if
   saveMainSettings();
 }
@@ -293,7 +293,10 @@ void MainWindow::createMainConnections()
     connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(add_index_pixmap(int)));
     connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(delete_progress_dialog()),
             Qt::DirectConnection);
+    connect(im_handler, &ImageHandler::change_current_image, [=]()
+    { view->recordView = &im_handler->current_image()->recordView; } );
 
+    // view
     connect(view, SIGNAL(point_picked(QPointF)), this,
             SLOT(show_profile(QPointF)));
 
@@ -307,7 +310,7 @@ void MainWindow::createMainConnections()
     connect(spectralAct, SIGNAL(triggered()), this, SLOT(spectralSlot()));  // СПЕКТРАЛЬНЫЙ АНАЛИЗ
     connect(view, SIGNAL(changeZObject(zGraph*)), this, SLOT(spectralUpdateExt(zGraph*)));
 
-// view
+
     connect(view->winZGraphListAct, SIGNAL(triggered()), this, SLOT(winZGraphList()));  // области интереса
     connect(view->indexListAct, SIGNAL(triggered()), this, SLOT(indexListUpdate()));  // изображения
     connect(view->channelListAct, SIGNAL(triggered()), this, SLOT(channelListUpdate()));  // каналы
@@ -804,7 +807,7 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->scale(1/view->GlobalScale, 1/view->GlobalScale);
   view->rotate(-view->GlobalRotate);
 // dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
-  if (!dataFileName.isEmpty()) saveSettings();  // ****************************
+//  if (!dataFileName.isEmpty()) saveSettings();  // ****************************
   dataFileName = im_handler->current_image()->get_file_name();
   view->empty = false;  // сцена содержит данные
   view->openAct->setEnabled(true);
@@ -813,6 +816,9 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->openAct->setEnabled(true);
   set_action_enabled(true);
   QApplication::processEvents();
+
+  QPixmap pxmap = view->mainPixmap->pixmap();
+  im_handler->current_image()->save_icon_to_file(pxmap, QSize(64,64));
 
 }
 
@@ -834,7 +840,12 @@ void MainWindow::updateNewDataSet(bool index_update)
 
     createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
 
+//    if (restoreSettingAtStartUp || !index_update) restoreSettings();  // dock + zgraph
     if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
+//    if (!index_update) {  // &&&&&&&
+//        view->horizontalScrollBar()->setValue(0);
+//        view->verticalScrollBar()->setValue(0);
+//    }
 
     slider->setEnabled(true);
     view->openAct->setEnabled(true);
@@ -1044,7 +1055,7 @@ void MainWindow::create_default_RGB_image()
 }
 
 void MainWindow::restoreIndexListWidget() {
-    int count = im_handler->current_image()->get_image_count();
+/*    int count = im_handler->current_image()->get_indexes_count();
     uint32_t depth = im_handler->current_image()->get_bands_count();
     for (int i = 0; i < count; i++) {
         im_handler->current_image()->set_current_slice(depth + i);
@@ -1057,7 +1068,7 @@ void MainWindow::restoreIndexListWidget() {
         lwItem->setText(formula.first);  lwItem->setToolTip(formula.second);
     }  // for
     view->GlobalChannelNum = depth;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);*/
 }
 
 void MainWindow::createDockWidgetForIndexes()
@@ -1098,12 +1109,12 @@ QVector<double> MainWindow::getVectorFromStr(QString str) {
 
 void MainWindow::restoreIndexes()
 {
-    bool SETTINGS_SET_EXISTS = im_handler->current_image()->load_formulas(save_formulas);
+/*    bool SETTINGS_SET_EXISTS = im_handler->current_image()->load_formulas(save_formulas);
 // при отсутствии ОДНОГО файла из набора игнорируем ВЕСЬ набор
     if (!SETTINGS_SET_EXISTS) return;
     im_handler->current_image()->load_additional_slices(save_slices);
     im_handler->current_image()->load_images(save_images);
-    im_handler->current_image()->load_brightness(save_brightness);
+    im_handler->current_image()->load_brightness(save_brightness);*/
 }
 
 void MainWindow::restoreSettings()
@@ -1249,11 +1260,15 @@ void MainWindow::restoreSettingsVersionOne(QSettings *settings)
     view->GlobalChannelStep = settings->value("channelStep", 1).toInt();
     show_channel_list_update();
 
-    int horizontal = settings->value("horizontal", 0).toInt();
-    int vertical = settings->value("vertical", 0).toInt();
     view->resetMatrix();  view->resetTransform();
     view->scale(1/view->GlobalScale, 1/view->GlobalScale);
     view->rotate(-view->GlobalRotate);
+
+    view->GlobalMaskNum = settings->value("maskNum", 0).toInt();
+    view->GlobalViewMode = settings->value("viewMode", 0).toInt();
+
+    int horizontal = settings->value("horizontal", 0).toInt();
+    int vertical = settings->value("vertical", 0).toInt();
     view->horizontalScrollBar()->setValue(horizontal);
     view->verticalScrollBar()->setValue(vertical);
     auto graphlist = settings->value("dockZGraphList", true).toBool();
@@ -1546,8 +1561,7 @@ void MainWindow::addRecentFile()
     recentAct->setText(info.fileName());
     recentAct->setData(fname);
     recentAct->setIcon(QIcon(view->mainPixmap->pixmap()));
-    QPixmap pxmap = view->mainPixmap->pixmap();
-    im_handler->current_image()->save_icon_to_file(pxmap, tb_def_size);
+
     fileToolBar->addAction(recentAct);
     connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
     recentFileNames.append(dataFileName);
@@ -1567,9 +1581,10 @@ void MainWindow::saveGLOBALSettings()
 
 void MainWindow::saveToHiddenFolder()
 {
-    return;
-    if (im_handler->get_images_count() == 0) return;  // надо по всем сетам !
-    im_handler->current_image()->save_indexes_for_restore(im_handler->get_hidden_folder());
+
+//    if (im_handler->get_images_count() == 0) return;  // надо по всем сетам !
+//    im_handler->current_image()->save_indexes_for_restore(im_handler->get_hidden_folder());
+//    im_handler->save_to_hidden_folder();
 }
 
 QString MainWindow::getGlobalIniFileName()

@@ -18,7 +18,7 @@ SpectralImage::~SpectralImage()
     foreach(slice_magic *sm, bands) delete sm;
 }
 
-void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize &size)
+void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize size)
 {
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     QFileInfo info(get_file_name());
@@ -28,10 +28,13 @@ void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize &size)
     small_pixmap.save(icon_fname);
 }
 
-QVector<QVector<double> > SpectralImage::get_band(uint16_t band){
-  if(img.count() < band) return QVector<QVector<double> >();
-  return img.at(band);
-//  return bands[band]->get_slice();
+QVector<QVector<double> > SpectralImage::get_band(uint16_t num){
+//  if(img.count() < band) return QVector<QVector<double> >();
+//  return img.at(band);
+  /*if (num < depth) sm = bands[num];  // каналы
+    else sm = indexes[num - depth];  // RGB, индексные изображения*/
+  if (num < depth) return bands[num]->get_slice();
+  else return indexes[num - depth]->get_slice();
 }
 
 QImage SpectralImage::get_grayscale(bool enhance_contrast, uint16_t band) {
@@ -109,7 +112,7 @@ QImage SpectralImage::get_rgb(bool enhance_contrast, int red, int green, int blu
 QImage SpectralImage::get_index_rgb(bool enhance_contrast, bool colorized, int num_index)
 {
     if(slice_size.width() <= 0 || slice_size.height() <= 0) return QImage();
-    if(num_index < 0 || num_index > img.length() - 1) {
+    if(num_index < 0 || num_index > bands.count()+indexes.count() - 1) {
         qDebug() << "CRITICAL - WRONG INDEX";
         return QImage();
     }
@@ -251,7 +254,8 @@ QVector<QPointF> SpectralImage::get_profile(QPoint p) {
   int x = p.x();    int y = p.y();    QVector<QPointF> v;     QPointF f;
   for(int z = 0; z < depth; z++) {
       f.rx() = wavelengths[z];
-      f.ry() = img.at(z).at(y).at(x);
+//      f.ry() = img.at(z).at(y).at(x);
+      f.ry() = get_band(z).at(y).at(x);
       v.append(f);
   }
   return v;
@@ -268,17 +272,17 @@ QList<QString> SpectralImage::get_wl_list(int precision) {
 
 void SpectralImage::append_slice(QVector<QVector<double> > slice) {
   if(slice.count() != slice_size.height() || slice.count() <= 0 || slice.at(0).count() != slice_size.width()) {
-    qDebug() << "Bad slice size! Current slice count:" << img.count() << "expected:" << slice_size;
+    qDebug() << "Bad slice size! Current slice count:" << bands.count() << "expected:" << slice_size;
     return;
   }
-  img.append(slice);
+/*  img.append(slice);
   indexBrightness.append(default_brightness);
   J09::histogramType hg;  // статистика гистограммы
   hg.brightness = default_brightness;
   histogram.append(hg);
   uint16_t num = img.count() - 1;
 
-  if (num > depth - 1) calculateHistogram(true, num);
+  if (num > depth - 1) calculateHistogram(true, num); */
 
 
   slice_magic *sm = new slice_magic();  bands.append(sm);  sm->set_data_file_name(fname);
@@ -328,14 +332,14 @@ void SpectralImage::append_RGB()
 
 int SpectralImage::append_index(QVector<QVector<double> > slice)
 {
-    img.append(slice);
+/*    img.append(slice);
     indexBrightness.append(default_brightness);
     J09::histogramType hg;  // статистика гистограммы
     hg.brightness = default_brightness;
     histogram.append(hg);
     uint16_t num = img.count() - 1;
 
-    if (num > depth - 1) calculateHistogram(true, num);
+    if (num > depth - 1) calculateHistogram(true, num);*/
 
 //    ***
     slice_magic *sm = new slice_magic();  indexes.append(sm);  sm->set_data_file_name(fname);
@@ -468,12 +472,12 @@ QString SpectralImage::get_y_axis_title_for_plot(bool short_title)
     return result;
 }
 
-void SpectralImage::append_additional_image(QImage image, QString index_name, QString index_formula)
-{
-    indexImages.append(image);
-    indexNameFormulaList.append(qMakePair(index_name,index_formula));
-    indexBrightness.append(default_brightness);
-}
+//void SpectralImage::append_additional_image(QImage image, QString index_name, QString index_formula)
+//{
+//    indexImages.append(image);
+//    indexNameFormulaList.append(qMakePair(index_name,index_formula));
+//    indexBrightness.append(default_brightness);
+//}
 
 QImage SpectralImage::get_additional_image(int num)
 {
@@ -484,137 +488,137 @@ QImage SpectralImage::get_additional_image(int num)
     return indexes[num]->get_image();
 }
 
-void SpectralImage::save_additional_slices(QString binfilename)
-{
-    if (depth == img.count()) return;
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QDir dir(writableLocation);
-    if (!dir.exists()) dir.mkpath(".");
-    QFile file(writableLocation + "/" + binfilename);
-    file.open(QIODevice::WriteOnly);
-    QDataStream out(&file);
-    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    out.setByteOrder(QDataStream::LittleEndian);
-    for (int i=depth; i<img.count(); i++)
-        out << img.at(i);
-    file.close();
-}
+//void SpectralImage::save_additional_slices(QString binfilename)
+//{
+//    if (depth == img.count()) return;
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QDir dir(writableLocation);
+//    if (!dir.exists()) dir.mkpath(".");
+//    QFile file(writableLocation + "/" + binfilename);
+//    file.open(QIODevice::WriteOnly);
+//    QDataStream out(&file);
+//    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    out.setByteOrder(QDataStream::LittleEndian);
+//    for (int i=depth; i<img.count(); i++)
+//        out << img.at(i);
+//    file.close();
+//}
 
-void SpectralImage::load_additional_slices(QString binfilename)
-{
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QFile file(writableLocation + "/" + binfilename);
-    if (!file.exists()) return;
-    file.open(QIODevice::ReadOnly);
-    QDataStream in(&file);
-    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    in.setByteOrder(QDataStream::LittleEndian);
-    for (int i = 0; i < indexNameFormulaList.count() - 1; i++) {
-        QVector<QVector<double> >  additional_slices;
-        in >> additional_slices;
-        img.append(additional_slices);
-    }  // for
-    file.close();
-}
+//void SpectralImage::load_additional_slices(QString binfilename)
+//{
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QFile file(writableLocation + "/" + binfilename);
+//    if (!file.exists()) return;
+//    file.open(QIODevice::ReadOnly);
+//    QDataStream in(&file);
+//    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    in.setByteOrder(QDataStream::LittleEndian);
+//    for (int i = 0; i < indexNameFormulaList.count() - 1; i++) {
+//        QVector<QVector<double> >  additional_slices;
+//        in >> additional_slices;
+//        img.append(additional_slices);
+//    }  // for
+//    file.close();
+//}
 
-void SpectralImage::save_images(QString pngfilename)
-{
-    if (indexImages.count() == 0) return;
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo file(fname);
-    writableLocation += "/" + file.completeBaseName();
-    QDir dir(writableLocation);
-    if (!dir.exists()) dir.mkpath(".");
-    for (int i=0; i<indexImages.count(); i++) {
-        indexImages.at(i).save(QString("%1/%2%3")
-                               .arg(writableLocation).arg(i).arg(pngfilename));
-    }  // for
-}
+//void SpectralImage::save_images(QString pngfilename)
+//{
+//    if (indexImages.count() == 0) return;
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo file(fname);
+//    writableLocation += "/" + file.completeBaseName();
+//    QDir dir(writableLocation);
+//    if (!dir.exists()) dir.mkpath(".");
+//    for (int i=0; i<indexImages.count(); i++) {
+//        indexImages.at(i).save(QString("%1/%2%3")
+//                               .arg(writableLocation).arg(i).arg(pngfilename));
+//    }  // for
+//}
 
-void SpectralImage::load_images(QString pngfilename)
-{
-    indexImages.clear();
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo file(fname);
-    writableLocation += "/" + file.completeBaseName();
-    for (int i=0; i<indexNameFormulaList.count(); i++) {
-        QImage image;
-        image.load(QString("%1/%2%3")
-                   .arg(writableLocation).arg(i).arg(pngfilename));
-        indexImages.append(image);
-    }  // for
-}
+//void SpectralImage::load_images(QString pngfilename)
+//{
+//    indexImages.clear();
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo file(fname);
+//    writableLocation += "/" + file.completeBaseName();
+//    for (int i=0; i<indexNameFormulaList.count(); i++) {
+//        QImage image;
+//        image.load(QString("%1/%2%3")
+//                   .arg(writableLocation).arg(i).arg(pngfilename));
+//        indexImages.append(image);
+//    }  // for
+//}
 
-void SpectralImage::save_formulas(QString images_name)
-{
-    if (indexNameFormulaList.count() == 0) return;
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QDir dir(writableLocation);
-    if (!dir.exists()) dir.mkpath(".");
-    QFile file(writableLocation + "/" + images_name);
-    file.open(QIODevice::WriteOnly);
-    QDataStream out(&file);
-    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    out.setByteOrder(QDataStream::LittleEndian);
-    out << indexNameFormulaList;
-    file.close();
-}
+//void SpectralImage::save_formulas(QString images_name)
+//{
+//    if (indexNameFormulaList.count() == 0) return;
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QDir dir(writableLocation);
+//    if (!dir.exists()) dir.mkpath(".");
+//    QFile file(writableLocation + "/" + images_name);
+//    file.open(QIODevice::WriteOnly);
+//    QDataStream out(&file);
+//    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    out.setByteOrder(QDataStream::LittleEndian);
+//    out << indexNameFormulaList;
+//    file.close();
+//}
 
-bool SpectralImage::load_formulas(QString images_name)
-{
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QFile file(writableLocation + "/" + images_name);
-    if (!file.exists()) return false;
-    indexNameFormulaList.clear();
-    file.open(QIODevice::ReadOnly);
-    QDataStream in(&file);
-    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    in.setByteOrder(QDataStream::LittleEndian);
-    in >> indexNameFormulaList;
-    file.close();
-    return true;
-}
+//bool SpectralImage::load_formulas(QString images_name)
+//{
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QFile file(writableLocation + "/" + images_name);
+//    if (!file.exists()) return false;
+//    indexNameFormulaList.clear();
+//    file.open(QIODevice::ReadOnly);
+//    QDataStream in(&file);
+//    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    in.setByteOrder(QDataStream::LittleEndian);
+//    in >> indexNameFormulaList;
+//    file.close();
+//    return true;
+//}
 
-void SpectralImage::save_brightness(QString images_brightness)
-{
-    if (indexBrightness.count() == 0) return;
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QDir dir(writableLocation);
-    if (!dir.exists()) dir.mkpath(".");
-    QFile file(writableLocation + "/" + images_brightness);
-    file.open(QIODevice::WriteOnly);
-    QDataStream out(&file);
-    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    out.setByteOrder(QDataStream::LittleEndian);
-    out << indexBrightness;
-    file.close();
-}
+//void SpectralImage::save_brightness(QString images_brightness)
+//{
+//    if (indexBrightness.count() == 0) return;
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QDir dir(writableLocation);
+//    if (!dir.exists()) dir.mkpath(".");
+//    QFile file(writableLocation + "/" + images_brightness);
+//    file.open(QIODevice::WriteOnly);
+//    QDataStream out(&file);
+//    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    out.setByteOrder(QDataStream::LittleEndian);
+//    out << indexBrightness;
+//    file.close();
+//}
 
-void SpectralImage::load_brightness(QString images_brightness)
-{
-    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    QFileInfo fi(fname);
-    writableLocation += "/" + fi.completeBaseName();
-    QFile file(writableLocation + "/" + images_brightness);
-    if (!file.exists()) return;
-    indexBrightness.clear();
-    file.open(QIODevice::ReadOnly);
-    QDataStream in(&file);
-    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    in.setByteOrder(QDataStream::LittleEndian);
-    in >> indexBrightness;
-    file.close();
-}
+//void SpectralImage::load_brightness(QString images_brightness)
+//{
+//    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+//    QFileInfo fi(fname);
+//    writableLocation += "/" + fi.completeBaseName();
+//    QFile file(writableLocation + "/" + images_brightness);
+//    if (!file.exists()) return;
+//    indexBrightness.clear();
+//    file.open(QIODevice::ReadOnly);
+//    QDataStream in(&file);
+//    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
+//    in.setByteOrder(QDataStream::LittleEndian);
+//    in >> indexBrightness;
+//    file.close();
+//}
 
 double SpectralImage::get_current_brightness()
 {
@@ -661,10 +665,10 @@ void SpectralImage::set_current_brightness(double value)
     indexBrightness[current_slice] = value; */
 }
 
-QPair<QString, QString> SpectralImage::get_current_formula()
-{
-    return indexNameFormulaList.at(current_slice - depth);
-}
+//QPair<QString, QString> SpectralImage::get_current_formula()
+//{
+//    return indexNameFormulaList.at(current_slice - depth);
+//}
 
 int SpectralImage::set_current_mask_index(int num)
 {
@@ -1001,6 +1005,24 @@ void SpectralImage::save_indexes_for_restore(QString hidden_dir)
 
     datfile.close();
 }
+
+void SpectralImage::update_sheck_visible(int trigger)
+{
+    QVector<slice_magic *> *vsm;
+    switch (trigger) {
+    case 1 : vsm = &bands;  // каналы
+        break;
+    case 2 : vsm = &indexes;  // RGB, индексные изображения
+        break;
+    case 3 : vsm = &masks;  // маски
+        break;
+    }  // switch
+    for(int i=0;  i<vsm->count(); i++) {
+        vsm->at(i)->set_check_state(vsm->at(i)->get_lw_item()->checkState() == Qt::Checked);
+        vsm->at(i)->set_visible(!vsm->at(i)->get_lw_item()->isHidden());
+    }  // for
+}
+
 
 void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 {

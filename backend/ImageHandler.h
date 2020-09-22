@@ -27,15 +27,16 @@ public:
     void set_brightness_to_slider(QSlider *slider, double brightness);
     QImage get_REAL_current_image();
     double get_new_brightness(QSlider *slider, int value);
-    void save_settings_all_images(QStringList &save_file_names);
+//    void save_settings_all_images(QStringList &save_file_names);
     QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
     QIcon load_icon_from_file(QString &fname, double rotation);
     QString getWritableLocation();  // активный каталог проекта
     void showWarningMessageBox(QMessageBox *mb, QString text);
     QString get_hidden_folder();
+    void save_to_hidden_folder();
 protected:
     int script_y, script_x; // например, в ImageHandler.h
-    QVector<QVector<QVector<double> > >* raster;
+//    QVector<QVector<QVector<double> > >* raster;
     Q_INVOKABLE double getByWL(double wl);
     QString mainIconFileName = "/main.png";
 public slots:
@@ -65,6 +66,7 @@ signals:
   void reading_progress(int);
   void finished();
   void index_finished(int);
+  void change_current_image();
 };
 
 #endif // IMAGEHANDLER_H

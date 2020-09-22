@@ -850,11 +850,6 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
     return;
   }  // if (PAN)
-//  if (event->modifiers() == Qt::ControlModifier) {
-//      setMouseTracking(true);
-//      setCursor(Qt::CrossCursor);
-//   }   else
-//      setMouseTracking(false);
   switch (insertMode) {
   case gQGraphicsView::Rect : {         // тип объекта - прямоугольник Rect 2	с возможностью поворота
       if (tmpRect == nullptr) return;
@@ -909,18 +904,6 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
   }  // switch (insertMode)
    QGraphicsView::mouseMoveEvent(event);
 }
-
-//  if (scene()->mouseGrabberItem() != nullptr) {
-//    for (int i = 0; i < ROIs_new.count(); i++) {
-//      if (ROIs_new[i] == scene()->mouseGrabberItem()) {
-//        //        ROIs_new[i]->scenePos();
-//        auto new_pos = mapToScene(event->pos());
-//        ROIs_new[i]->update_position(new_pos);
-//        emit roi_position_updated(QPair<int, QPointF>(i, new_pos));
-//      }
-//    }
-//  }
-//  QGraphicsView::mouseMoveEvent(event);
 
 void gQGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
   if (PAN)

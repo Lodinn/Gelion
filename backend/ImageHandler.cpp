@@ -21,6 +21,7 @@ bool ImageHandler::set_current_image(int image_list_index) {
   if ((image_list_index < 0) ||
       (image_list_index > image_list.length() - 1)) return false;
   index_current_dataset = image_list_index;
+  emit change_current_image();
   return true;
 }
 
@@ -100,16 +101,16 @@ double ImageHandler::get_new_brightness(QSlider *slider, int value)
     return result;
 }
 
-void ImageHandler::save_settings_all_images(QStringList &save_file_names)
-{
-    for (int i = 0; i < image_list.count(); i++) {
-        set_current_image(i);
-        current_image()->save_additional_slices(save_file_names.at(0));
-        current_image()->save_images(save_file_names.at(1));
-        current_image()->save_formulas(save_file_names.at(2));
-        current_image()->save_brightness(save_file_names.at(3));
-    } // for
-}
+//void ImageHandler::save_settings_all_images(QStringList &save_file_names)
+//{
+//    for (int i = 0; i < image_list.count(); i++) {
+//        set_current_image(i);
+//        current_image()->save_additional_slices(save_file_names.at(0));
+//        current_image()->save_images(save_file_names.at(1));
+//        current_image()->save_formulas(save_file_names.at(2));
+//        current_image()->save_brightness(save_file_names.at(3));
+//    } // for
+//}
 
 QString ImageHandler::getHDRfileNameConvertedFromJPG(QString jpg_name)
 {
@@ -220,13 +221,24 @@ QString ImageHandler::get_hidden_folder()
     return wl + hidden_folder;
 }
 
-double ImageHandler::getByWL(double wl) {
-  int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
-  return current_image()->get_raster()->at(bn).at(script_y).at(script_x);
+void ImageHandler::save_to_hidden_folder()
+{
+    if (image_list.count() == 0) return;
+    for (int i=0; i<image_list.count(); i++) {
+        set_current_image(i);
+        image_list[i]->save_indexes_for_restore(get_hidden_folder());
+    }  // for
 }
 
-void ImageHandler::append_index_raster(QString for_eval) {
-  raster = current_image()->get_raster();
+double ImageHandler::getByWL(double wl) {
+  int bn = get_band_by_wave_length(wl); //логика для получения номера канала по длине волны
+//  return current_image()->get_raster()->at(bn).at(script_y).at(script_x);
+  return current_image()->get_band(bn).at(script_y).at(script_x);
+}
+
+void ImageHandler::append_index_raster(QString for_eval)
+{
+//  raster = current_image()->get_raster();
   read_file_canceled = false;
   show_progress_mode = ImageHandler::index_mode;
   QJSEngine engine;
@@ -458,6 +470,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   }
   image_list.append(image);
   index_current_dataset = image_list.count() - 1;
+  emit change_current_image();
   emit finished();
   datfile.close();
 }

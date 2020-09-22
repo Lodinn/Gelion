@@ -48,6 +48,7 @@ private:
     J09::histogramType *h_data = nullptr;
     void setHistogramToSliders();
     void getHistogramFromSliders();
+    void updatePreviewImageByMouse();
     void updatePreviewImage();
     int histogramPlotTrigger = 0;
     bool histogramPlotPAN = false;

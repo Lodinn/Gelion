@@ -267,6 +267,9 @@ void imageHistogram::setupConnections()
     connect(previewImage,&QCheckBox::stateChanged,this, &imageHistogram::histogramPreview);
     connect(buttonAxisRescale, &QPushButton::clicked, this, &imageHistogram::axisRescale);
     connect(buttonMaskSave, &QPushButton::clicked, this, &imageHistogram::maskSave);
+// Подключаем сигналы событий мыши от окна просмотра к слотам для их обработки
+    connect(previewPlot, &QCustomPlot::mouseDoubleClick, this, &imageHistogram::updatePreviewImageByMouse);
+
 }
 
 void imageHistogram::setupSlidersConnections()
@@ -327,6 +330,13 @@ void imageHistogram::getHistogramFromSliders()
     h_data->wl380 = 380. + sliderLeftColorEdge->value() * (781.-380.) / 100.;
     h_data->wl781 = 380. + sliderRightColorEdge->value() * (781.-380.) / 100.;
 
+}
+
+void imageHistogram::updatePreviewImageByMouse()
+{
+    h_data->rgb_preview++;
+    if (h_data->rgb_preview == 4) h_data->rgb_preview = 0;
+    updatePreviewImage();
 }
 
 void imageHistogram::updatePreviewImage()
