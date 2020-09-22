@@ -178,7 +178,7 @@ private:
     bool index = false;
     bool is_mask = false;
     QString formula = "";  // формула индекса \ маски
-    // общая формула алгоритма составной маскиразбитая на составляющие
+    // общая формула алгоритма составной маски разбитая на составляющие
     QStringList formula_step_by_step;
     bool inverse = false;            // инверсное изображение \ маска
     J09::RGB_CANNELS rgb_wl;  // default wave lengths
@@ -204,11 +204,9 @@ public:
   QString get_file_name() { return fname; }
   void save_icon_to_file(QPixmap &pixmap, QSize size);
 
-//  QVector<QVector<QVector<double> > >* get_raster() { return &img; }
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
   double get_index_brightness(uint32_t num) {
-//      return indexBrightness.at(num);
       return indexes[num]->get_brightness();
   }
   QString get_y_axis_title_for_plot(bool short_title);  // наименование единиц измерения
@@ -234,7 +232,6 @@ public slots:
     height = h;
     width = w;
     slice_size = QSize(w, h);
-//    img.clear();
   }
   void set_wls(QVector<double> wls) { wavelengths = wls; }
 public:
@@ -263,10 +260,11 @@ public:
   void save_checked_masks_separately_img(QString png);
   void save_checked_masks_separately_csv();
   // save for restore project state
-//  void save_zobjects_for_restore(QString hidden_dir);
-  void save_indexes_for_restore(QString hidden_dir);
-//  void save_bands_for_restore(QString hidden_dir);
-//  void save__masks_for_restore(QString hidden_dir);
+//  void save_zobjects_for_restore(QString hidden_dir);  new
+  void save_indexes_for_restore(QString hidden_dir);  // new
+//  void save_bands_for_restore(QString hidden_dir);  new
+//  void save__masks_for_restore(QString hidden_dir);  new
+  void save_view_param_for_restore(QString hidden_dir);
   void update_sheck_visible(int trigger);  // обновить статус 1 - bands 2 - indexes 3 - masks
 
 private:
@@ -274,14 +272,6 @@ private:
   QVector<slice_magic *> bands;  // каналы
   QVector<slice_magic *> indexes;  // RGB, индексные изображения
   QVector<slice_magic *> masks;  // маски
-
-// index order (from outer to inner): z, y, x
-//  QVector<QVector<QVector<double> > > img;  // img свыше последнего канала содержит индексные изображения
-//  QVector<J09::indexType> img_additional;  // массив индексных изображений , включая RGB
-//  QVector<J09::maskRecordType *> rec_masks;  // массив масочных изображений
-//  QVector<QImage> indexImages;  // нулевой QImage содержит дефолтную RGB
-//  QVector<QPair<QString, QString> > indexNameFormulaList;  // списко индексов "наименование,формула"
-//  QVector<double > indexBrightness;
 
   int current_slice = -1;         // текущий номер массива данных, 0..deep-1 - каналы, далее RGB, потом индексы
   int current_mask_index = -1;  // текущий номер маски
@@ -299,37 +289,22 @@ public:
   double wl380 = 380.0;
   double wl781 = 781.0;
   QString fname;
-//  void append_additional_image(QImage image, QString index_name, QString index_formula);
   QImage get_additional_image(int num);
-//  int get_image_count() { return indexImages.count(); }
-
-//  void save_additional_slices(QString binfilename);
-//  void save_images(QString pngfilename);
-//  void save_formulas(QString images_name);
-//  void save_brightness(QString  images_brightness);
-
-//  void load_additional_slices(QString binfilename);
-//  void load_images(QString pngfilename);
-//  bool load_formulas(QString images_name);  // проверка на наличие ВСЕГО набора
-//  void load_brightness(QString  images_brightness);
 
   void set_current_slice(int num) {
       if (num < 0 || num >  depth + indexes.count() - 1) return;
-//      if (num < 0 || num >  indexBrightness.count() - 1) return;
       current_slice = num; }
   int get_current_slice() { return current_slice; }
   double get_current_brightness();
   void set_current_brightness(double value);
-//  QPair<QString, QString> get_current_formula();
+  int set_current_mask_index(int num);
+  int get_current_mask_index() { return current_mask_index; }
+  slice_magic *get_current_mask();
 
-  int set_current_mask_index(int num);                         // --- ok
-  int get_current_mask_index() { return current_mask_index; }  // --- ok
-  slice_magic *get_current_mask();                    // --- ??? 1 --
-
-  void set_mask(int num, slice_magic *msk) { masks[num] = msk; }  // 3--- ??? --
-  QImage create_current_mask_image();                              // --- ??? 4 --
-  QImage get_mask_image(int num);                           // --- ??? 5 --
-  QImage create_mask_image(slice_magic *sm);          // --- ??? 6 --
+  void set_mask(int num, slice_magic *msk) { masks[num] = msk; }
+  QImage create_current_mask_image();
+  QImage get_mask_image(int num);
+  QImage create_mask_image(slice_magic *sm);
   J09::maskRecordType convert_to_record_from_mask(int num);
 };
 

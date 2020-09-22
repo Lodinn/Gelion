@@ -876,6 +876,7 @@ void MainWindow::createContextAction(const QIcon &icon, const QString &text, int
 
 void MainWindow::showContextMenuMaskImagList(const QPoint &pos)
 {
+    im_handler->current_image()->update_sheck_visible(3);  // masks
     QPoint globalPos = maskListWidget->mapToGlobal(pos);
     QMenu menu(this);
     menu.addAction(maskAct);
@@ -1506,6 +1507,7 @@ void MainWindow::restoreSettingsVersionTwo(QSettings *settings)
 
 void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 {
+    im_handler->current_image()->update_sheck_visible(1);  // bands
     slider->setEnabled(true);
 
     indexListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1523,6 +1525,7 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
 
 void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 {
+    im_handler->current_image()->update_sheck_visible(2);  // indexes
     slider->setEnabled(true);
 
     chListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1542,6 +1545,7 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
 
 void MainWindow::itemClickedMaskList(QListWidgetItem *lwItem)
 {
+    im_handler->current_image()->update_sheck_visible(3);  // masks
     slider->setEnabled(false);
 
     chListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1618,6 +1622,7 @@ void MainWindow::OpenRecentFile()
 
 void MainWindow::showContextMenuChannelList(const QPoint &pos)
 {
+    im_handler->current_image()->update_sheck_visible(1);  // bands
     QPoint globalPos = chListWidget->mapToGlobal(pos);
     QMenu menu(this);
     for (int i = 0; i < show_channel_list_acts.count(); i++)
@@ -1643,6 +1648,7 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
 
 void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
 {
+    im_handler->current_image()->update_sheck_visible(2);  // indexes
     if (dataFileName.isEmpty()) return;
     QPoint globalPos = indexListWidget->mapToGlobal(pos);
     QMenu menu(this);

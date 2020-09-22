@@ -183,10 +183,10 @@ protected:
  void createContextAction(const QIcon &icon, const QString &text, int num, QVector<QAction *> &av, const char *member);
 
 private slots:
-  void showContextMenuMaskImagList(const QPoint &pos);
-  void showContextMenuChannelList(const QPoint &pos);
   void showContextMenuZGraphList(const QPoint &pos);
   void showContextMenuDockIndexList(const QPoint &pos);
+  void showContextMenuChannelList(const QPoint &pos);
+  void showContextMenuMaskImagList(const QPoint &pos);
 
   void show_zgraph_list();
   void show_index_list();
