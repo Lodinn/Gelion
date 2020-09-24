@@ -694,7 +694,7 @@ QPolygonF zPoint::getTitlePolygon()
     return QPolygonF();
 }
 
-QStringList zPoint::getSettings(int num)
+QStringList zPoint:: getSettings(int num)
 {
 
     QStringList strlist;

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>657</width>
-    <height>565</height>
+    <width>590</width>
+    <height>502</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,8 +17,8 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>520</y>
-     <width>631</width>
+     <y>460</y>
+     <width>561</width>
      <height>32</height>
     </rect>
    </property>
@@ -32,50 +32,15 @@
   <widget class="QGroupBox" name="groupBox_GLOBAL_settings">
    <property name="geometry">
     <rect>
-     <x>0</x>
+     <x>10</x>
      <y>10</y>
      <width>561</width>
-     <height>171</height>
+     <height>131</height>
     </rect>
    </property>
    <property name="title">
     <string>Основные</string>
    </property>
-   <widget class="QCheckBox" name="checkBox_save_project_settings">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>40</y>
-      <width>231</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>сохранять настройки проекта</string>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
-    <property name="tristate">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBox_load_project_settings">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>60</y>
-      <width>231</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>восстанавливать настройки проекта</string>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
-   </widget>
    <widget class="QCheckBox" name="checkBox_load_recent_file">
     <property name="geometry">
      <rect>
@@ -117,6 +82,12 @@
       <height>16</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
      <string>количество последних файлов</string>
     </property>
@@ -125,7 +96,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>90</y>
+      <y>70</y>
       <width>31</width>
       <height>20</height>
      </rect>
@@ -138,7 +109,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>120</y>
+      <y>100</y>
       <width>31</width>
       <height>20</height>
      </rect>
@@ -151,7 +122,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>90</y>
+      <y>70</y>
       <width>231</width>
       <height>16</height>
      </rect>
@@ -170,7 +141,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>120</y>
+      <y>100</y>
       <width>231</width>
       <height>16</height>
      </rect>
@@ -185,40 +156,62 @@
      <string>масштаб изображения при загрузке</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="checkBox_load_project_settings_view">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>291</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>восстанавливать масштаб и поворот проекта</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_ROI_settings">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>190</y>
-     <width>631</width>
+     <y>150</y>
+     <width>561</width>
      <height>111</height>
     </rect>
    </property>
    <property name="title">
     <string>Области интереса</string>
    </property>
-   <widget class="QCheckBox" name="checkBox_save_NOTchecked_zObject">
+   <widget class="QCheckBox" name="checkBox_zobject_list_load">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>371</width>
+      <width>211</width>
       <height>18</height>
      </rect>
     </property>
     <property name="text">
-     <string>сохранять в настройках неотмеченные области интереса</string>
+     <string>загружать список объектов</string>
     </property>
     <property name="checked">
-     <bool>true</bool>
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEdit_dock_width">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>40</y>
+      <x>330</x>
+      <y>22</y>
       <width>31</width>
       <height>20</height>
      </rect>
@@ -230,8 +223,8 @@
    <widget class="QLineEdit" name="lineEdit_dock_height">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>68</y>
+      <x>330</x>
+      <y>50</y>
       <width>31</width>
       <height>20</height>
      </rect>
@@ -243,8 +236,8 @@
    <widget class="QLabel" name="label_dock_height">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>70</y>
+      <x>370</x>
+      <y>52</y>
       <width>171</width>
       <height>16</height>
      </rect>
@@ -256,8 +249,8 @@
    <widget class="QLabel" name="label_dock_width">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>42</y>
+      <x>370</x>
+      <y>24</y>
       <width>171</width>
       <height>16</height>
      </rect>
@@ -269,9 +262,9 @@
    <widget class="QCheckBox" name="checkBox_rainbow_show">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>20</y>
-      <width>231</width>
+      <x>10</x>
+      <y>50</y>
+      <width>201</width>
       <height>18</height>
      </rect>
     </property>
@@ -282,32 +275,132 @@
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QCheckBox" name="checkBox_profile_dev">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>261</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>отображать дисперсию профиля (95%)</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_images_settings">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>310</y>
+     <x>10</x>
+     <y>270</y>
      <width>561</width>
-     <height>81</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="title">
     <string>Изображения</string>
    </property>
+   <widget class="QCheckBox" name="checkBox_index_save">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>281</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сохранять изображения (индексы) при закрытии</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_index_load">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>20</y>
+      <width>221</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>загружать изображения (индексы)</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_channel_list">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>400</y>
+     <y>330</y>
      <width>561</width>
-     <height>101</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="title">
     <string>Список каналов</string>
    </property>
+   <widget class="QCheckBox" name="checkBox_channel_list_load">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>20</y>
+      <width>201</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>загружать список каналов</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_masks">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>390</y>
+     <width>561</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Маски</string>
+   </property>
+   <widget class="QCheckBox" name="checkBox_masks_save">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>271</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сохранять изображения (маски) при закрытии</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_masks_load">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>20</y>
+      <width>211</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>загружать изображения (маски)</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

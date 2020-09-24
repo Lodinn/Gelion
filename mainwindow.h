@@ -54,6 +54,7 @@ class MainWindow : public QMainWindow {
   void toggleViewAction(bool b);
   void createDockWidgetForChannels();
   void createDockWidgetForIndexes();
+  void updateIndexListWidget();  // заголовок окна изображений
   void restoreIndexListWidget();
   void zGparhEditDialog(zGraph *item);
   void OpenRecentFile();
@@ -68,14 +69,22 @@ class MainWindow : public QMainWindow {
 private:
   const QIcon icon256 = QIcon::fromTheme("mainwindow", QIcon(":/icons/256_colors.png"));
   void updateNewDataSet(bool index_update);  // ----------------
+  void updateGraphicsViewParams(bool index_update);  // задать параметры отображения главного изображения
+  void restoreZGraphList();  // восстановить список областей интереса из скрытой директории
+  void restoreChannelsVisibility();  // восстановить состояние списка каналов
+  void restore_index_list();  // восстановить состояние списка включая RGB
+  void restore_mask_list();  // восстановить состояние списка масок
   QStringList recentFileNames;
   void saveSettings();
   QString getDataSetPath();
   void saveSettingsZ(QSettings &settings, bool save_checked_only);  // save Z Objects
+  void saveSettingsZtoHiddenFolder(int old_index_dataset);
+  void saveSettingsChannelsToHiddenFolder(int old_index_dataset);
   void restoreIndexes();
   void restoreSettings();
   void loadMainSettings();
   void saveMainSettings();
+  void saveToHiddenFolder();  // hidden
   QString getMainSettingsFileName();
   void restoreSettingsVersionOne(QSettings *settings);
   void createZGraphItemFromGroups(QStringList groups, QSettings *settings);  // создать объекты из текстового списка
@@ -83,8 +92,6 @@ private:
   void restoreDockWidgetsPositionExt();  // // восстанавливает коррдинаты окон для загруженных ОИ
   void restoreSettingsVersionTwo(QSettings *settings);
   void addRecentFile();
-  void saveGLOBALSettings();
-  void saveToHiddenFolder();
   QString getGlobalIniFileName();
   void calculateIndexAndStoreToIndexList(QString title, QString formula);
 

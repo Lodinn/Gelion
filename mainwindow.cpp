@@ -42,10 +42,10 @@ MainWindow::~MainWindow() {
 
 void MainWindow::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event)
-  if (saveSettingAtCloseApp) {
-      saveSettings();
+//  if (saveSettingAtCloseApp) {
+//      saveSettings();
 //      im_handler->save_settings_all_images(save_file_names);
-  }  // if
+//  }  // if
   saveMainSettings();
 }
 
@@ -89,13 +89,13 @@ void MainWindow::saveSettings()
     settings.setIniCodec( codec );
     settings.clear();
     settings.setValue("version", 1);
-    settings.setValue("scale", view->GlobalScale);
-    settings.setValue("rotation", view->GlobalRotate);
-    settings.setValue("channelNum", view->GlobalChannelNum);
-    settings.setValue("channelStep", view->GlobalChannelStep);
+    settings.setValue("scale", view->recordView->GlobalScale);
+    settings.setValue("rotation", view->recordView->GlobalRotate);
+    settings.setValue("channelNum", view->recordView->GlobalChannelNum);
+    settings.setValue("channelStep", view->recordView->GlobalChannelStep);
 
-    settings.setValue("maskNum", view->GlobalMaskNum);
-    settings.setValue("viewMode", view->GlobalViewMode);
+    settings.setValue("maskNum", view->recordView->GlobalMaskNum);
+    settings.setValue("viewMode", view->recordView->GlobalViewMode);
     settings.setValue("horizontal", view->horizontalScrollBar()->value());
     settings.setValue("vertical", view->verticalScrollBar()->value());
 
@@ -128,6 +128,36 @@ void MainWindow::saveSettingsZ(QSettings &settings, bool save_checked_only)
         }  // for
         num++;
     }  // for
+}
+
+void MainWindow::saveSettingsZtoHiddenFolder(int old_index_dataset)
+{
+    if (old_index_dataset == -1) return;
+    QString fname = im_handler->get_hidden_folder_by_num(old_index_dataset);
+    if (fname.isEmpty()) return;
+    QSettings settings( fname + "roi.roi", QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings.setIniCodec( codec );
+    settings.clear();
+    saveSettingsZ(settings, false);
+}
+
+void MainWindow::saveSettingsChannelsToHiddenFolder(int old_index_dataset)
+{
+    if (old_index_dataset == -1) return;
+    QString fname = im_handler->get_hidden_folder_by_num(old_index_dataset);
+    if (fname.isEmpty()) return;
+
+    QList<J09::channelCheckVisible> ccv = im_handler->get_image(old_index_dataset)->get_list_channel_visibility();
+    QFile datfile(fname + "channels.bin");
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+    datstream << ccv.count();
+    for (int i=0; i<ccv.count(); i++)
+        datstream << ccv[i].checked << ccv[i].isHidden << ccv[i].brightness;
+    datfile.close();
 }
 
 void MainWindow::SetupUi() {
@@ -294,7 +324,9 @@ void MainWindow::createMainConnections()
     connect(im_handler, SIGNAL(index_finished(int)), this, SLOT(delete_progress_dialog()),
             Qt::DirectConnection);
     connect(im_handler, &ImageHandler::change_current_image, [=]()
-    { view->recordView = &im_handler->current_image()->recordView; } );
+        { view->recordView = &im_handler->current_image()->recordView; } );
+    connect( im_handler, &ImageHandler::change_current_image, this, &MainWindow::saveSettingsZtoHiddenFolder );
+    connect( im_handler, &ImageHandler::change_current_image, this, &MainWindow::saveSettingsChannelsToHiddenFolder );
 
     // view
     connect(view, SIGNAL(point_picked(QPointF)), this,
@@ -790,6 +822,7 @@ void MainWindow::open() {
   if (num != -1) {
     if (im_handler->set_current_image(num)) {
       updateNewDataSet(false);
+      updateGraphicsViewParams(false);  // задать параметры отображения главного изображения
       addRecentFile();
       return;
     }  // if
@@ -800,18 +833,14 @@ void MainWindow::open() {
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
-  view->mainPixmap->setOpacity(1.0);
-  view->resetMatrix();  view->resetTransform();
-  view->GlobalScale = 1. / GLOBAL_SETTINGS.main_rgb_scale_start;
-  view->GlobalRotate = - GLOBAL_SETTINGS.main_rgb_rotate_start;
-  view->scale(1/view->GlobalScale, 1/view->GlobalScale);
-  view->rotate(-view->GlobalRotate);
+
 // dataFileName ПРИСВАИВАТЬ ПОСЛЕ ЗАГРУЗКИ ФАЙЛА !!!!!
 //  if (!dataFileName.isEmpty()) saveSettings();  // ****************************
   dataFileName = im_handler->current_image()->get_file_name();
   view->empty = false;  // сцена содержит данные
   view->openAct->setEnabled(true);
   updateNewDataSet(true);
+  updateGraphicsViewParams(true);  // задать параметры отображения главного изображения
   addRecentFile();
   view->openAct->setEnabled(true);
   set_action_enabled(true);
@@ -828,27 +857,28 @@ void MainWindow::updateNewDataSet(bool index_update)
     zGraphListWidget->clear();
     indexListWidget->clear();
     chListWidget->clear();
+    maskListWidget->clear();
 
     imgSpectral->hide();  spectralAct->setEnabled(false); spectralAct->setChecked(false);
     imgHistogram->hide();  histogramAct->setEnabled(false); histogramAct->setChecked(false);
     imgMasks->hide();  maskAct->setEnabled(false); maskAct->setChecked(false);
+    slider->setEnabled(true);
+    view->openAct->setEnabled(true);
 
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     actual_resent_files.append(dataFileName);
     createDockWidgetForChannels();
-    if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
+    if (!GLOBAL_SETTINGS._index_load) createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
 
-    createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
-
+//    if (restoreSettingAtStartUp && index_update) restoreIndexes();  // slice++image++brightness
 //    if (restoreSettingAtStartUp || !index_update) restoreSettings();  // dock + zgraph
-    if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
+//    if (restoreSettingAtStartUp) restoreSettings();  // dock + zgraph
 //    if (!index_update) {  // &&&&&&&
 //        view->horizontalScrollBar()->setValue(0);
 //        view->verticalScrollBar()->setValue(0);
 //    }
 
-    slider->setEnabled(true);
-    view->openAct->setEnabled(true);
+
 }
 
 void MainWindow::calculateVisibleZObject(bool rescale) {
@@ -876,6 +906,8 @@ void MainWindow::createContextAction(const QIcon &icon, const QString &text, int
 
 void MainWindow::showContextMenuMaskImagList(const QPoint &pos)
 {
+    if (dataFileName.isEmpty()) return;
+
     im_handler->current_image()->update_sheck_visible(3);  // masks
     QPoint globalPos = maskListWidget->mapToGlobal(pos);
     QMenu menu(this);
@@ -1007,52 +1039,14 @@ void MainWindow::createDockWidgetForChannels()
         chListWidget->addItem(lwItem);
     }  // for
     chListWidget->setCurrentRow(0);
-/*    chListWidget->clear();
-    auto strlist = im_handler->current_image()->get_wl_list(2);  // две цифры после запятой
-    auto wavelengths = im_handler->current_image()->wls();
-    foreach(QString str, strlist) {
-        QListWidgetItem *lwItem = new QListWidgetItem();
-        chListWidget->addItem(lwItem);
-        lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
-        lwItem->setCheckState(Qt::Unchecked);
-        lwItem->setText(str);
-
-        int lwnum = strlist.indexOf(str);
-        qreal wlen = wavelengths[lwnum];
-        if (wlen < 781) {  // видимый диапазон
-            QPixmap pixmap(16,16);
-            QColor color = view->waveLengthToRGB(wlen);
-            pixmap.fill(color);
-            QIcon icon(pixmap);
-            lwItem->setIcon(icon);
-        } else
-            lwItem->setIcon(QIcon(":/icons/color_NIR_32.png"));
-     }  // for
-    chListWidget->setCurrentRow(0); */
 }
 
 void MainWindow::create_default_RGB_image()
 {
     im_handler->current_image()->append_RGB();
     uint32_t depth = im_handler->current_image()->get_bands_count();
-    view->GlobalChannelNum = depth;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
-
-/*// 84 - 641nm 53 - 550nm 22 - 460nm
-    int num_red = im_handler->get_band_by_wave_length(rgb_default.red);
-    int num_green = im_handler->get_band_by_wave_length(rgb_default.green);
-    int num_blue = im_handler->get_band_by_wave_length(rgb_default.blue);
-    if (num_red == -1 || num_green == -1 || num_blue == -1) {
-        qDebug() << "CRITICAL! WRONG CONSTRUCTING THE RGB IMAGE";
-        return;
-    }  // if
-    QImage img = im_handler->current_image()->get_rgb(true,num_red,num_green,num_blue);
-    QString rgb_str = QString("R: %1 нм G: %2 нм B: %3 нм").arg(rgb_default.red)
-            .arg(rgb_default.green).arg(rgb_default.blue);
-    im_handler->current_image()->append_additional_image(img,rgb_str,rgb_str);
-    uint32_t depth = im_handler->current_image()->get_bands_count();
-    view->GlobalChannelNum = depth;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);*/
+    view->recordView->GlobalChannelNum = depth;
+    im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
 }
 
 void MainWindow::restoreIndexListWidget() {
@@ -1080,10 +1074,16 @@ void MainWindow::createDockWidgetForIndexes()
     if (indexListWidget->count() == 0) {
         create_default_RGB_image();
         QListWidgetItem *lwItem = new QListWidgetItem();
-        im_handler->current_image()->set_LW_item(lwItem, view->GlobalChannelNum);
+        im_handler->current_image()->set_LW_item(lwItem, view->recordView->GlobalChannelNum);
         indexListWidget->addItem(lwItem);
     }  // if
 
+    updateIndexListWidget();  // заголовок окна изображений
+
+}
+
+void MainWindow::updateIndexListWidget()
+{
     indexListWidget->setCurrentRow(0);
     chListWidget->currentItem()->setSelected(false);  // конкурент
     set_abstract_index_pixmap();
@@ -1153,9 +1153,10 @@ void MainWindow::loadMainSettings()
     settings.setIniCodec( codec );
 
     settings.beginGroup( "General" );
-    GLOBAL_SETTINGS.load_resent_project = settings.value( "load_resent_project", true).toBool();
+    GLOBAL_SETTINGS.load_resent_project = settings.value( "load_resent_project", false).toBool();
     GLOBAL_SETTINGS.save_project_settings = settings.value( "save_project_settings", false).toBool();
     GLOBAL_SETTINGS.restore_project_settings = settings.value( "restore_project_settings", false).toBool();
+    GLOBAL_SETTINGS.restore_project_settings_view = settings.value( "restore_project_settings_view", false).toBool();
     GLOBAL_SETTINGS.resent_files_count = settings.value( "resent_files_count", 3).toInt();
     GLOBAL_SETTINGS.save_not_checked_roi = settings.value( "save_not_checked_roi", true).toBool();
     GLOBAL_SETTINGS.zobject_dock_size_w = settings.value( "zobject_dock_size_w", 420).toInt();
@@ -1193,6 +1194,7 @@ void MainWindow::saveMainSettings()
     settings.setValue( "load_resent_project", GLOBAL_SETTINGS.load_resent_project );
     settings.setValue( "save_project_settings", GLOBAL_SETTINGS.save_project_settings );
     settings.setValue( "restore_project_settings", GLOBAL_SETTINGS.restore_project_settings );
+    settings.setValue( "restore_project_settings_view", GLOBAL_SETTINGS.restore_project_settings_view );
     settings.setValue( "resent_files_count", GLOBAL_SETTINGS.resent_files_count );
     settings.setValue( "save_not_checked_roi", GLOBAL_SETTINGS.save_not_checked_roi );
     settings.setValue( "zobject_dock_size_w", GLOBAL_SETTINGS.zobject_dock_size_w );
@@ -1211,13 +1213,6 @@ void MainWindow::saveMainSettings()
     // recent files
     settings.remove("Resent files");
     settings.beginGroup( "Resent files" );
-/*    int count = 1;
-    for(int i=0; i<recentFileNames.count(); i++) {
-        if (count > GLOBAL_SETTINGS.resent_files_count) break;
-        QString key(QString("file%1").arg(count));
-        settings.setValue( key , recentFileNames[i] );
-        count++;
-    } */
     QStringList appended_files;
     int count = 1;
     for(int i=0; i<actual_resent_files.count(); i++) {
@@ -1243,30 +1238,30 @@ QString MainWindow::getMainSettingsFileName()
 
 void MainWindow::restoreSettingsVersionOne(QSettings *settings)
 {
-    view->GlobalScale = settings->value("scale", 1.0).toDouble();
-    view->GlobalRotate = settings->value("rotation", 0.0).toDouble();
-    view->GlobalChannelNum = settings->value("channelNum", 0).toInt();
+    view->recordView->GlobalScale = settings->value("scale", 1.0).toDouble();
+    view->recordView->GlobalRotate = settings->value("rotation", 0.0).toDouble();
+    view->recordView->GlobalChannelNum = settings->value("channelNum", 0).toInt();
     uint32_t depth = im_handler->current_image()->get_bands_count();
-    if (view->GlobalChannelNum < depth) {
-        QListWidgetItem *lwItem = chListWidget->item(view->GlobalChannelNum);
+    if (view->recordView->GlobalChannelNum < depth) {
+        QListWidgetItem *lwItem = chListWidget->item(view->recordView->GlobalChannelNum);
         itemClickedChannelList(lwItem);
         chListWidget->setCurrentItem(lwItem);  chListWidget->scrollToItem(lwItem);
     }  else {
-        QListWidgetItem *lwItem = indexListWidget->item(view->GlobalChannelNum - depth);
+        QListWidgetItem *lwItem = indexListWidget->item(view->recordView->GlobalChannelNum - depth);
         lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);
         lwItem->setCheckState(Qt::Unchecked);
         itemClickedIndexList(lwItem);
         indexListWidget->setCurrentItem(lwItem);  indexListWidget->scrollToItem(lwItem);
     }  // if
-    view->GlobalChannelStep = settings->value("channelStep", 1).toInt();
+    view->recordView->GlobalChannelStep = settings->value("channelStep", 1).toInt();
     show_channel_list_update();
 
     view->resetMatrix();  view->resetTransform();
-    view->scale(1/view->GlobalScale, 1/view->GlobalScale);
-    view->rotate(-view->GlobalRotate);
+    view->scale(1/view->recordView->GlobalScale, 1/view->recordView->GlobalScale);
+    view->rotate(-view->recordView->GlobalRotate);
 
-    view->GlobalMaskNum = settings->value("maskNum", 0).toInt();
-    view->GlobalViewMode = settings->value("viewMode", 0).toInt();
+    view->recordView->GlobalMaskNum = settings->value("maskNum", 0).toInt();
+    view->recordView->GlobalViewMode = settings->value("viewMode", 0).toInt();
 
     int horizontal = settings->value("horizontal", 0).toInt();
     int vertical = settings->value("vertical", 0).toInt();
@@ -1327,7 +1322,7 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             settings->beginGroup(str);
             QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-            zRect *rect = new zRect(pXY,view->GlobalScale,view->GlobalRotate);
+            zRect *rect = new zRect(pXY,view->recordView->GlobalScale,view->recordView->GlobalRotate);
             QString title = settings->value("title").toString();
             rect->setTitle(title);
             rect->aicon = QIcon(":/images/vector_square.png");
@@ -1361,7 +1356,7 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             settings->beginGroup(str);
             QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-            zEllipse *ellipse = new zEllipse(pXY,view->GlobalScale,view->GlobalRotate);
+            zEllipse *ellipse = new zEllipse(pXY,view->recordView->GlobalScale,view->recordView->GlobalRotate);
             QString title = settings->value("title").toString();
             ellipse->setTitle(title);
             ellipse->aicon = QIcon(":/images/vector_ellipse.png");
@@ -1395,7 +1390,7 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             settings->beginGroup(str);
             QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-            zPolyline *polyline = new zPolyline( view->GlobalScale,view->GlobalRotate );
+            zPolyline *polyline = new zPolyline( view->recordView->GlobalScale, view->recordView->GlobalRotate );
             QString title = settings->value("title").toString();
             polyline->setTitle(title);
             polyline->setPos(pXY);
@@ -1430,7 +1425,7 @@ void MainWindow::createZGraphItemFromGroups(QStringList groups, QSettings *setti
             settings->beginGroup(str);
             QString pos = settings->value("pos").toString();
             QPointF pXY = getPointFromStr(pos);
-            zPolygon *polygon = new zPolygon( view->GlobalScale,view->GlobalRotate );
+            zPolygon *polygon = new zPolygon( view->recordView->GlobalScale, view->recordView->GlobalRotate );
             QString title = settings->value("title").toString();
             polygon->setTitle(title);
             polygon->setPos(pXY);
@@ -1514,10 +1509,10 @@ void MainWindow::itemClickedChannelList(QListWidgetItem *lwItem)
     QListWidgetItem *mlw = maskListWidget->currentItem();
     if(mlw) mlw->setSelected(false);  // конкурент
 
-    view->GlobalViewMode = 0;
+    view->recordView->GlobalViewMode = 0;
     int num = chListWidget->row(lwItem);
-    view->GlobalChannelNum = num;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+    view->recordView->GlobalChannelNum = num;
+    im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
 //----------------------------------------------------------------
     set_abstract_index_pixmap();
     imgHistogram->hide();  histogramAct->setEnabled(false);
@@ -1532,11 +1527,11 @@ void MainWindow::itemClickedIndexList(QListWidgetItem *lwItem)
     QListWidgetItem *mlw = maskListWidget->currentItem();
     if(mlw) mlw->setSelected(false);  // конкурент
 
-    view->GlobalViewMode = 0;
+    view->recordView->GlobalViewMode = 0;
     int num = indexListWidget->row(lwItem);
     uint32_t depth = im_handler->current_image()->get_bands_count();
-    view->GlobalChannelNum = num + depth;
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+    view->recordView->GlobalChannelNum = num + depth;
+    im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
 //----------------------------------------------------------------
     set_abstract_index_pixmap();
     if (num==0) {imgHistogram->hide(); histogramAct->setEnabled(false); }
@@ -1550,9 +1545,9 @@ void MainWindow::itemClickedMaskList(QListWidgetItem *lwItem)
 
     chListWidget->currentItem()->setSelected(false);  // конкурент
     indexListWidget->currentItem()->setSelected(false);  // конкурент
-    view->GlobalViewMode = 1;
+    view->recordView->GlobalViewMode = 1;
     int num = maskListWidget->row(lwItem);
-    view->GlobalChannelNum = -1;  view->GlobalMaskNum = num;
+    view->recordView->GlobalChannelNum = -1;  view->recordView->GlobalMaskNum = num;
     set_abstract_mask_pixmap();
 }
 
@@ -1573,22 +1568,31 @@ void MainWindow::addRecentFile()
     view->resentFilesActions.append(recentAct);
 }
 
-void MainWindow::saveGLOBALSettings()
-{
-    QString iniFileName = getGlobalIniFileName();
-    QSettings settings( iniFileName, QSettings::IniFormat );
-    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
-    settings.setIniCodec( codec );
-    settings.clear();
-
-}
-
 void MainWindow::saveToHiddenFolder()
 {
-
 //    if (im_handler->get_images_count() == 0) return;  // надо по всем сетам !
 //    im_handler->current_image()->save_indexes_for_restore(im_handler->get_hidden_folder());
 //    im_handler->save_to_hidden_folder();
+
+    for (int i=0; i<im_handler->get_images_count(); i++) {    // масштаб, поворот, сдвиг
+        SpectralImage *si = im_handler->get_image(i);
+        if (!si) continue;
+        si->save_view_param_for_restore(im_handler->get_hidden_folder_by_num(i));
+    }  // for
+    saveSettingsZtoHiddenFolder(im_handler->get_current_image_num());       // области интереса
+    saveSettingsChannelsToHiddenFolder(im_handler->get_current_image_num());    // отображение каналов
+    if (GLOBAL_SETTINGS._index_save)                            // индексы
+        for (int i=0; i<im_handler->get_images_count(); i++) {    // RGB включая !!!
+            SpectralImage *si = im_handler->get_image(i);
+            if (!si) continue;
+            si->save_indexes_for_restore(im_handler->get_hidden_folder_by_num(i));
+        }  // for
+    if (GLOBAL_SETTINGS._masks_save)                            // маски
+        for (int i=0; i<im_handler->get_images_count(); i++) {
+            SpectralImage *si = im_handler->get_image(i);
+            if (!si) continue;
+            si->save_masks_for_restore(im_handler->get_hidden_folder_by_num(i));
+        }  // for
 }
 
 QString MainWindow::getGlobalIniFileName()
@@ -1616,12 +1620,118 @@ void MainWindow::OpenRecentFile()
             if (!set_current) return;
             dataFileName = im_handler->current_image()->get_file_name();
             updateNewDataSet(false);
+            updateGraphicsViewParams(false);  // задать параметры отображения главного изображения
         }  // if (num == -1)
     }  // if (action)
 }
 
+void MainWindow::updateGraphicsViewParams(bool index_update)
+{
+    view->mainPixmap->setOpacity(1.0);
+    view->resetMatrix();  view->resetTransform();
+
+    if (index_update) {                                                                 // загрузка файла с диска
+        view->recordView->GlobalScale = 1. / GLOBAL_SETTINGS.main_rgb_scale_start;
+        view->recordView->GlobalRotate = - GLOBAL_SETTINGS.main_rgb_rotate_start;
+        view->recordView->GlobalHScrollBar = view->horizontalScrollBar()->value();
+        view->recordView->GlobalVScrollBar = view->verticalScrollBar()->value();
+    // восстанавливать настройки отображения проекта масштаб поворот
+        if (GLOBAL_SETTINGS.restore_project_settings_view)
+            im_handler->current_image()->load_view_param_for_restore(im_handler->get_hidden_folder());
+        if (GLOBAL_SETTINGS._zobject_list_load)
+            restoreZGraphList();                      // восстановить список областей интереса из скрытой директории
+        if (GLOBAL_SETTINGS._index_load) {                  // восстановить состояние списка изображений включая RGB
+            im_handler->current_image()->load_indexes_for_restore(im_handler->get_hidden_folder());
+            restore_index_list();
+            updateIndexListWidget();  // заголовок окна изображений
+        }
+        if (GLOBAL_SETTINGS._channel_list_load)
+            restoreChannelsVisibility();  // восстановить состояние списка каналов
+        if (GLOBAL_SETTINGS._masks_load) {                  // восстановить состояние списка масок
+            im_handler->current_image()->load_masks_for_restore(im_handler->get_hidden_folder());
+            restore_mask_list();
+        }
+    }
+    else {                                                                              // файл ранее был загружен
+        restoreZGraphList();  // восстановить список областей интереса из скрытой директории
+        restore_index_list();  // восстановить состояние списка изображений включая RGB
+        updateIndexListWidget();  // заголовок окна изображений
+        restoreChannelsVisibility();  // восстановить состояние списка каналов
+        restore_mask_list();  // восстановить состояние списка масок
+    }
+
+    view->scale(1/view->recordView->GlobalScale, 1/view->recordView->GlobalScale);
+    view->rotate(-view->recordView->GlobalRotate);
+    view->horizontalScrollBar()->setValue(view->recordView->GlobalHScrollBar);
+    view->verticalScrollBar()->setValue(view->recordView->GlobalVScrollBar);
+
+}
+
+void MainWindow::restoreZGraphList()
+{
+    zGraphListWidget->clear();
+
+    QString fname = im_handler->get_hidden_folder();
+    fname += "roi.roi";
+    if (!QFile::exists(fname)) return;
+
+    QSettings *settings = new QSettings( fname, QSettings::IniFormat );
+    QTextCodec *codec = QTextCodec::codecForName( "UTF-8" );
+    settings->setIniCodec( codec );
+    QStringList groups = settings->childGroups();
+
+    createZGraphItemFromGroups(groups, settings);  // создать объекты из текстового списка
+
+    auto graphList = view->getZGraphItemsList();
+    if (imgSpectral->isVisible()) imgSpectral->updateDataExt(dataFileName, graphList, nullptr);  // обновление всех профилей
+    if (graphList.count() > 0) spectralAct->setEnabled(true);
+
+}
+
+void MainWindow::restoreChannelsVisibility()
+{
+    QString fname = im_handler->get_hidden_folder();
+    fname += "channels.bin";
+    if (!QFile::exists(fname)) return;
+    im_handler->current_image()->set_channel_visibility(fname);
+}
+
+void MainWindow::restore_index_list()
+{
+    indexListWidget->clear();
+
+    uint32_t depth = im_handler->current_image()->get_bands_count();
+    for (int i=0; i<im_handler->current_image()->get_indexes_count(); i++) {
+        QListWidgetItem *lwItem = new QListWidgetItem();
+        indexListWidget->addItem(lwItem);
+        im_handler->current_image()->set_LW_item(lwItem, i+depth);
+        slice_magic *sm = im_handler->current_image()->get_index(i);
+        if (!sm || i == 0) continue;
+        if (sm->get_check_state()) lwItem->setCheckState(Qt::Checked);
+        else lwItem->setCheckState(Qt::Unchecked);
+        lwItem->setHidden(!sm->get_visible());
+    }  // for
+}
+
+void MainWindow::restore_mask_list()
+{
+    maskListWidget->clear();
+
+    for (int i=0; i<im_handler->current_image()->get_masks_count(); i++) {
+        slice_magic *sm = im_handler->current_image()->get_mask(i);
+        if (!sm) continue;
+        QListWidgetItem *item = imgMasks->createMaskWidgetItem(sm, sm->get_image());
+        maskListWidget->addItem(item);
+        if (sm->get_check_state()) item->setCheckState(Qt::Checked);
+        else item->setCheckState(Qt::Unchecked);
+        item->setHidden(!sm->get_visible());
+    }  // for
+}
+
 void MainWindow::showContextMenuChannelList(const QPoint &pos)
 {
+    if (dataFileName.isEmpty()) return;
+
     im_handler->current_image()->update_sheck_visible(1);  // bands
     QPoint globalPos = chListWidget->mapToGlobal(pos);
     QMenu menu(this);
@@ -1632,6 +1742,8 @@ void MainWindow::showContextMenuChannelList(const QPoint &pos)
 
 void MainWindow::showContextMenuZGraphList(const QPoint &pos)
 {
+    if (dataFileName.isEmpty()) return;
+
     QPoint globalPos = zGraphListWidget->mapToGlobal(pos);
     QMenu menu(this);
     menu.addAction(spectralAct);
@@ -1639,7 +1751,6 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
         menu.addAction(show_zgraph_list_acts[i]);
 
 //    QMenu *maskMenu = menu.addMenu(tr("Отфильтровать по маске"));
-
 //    for (int i = 0; i < mask_list_acts.count(); i++)
 //        maskMenu->addAction(mask_list_acts[i]);
 
@@ -1648,6 +1759,8 @@ void MainWindow::showContextMenuZGraphList(const QPoint &pos)
 
 void MainWindow::showContextMenuDockIndexList(const QPoint &pos)
 {
+    if (dataFileName.isEmpty()) return;
+
     im_handler->current_image()->update_sheck_visible(2);  // indexes
     if (dataFileName.isEmpty()) return;
     QPoint globalPos = indexListWidget->mapToGlobal(pos);
@@ -1705,9 +1818,9 @@ void MainWindow::show_mask_list()
             slider->setEnabled(false);
             chListWidget->currentItem()->setSelected(false);  // конкурент
             indexListWidget->currentItem()->setSelected(false);  // конкурент
-            view->GlobalViewMode = 1;
-            view->GlobalChannelNum = -1;  view->GlobalMaskNum = gmc;
-            maskListWidget->setCurrentRow(view->GlobalMaskNum);
+            view->recordView->GlobalViewMode = 1;
+            view->recordView->GlobalChannelNum = -1;  view->recordView->GlobalMaskNum = gmc;
+            maskListWidget->setCurrentRow(view->recordView->GlobalMaskNum);
             set_abstract_mask_pixmap();
 
             break; }
@@ -1746,9 +1859,9 @@ void MainWindow::show_mask_list()
                 imgMasks->clearForAllObjects();
                 maskAct->setChecked(false); maskAct->setEnabled(false);
 // режим отображения устанавливаем в RGB
-                view->GlobalViewMode = 0;
-                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
-                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+                view->recordView->GlobalViewMode = 0;
+                view->recordView->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
                 set_abstract_index_pixmap();
             //----------------------------------------------------------------
                 imgHistogram->hide(); histogramAct->setEnabled(false);
@@ -1809,10 +1922,10 @@ void MainWindow::show_index_list()
 
             uint32_t depth = im_handler->current_image()->get_bands_count();
             indexListWidget->setCurrentRow(new_num - depth);
-            view->GlobalChannelNum = new_num;  histogramAct->setEnabled(true);
+            view->recordView->GlobalChannelNum = new_num;  histogramAct->setEnabled(true);
 
-            view->GlobalViewMode = 0;
-            im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+            view->recordView->GlobalViewMode = 0;
+            im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
             set_abstract_index_pixmap();
             show_histogram_widget();  // histogram
             chListWidget->currentItem()->setSelected(false);  // конкурент
@@ -1851,9 +1964,9 @@ void MainWindow::show_index_list()
             int res = msgBox.exec();
             if (res == QMessageBox::Ok) {   // нажата кнопка Да
                 // режим отображения устанавливаем в RGB
-                view->GlobalViewMode = 0;
-                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
-                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+                view->recordView->GlobalViewMode = 0;
+                view->recordView->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
                 set_abstract_index_pixmap();
 
                 im_handler->current_image()->delete_all_indexes();
@@ -1875,9 +1988,9 @@ void MainWindow::show_index_list()
             int res = msgBox.exec();
             if (res == QMessageBox::Ok) {   // нажата кнопка Да
                 // режим отображения устанавливаем в RGB
-                view->GlobalViewMode = 0;
-                view->GlobalChannelNum = im_handler->current_image()->get_bands_count();
-                im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+                view->recordView->GlobalViewMode = 0;
+                view->recordView->GlobalChannelNum = im_handler->current_image()->get_bands_count();
+                im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
                 set_abstract_index_pixmap();
 
                 im_handler->current_image()->delete_checked_indexes();
@@ -1918,7 +2031,7 @@ void MainWindow::updateDeleteItemsBoxWarning(QMessageBox &mb, QString title, QSt
 
 void MainWindow::show_channel_list_update() {
     for (int row = 0; row < chListWidget->count(); row++) {
-        if (row % view->GlobalChannelStep == 0)
+        if (row % view->recordView->GlobalChannelStep == 0)
             chListWidget->item(row)->setHidden(false);
         else chListWidget->item(row)->setHidden(true);
     }  // for
@@ -1946,8 +2059,8 @@ void MainWindow::show_channel_list()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
-        view->GlobalChannelStep = action->data().toInt();
-        switch (view->GlobalChannelStep) {
+        view->recordView->GlobalChannelStep = action->data().toInt();
+        switch (view->recordView->GlobalChannelStep) {
         case 1 :
         case 2 :
         case 5 :
@@ -1994,11 +2107,11 @@ void MainWindow::show_channel_list()
                 tr("Файлы спектральных каналов (*.splst)"));
             if (fname.isEmpty()) return;
 
-            view->GlobalViewMode = 0;
-            view->GlobalChannelNum = im_handler->current_image()->load_list_checked_bands(fname);
-            im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+            view->recordView->GlobalViewMode = 0;
+            view->recordView->GlobalChannelNum = im_handler->current_image()->load_list_checked_bands(fname);
+            im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
             set_abstract_index_pixmap();
-            chListWidget->setCurrentRow(view->GlobalChannelNum);
+            chListWidget->setCurrentRow(view->recordView->GlobalChannelNum);
             indexListWidget->currentItem()->setSelected(false);  // конкурент
 
             break;
@@ -2193,30 +2306,8 @@ void MainWindow::inputIndexDlgShow()
     dlg->ui->buttonBox->buttons().at(1)->setText("Отмена");
     QVector<double> wls = im_handler->current_image()->wls();
     dlg->setSpectralRange(wls);
-    if (dlg->exec() == QDialog::Accepted) {
-//        view->index_title_str = dlg->get_index_title();
-//        view->index_formula_str = dlg->get_formula();
+    if (dlg->exec() == QDialog::Accepted)
         calculateIndexAndStoreToIndexList(dlg->get_index_title(), dlg->get_formula());
-
-        /*QString input = dlg->get_formula();
-        if (input.isEmpty()) {
-            qDebug() << "wrong index !!!";
-            return;
-        }  // if
-        QString for_eval = im_handler->get_regular_expression(input);
-        if (for_eval.isEmpty()) {
-            qDebug() << "wrong index !!!";
-            return;
-        }  // if
-// update index list
-        J09::indexType indexItem;
-        indexItem.name = dlg->ui->lineEditInputTitle->text();
-        indexItem.formula = dlg->ui->lineEditInputFormula->text();
-        if (dlg->namesList.indexOf(indexItem.name) == -1)
-            indexList.append(indexItem);
-
-        emit index_calculate(for_eval); */
-    }  // if
 }
 
 void MainWindow::calculateIndexAndStoreToIndexList(QString title, QString formula)
@@ -2285,14 +2376,14 @@ void MainWindow::change_brightness(int value)
 
 void MainWindow::add_index_pixmap(int num)
 {
-    view->GlobalViewMode = 0;
+    view->recordView->GlobalViewMode = 0;
 
-    view->GlobalChannelNum = num;  histogramAct->setEnabled(true);
+    view->recordView->GlobalChannelNum = num;  histogramAct->setEnabled(true);
 
 //    QImage img = im_handler->current_image()->get_index_rgb(true,true,num);
 //    im_handler->current_image()->append_additional_image(img,
 //                                 view->index_title_str,view->index_formula_str);
-    im_handler->current_image()->set_current_slice(view->GlobalChannelNum);
+    im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
 
 //    im_handler->current_image()->histogram[view->GlobalChannelNum-1]
 //            .rotation = GLOBAL_SETTINGS.main_rgb_rotate_start;
@@ -2300,7 +2391,7 @@ void MainWindow::add_index_pixmap(int num)
                                                        view->index_title_str,view->index_formula_str);
     QListWidgetItem *lwItem = new QListWidgetItem();
     indexListWidget->addItem(lwItem);
-    im_handler->current_image()->set_LW_item(lwItem, view->GlobalChannelNum);
+    im_handler->current_image()->set_LW_item(lwItem, view->recordView->GlobalChannelNum);
     indexListWidget->setCurrentRow(indexListWidget->count() - 1);
     chListWidget->currentItem()->setSelected(false);  // конкурент
 
@@ -2321,7 +2412,7 @@ void MainWindow::add_index_pixmap(int num)
 
 void MainWindow::add_mask_pixmap(slice_magic *sm)
 {
-    view->GlobalViewMode = 1;
+    view->recordView->GlobalViewMode = 1;
     im_handler->current_image()->append_mask(sm);
     QListWidgetItem *item = imgMasks->createMaskWidgetItem(sm, sm->get_image());
     maskListWidget->addItem(item);
@@ -2340,18 +2431,11 @@ void MainWindow::set_abstract_index_pixmap()
     QImage img = im_handler->current_image()->get_current_image();
     QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
     view->mainPixmap->setPixmap(pxm);
-
-/*    double brightness = im_handler->current_image()->get_current_brightness();
-    im_handler->set_brightness_to_slider(slider, brightness);
-    QImage img = im_handler->get_REAL_current_image();
-    QPixmap pxm = view->changeBrightnessPixmap(img, brightness);
-    view->mainPixmap->setPixmap(pxm); */
 }
 
 void MainWindow::set_abstract_mask_pixmap()
 {
-    im_handler->current_image()->set_current_mask_index(view->GlobalMaskNum);
-//    J09::maskRecordType *am = im_handler->current_image()->getCurrentMask();
+    im_handler->current_image()->set_current_mask_index(view->recordView->GlobalMaskNum);
     QImage img = im_handler->current_image()->get_current_mask_image();
     QPixmap pxm = QPixmap::fromImage(img);
     view->mainPixmap->setPixmap(pxm);
@@ -2371,19 +2455,4 @@ void MainWindow::updateHistogram()
     imgHistogram->updateData(dataFileName, im_handler->current_image()->get_current_index());
     if (histogramAct->isChecked()) imgHistogram->show();
     else imgHistogram->hide();
-
-
-/*    uint32_t depth = im_handler->current_image()->get_bands_count();
-    double brightness = im_handler->current_image()->getBrightness(depth);  // RGB - slice
-    QImage img = im_handler->current_image()->get_additional_image(0);   // RGB - image
-    mainPixmap = view->changeBrightnessPixmap(img, brightness);
-
-    QVector<QVector<double> > slice_index = im_handler->current_image()->get_band(view->GlobalChannelNum-1);
-    QPair<QString, QString> name = im_handler->current_image()->get_current_formula();
-
-    imgHistogram->setPreviewPixmap(mainPixmap);
-    imgHistogram->updateData(dataFileName, name.first, name.second, slice_index,
-                             im_handler->current_image()->histogram[view->GlobalChannelNum-1]);
-    if (histogramAct->isChecked()) imgHistogram->show();
-    else imgHistogram->hide(); */
 }

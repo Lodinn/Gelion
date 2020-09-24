@@ -16,6 +16,7 @@ public:
   ~ImageHandler();
 //! returns true on success (current index set to the requested one), false otherwise
     bool set_current_image(int image_list_index);
+    int get_current_image_num() { return index_current_dataset; }
     QString get_regular_expression(QString input);
     int get_band_by_wave_length(double wave_length);
     enum show_progress_mode_set { hdr_mode, index_mode };
@@ -31,8 +32,10 @@ public:
     QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
     QIcon load_icon_from_file(QString &fname, double rotation);
     QString getWritableLocation();  // активный каталог проекта
+    QString getWritableLocationByNum(int num);  // каталог проекта номер num
     void showWarningMessageBox(QMessageBox *mb, QString text);
     QString get_hidden_folder();
+    QString get_hidden_folder_by_num(int num);
     void save_to_hidden_folder();
 protected:
     int script_y, script_x; // например, в ImageHandler.h
@@ -60,13 +63,16 @@ private:
   void createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name);
   double rgb_to_float = 255.;
   QString hidden_folder = "/do not change this folder/";
-
+public:
+  SpectralImage* get_image(int num) {
+      if (num < 0 || num > image_list.count()-1) return nullptr;
+      return image_list[num]; }
 signals:
   void numbands_obtained(int);
   void reading_progress(int);
   void finished();
   void index_finished(int);
-  void change_current_image();
+  void change_current_image(int old_index_dataset);
 };
 
 #endif // IMAGEHANDLER_H

@@ -516,6 +516,44 @@ J09::maskRecordType SpectralImage::convert_to_record_from_mask(int num)
     return mr;
 }
 
+QList<J09::channelCheckVisible> SpectralImage::get_list_channel_visibility()
+{
+    QList<J09::channelCheckVisible> result;
+    foreach( slice_magic *sm, bands ) {
+        J09::channelCheckVisible ccv;
+        ccv.checked = sm->get_lw_item()->checkState() == Qt::Checked;
+        ccv.isHidden = sm->get_lw_item()->isHidden();
+        ccv.brightness = sm->get_brightness();
+        result.append(ccv);
+    }  // foreach
+    return result;
+}
+
+void SpectralImage::set_channel_visibility(QString fname)
+{
+    QList<J09::channelCheckVisible> ccv;
+    QFile datfile(fname);
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+    int count;
+    datstream >> count;
+    for (int i=0; i<count; i++) {
+        J09::channelCheckVisible ccv_item;
+        datstream >> ccv_item.checked >> ccv_item.isHidden >> ccv_item.brightness;
+        ccv.append(ccv_item);
+    }
+    datfile.close();
+    for (int i=0; i<ccv.count(); i++) {
+        if (i > bands.count()-1) break;
+        if (ccv[i].checked) bands[i]->get_lw_item()->setCheckState(Qt::Checked);
+        else bands[i]->get_lw_item()->setCheckState(Qt::Unchecked);
+        bands[i]->get_lw_item()->setHidden(ccv[i].isHidden);
+        bands[i]->set_brightness(ccv[i].brightness);
+    }  // for
+}
+
 void SpectralImage::delete_all_masks()
 {
     foreach(slice_magic *m, masks) delete m;
@@ -746,6 +784,74 @@ void SpectralImage::save_indexes_for_restore(QString hidden_dir)
     datfile.close();
 }
 
+void SpectralImage::load_indexes_for_restore(QString hidden_dir)
+{
+    QString fname = hidden_dir + "index.index";
+    if (!QFile::exists(fname)) return;
+
+    QFile datfile( fname );
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    int count;
+    datstream >> count;
+
+    for(int i=0; i<count; i++) {
+        slice_magic *sm = new slice_magic;
+        sm->load(datstream);
+        indexes.append(sm);
+    }  // for
+
+    datfile.close();
+}
+
+void SpectralImage::save_masks_for_restore(QString hidden_dir)
+{
+    QFile datfile( hidden_dir + "masks.mask" );
+    datfile.open(QIODevice::WriteOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    datstream << masks.count();
+
+    for(int i=0; i<masks.count(); i++) {
+        if (masks[i]->get_lw_item()->checkState() == Qt::Checked) masks[i]->set_check_state(true);
+        else masks[i]->set_check_state(false);
+        masks[i]->save(datstream);
+    }  // for
+
+    datfile.close();
+}
+
+void SpectralImage::load_masks_for_restore(QString hidden_dir)
+{
+    QString fname = hidden_dir + "masks.mask";
+    if (!QFile::exists(fname)) return;
+
+    QFile datfile( fname );
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    int count;
+    datstream >> count;
+
+    for(int i=0; i<count; i++) {
+        slice_magic *sm = new slice_magic;
+        sm->load(datstream);
+        masks.append(sm);
+    }  // for
+
+    datfile.close();
+}
+
 void SpectralImage::save_view_param_for_restore(QString hidden_dir)
 {
     QFile datfile( hidden_dir + "view.bin" );
@@ -758,6 +864,24 @@ void SpectralImage::save_view_param_for_restore(QString hidden_dir)
     datstream << recordView.GlobalScale << recordView.GlobalRotate << recordView.GlobalHScrollBar
               << recordView.GlobalVScrollBar << recordView.GlobalChannelNum << recordView.GlobalChannelStep
               << recordView.GlobalMaskNum << recordView.GlobalViewMode;
+
+    datfile.close();
+}
+
+void SpectralImage::load_view_param_for_restore(QString hidden_dir)
+{
+    QFile datfile( hidden_dir + "view.bin" );
+    if (!datfile.exists()) return;
+
+    datfile.open(QIODevice::ReadOnly);
+    QDataStream datstream( &datfile );
+
+    datstream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    datstream.setByteOrder(QDataStream::LittleEndian);
+
+    datstream >> recordView.GlobalScale >> recordView.GlobalRotate >> recordView.GlobalHScrollBar
+              >> recordView.GlobalVScrollBar >> recordView.GlobalChannelNum >> recordView.GlobalChannelStep
+              >> recordView.GlobalMaskNum >> recordView.GlobalViewMode;
 
     datfile.close();
 }
@@ -791,6 +915,7 @@ void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 
     if (num == depth) {
         QFont font = lwItem->font();  font.setItalic(true);  font.setBold(true);
+        double psf = font.pointSizeF();  font.setPointSizeF(.95*psf);
         lwItem->setFont(font);
 // попытка выделить RGB из списка индексов
         lwItem->setFlags(lwItem->flags() | Qt::ItemIsUserCheckable);

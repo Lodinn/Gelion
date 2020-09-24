@@ -52,6 +52,7 @@ namespace J09 {
       bool load_resent_project = true;  // при запуске загружать последний проект
       bool save_project_settings = false;  // сохранять настройки проекта
       bool restore_project_settings = false;  // восстанавливать настройки проекта
+      bool restore_project_settings_view = false;  // восстанавливать настройки отображения проекта
       int resent_files_count = 3;  // &&& количество последних файлов
       bool save_not_checked_roi = true;  // сохранять в настройках неотмеченные области интереса
       int zobject_dock_size_w = 450;  // размеры окна профиля, пиксели
@@ -68,6 +69,15 @@ namespace J09 {
       int std_dev_brush_color_transparency = 200;
       double main_rgb_rotate_start = 90.;
       double main_rgb_scale_start = 3.;
+      int main_rgb_h_scrollbar = 0;
+      int main_rgb_v_scrollbar = 0;
+
+      bool _zobject_list_load = false;
+      bool _index_save = false;
+      bool _index_load = false;
+      bool _channel_list_load = false;
+      bool _masks_save = false;
+      bool _masks_load = false;
   };
   struct maskRecordType {  // пакет данных об изображении - Маска
       bool checked = true;
@@ -84,7 +94,13 @@ namespace J09 {
       qreal GlobalScale = 1;  qreal GlobalRotate = 0;
       int GlobalHScrollBar = 0;  int GlobalVScrollBar = 0;
       int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
-      int GlobalMaskNum = 0;    int GlobalViewMode = 0;
+      int GlobalMaskNum = 0;
+      int GlobalViewMode = 0;  // 0 - z object, rgb, index, chennels ***=== 1 - masks
+  };
+  struct channelCheckVisible {  // параметры отображения списка каналов
+      bool checked = false;
+      bool isHidden = false;
+      double brightness = 1.;  // яркость
   };
 }
 QT_END_NAMESPACE
@@ -120,7 +136,8 @@ public:
         if (is_mask) {
             listwidget->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled );
             listwidget->setFlags(listwidget->flags() | Qt::ItemIsUserCheckable);
-            listwidget->setCheckState(Qt::Checked); }
+            listwidget->setCheckState(Qt::Checked);
+        }  // is_mask
     }  // void set_LW_item
     QListWidgetItem *get_lw_item() { return listwidget; }
     void set_NULL_lw() { listwidget = nullptr; }
@@ -247,7 +264,8 @@ public:
   void delete_checked_indexes();
   void save_checked_indexes(QString indexfilename);
   int load_indexes_from_file(QString indexfilename, QListWidget *ilw);
-  slice_magic *get_index(int num) { return indexes[num]; }
+  slice_magic *get_index(int num) { if (num < 0 || num > indexes.count() - 1) return nullptr;
+      return indexes[num]; }
   slice_magic *get_mask(int num) { if (num < 0 || num > masks.count() - 1) return nullptr;
       return masks.at(num);  }
   void save_list_checked_bands(QString lstfilename);
@@ -262,9 +280,12 @@ public:
   // save for restore project state
 //  void save_zobjects_for_restore(QString hidden_dir);  new
   void save_indexes_for_restore(QString hidden_dir);  // new
+  void load_indexes_for_restore(QString hidden_dir);  // new
 //  void save_bands_for_restore(QString hidden_dir);  new
-//  void save__masks_for_restore(QString hidden_dir);  new
+  void save_masks_for_restore(QString hidden_dir);  // new
+  void load_masks_for_restore(QString hidden_dir);  // new
   void save_view_param_for_restore(QString hidden_dir);
+  void load_view_param_for_restore(QString hidden_dir);
   void update_sheck_visible(int trigger);  // обновить статус 1 - bands 2 - indexes 3 - masks
 
 private:
@@ -306,6 +327,8 @@ public:
   QImage get_mask_image(int num);
   QImage create_mask_image(slice_magic *sm);
   J09::maskRecordType convert_to_record_from_mask(int num);
+  QList<J09::channelCheckVisible> get_list_channel_visibility();
+  void set_channel_visibility(QString fname);  // восстановить состояние списка каналов
 };
 
 #endif // SPECTRALIMAGE_H

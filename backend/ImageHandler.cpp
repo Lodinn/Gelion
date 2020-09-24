@@ -20,8 +20,11 @@ ImageHandler::~ImageHandler() {}
 bool ImageHandler::set_current_image(int image_list_index) {
   if ((image_list_index < 0) ||
       (image_list_index > image_list.length() - 1)) return false;
+
+  int old_ds_num = index_current_dataset;
   index_current_dataset = image_list_index;
-  emit change_current_image();
+  emit change_current_image(old_ds_num);
+
   return true;
 }
 
@@ -147,6 +150,18 @@ QString ImageHandler::getWritableLocation()
     return writableLocation;
 }
 
+QString ImageHandler::getWritableLocationByNum(int num)
+{
+    SpectralImage *si = get_image(num);
+    if (!si) return QString("");
+    QFileInfo info(si->get_file_name());  // файл данных
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    writableLocation += "/" + info.completeBaseName();
+    QDir dir(writableLocation);
+    if (!dir.exists()) dir.mkpath(".");
+    return writableLocation;
+}
+
 void ImageHandler::showWarningMessageBox(QMessageBox *mb, QString text)
 {
 
@@ -216,6 +231,15 @@ void ImageHandler::createHdrDatFilesFromJPG(QString jpg_name, QString hdr_name)
 QString ImageHandler::get_hidden_folder()
 {
     QString wl = getWritableLocation();
+    QDir dir(wl + hidden_folder);
+    if (!dir.exists()) dir.mkpath(".");
+    return wl + hidden_folder;
+}
+
+QString ImageHandler::get_hidden_folder_by_num(int num)
+{
+    QString wl = getWritableLocationByNum(num);
+    if (wl.isEmpty()) return QString("");
     QDir dir(wl + hidden_folder);
     if (!dir.exists()) dir.mkpath(".");
     return wl + hidden_folder;
@@ -469,8 +493,11 @@ void ImageHandler::read_envi_hdr(QString fname) {
     QApplication::processEvents();
   }
   image_list.append(image);
+
+  int old_ds_num = index_current_dataset;
   index_current_dataset = image_list.count() - 1;
-  emit change_current_image();
+  emit change_current_image(old_ds_num);
+
   emit finished();
   datfile.close();
 }

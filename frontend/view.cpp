@@ -11,6 +11,8 @@
 
 gQGraphicsView::gQGraphicsView(QGraphicsScene *scene) : QGraphicsView(scene)
 {
+
+
     const QIcon openIcon = QIcon::fromTheme("Открыть файл...", QIcon(":/icons/open.png"));
     openAct = new QAction(openIcon, tr("&Открыть файл..."), this);
     openAct->setShortcut(QKeySequence::Open);
@@ -646,8 +648,8 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
         if(event->delta() > 0) sx = 1.05;
         else sx = 0.95;
         scale(sx, sx);
-        GlobalScale /= sx;
-        setScaleItems(GlobalScale);
+        recordView->GlobalScale /= sx;
+        setScaleItems(recordView->GlobalScale);
         return;
     }  // if
     if (event->modifiers() == Qt::ShiftModifier) {
@@ -655,8 +657,8 @@ void gQGraphicsView::wheelEvent(QWheelEvent *event)
         if(event->delta() > 0) angle = -1.0;
         else angle = 1.0;
         rotate(angle);
-        GlobalRotate -= angle;
-        setRotateItems(GlobalRotate);
+        recordView->GlobalRotate -= angle;
+        setRotateItems(recordView->GlobalRotate);
         return;
     }  // if
     QGraphicsView::wheelEvent(event);
@@ -695,7 +697,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
         qreal x1 = p.rx();  qreal y1 = p.ry();
         qreal x2 = p.rx();  qreal y2 = p.ry();
         tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
-        tmpRect = new zRect(p,GlobalScale,GlobalRotate);
+        tmpRect = new zRect(p, recordView->GlobalScale, recordView->GlobalRotate);
         tmpRect->defineNewObjTitle(getZGraphItemsList());   // tmpRect->setTitle("Прямоугольник 1"); //hfd
         tmpRect->aicon = rectAct->icon();
         tmpRect->updateBoundingRect();
@@ -727,7 +729,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
             qreal x1 = p.rx();  qreal y1 = p.ry();
             qreal x2 = p.rx();  qreal y2 = p.ry();
             tmpLines.append(scene()->addLine(x1,y1,x2,y2,fInsPen));
-            tmpEllipse = new zEllipse(p,GlobalScale,GlobalRotate);
+            tmpEllipse = new zEllipse(p,recordView->GlobalScale,recordView->GlobalRotate);
             tmpEllipse->defineNewObjTitle(getZGraphItemsList());   // tmpEllipse->setTitle("Эллипс 1");
             tmpEllipse->aicon = QIcon(":/images/vector_ellipse.png"); //hfd
             tmpEllipse->updateBoundingRect();
@@ -794,7 +796,7 @@ void gQGraphicsView:: mousePressEvent(QMouseEvent *event)
 
 void gQGraphicsView::createPolygon(QPoint pos)
 {
-    zPolygon *zp = new zPolygon(GlobalScale,GlobalRotate);
+    zPolygon *zp = new zPolygon(recordView->GlobalScale, recordView->GlobalRotate);
     connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
     zp->defineNewObjTitle(getZGraphItemsList());   // zp->setTitle("Полигон 1");
     zp->aicon = QIcon(":/images/vector-polygon.png"); //hfd
@@ -817,7 +819,7 @@ void gQGraphicsView::createPolygon(QPoint pos)
 
 void gQGraphicsView::createPolyline(QPoint pos)
 {
-    zPolyline *zp = new zPolyline(GlobalScale,GlobalRotate);
+    zPolyline *zp = new zPolyline(recordView->GlobalScale, recordView->GlobalRotate);
     connect(zp, SIGNAL(itemDelete(zGraph *)), this, SLOT(deleteZGraphItem(zGraph *)));
     zp->defineNewObjTitle(getZGraphItemsList());   // zp->setTitle("Полилиния 1");
     zp->aicon = QIcon(":/images/polyline-64.png"); //hfd
@@ -845,6 +847,9 @@ void gQGraphicsView::mouseMoveEvent(QMouseEvent *event) {
                                     (event->x() - pX0));
     verticalScrollBar()->setValue(verticalScrollBar()->value() -
                                   (event->y() - pY0));
+    recordView->GlobalHScrollBar = horizontalScrollBar()->value();
+    recordView->GlobalVScrollBar = verticalScrollBar()->value();
+
     pX0 = event->x();
     pY0 = event->y();
     event->accept();
@@ -947,17 +952,17 @@ void gQGraphicsView::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_S) {  // поворот на 90 градусов
         qreal angle = 90.;
         rotate(angle);
-        GlobalRotate -= angle;
-        if (GlobalRotate < .0) GlobalRotate += 360.;
-        setRotateItems(GlobalRotate);
+        recordView->GlobalRotate -= angle;
+        if (recordView->GlobalRotate < .0) recordView->GlobalRotate += 360.;
+        setRotateItems(recordView->GlobalRotate);
         return;
     }  // if Key_W
     if (event->key() == Qt::Key_A) {  // поворот на -90 градусов
         qreal angle = -90.;
         rotate(angle);
-        GlobalRotate -= angle;
-        if (GlobalRotate > 360.) GlobalRotate -= 360.;
-        setRotateItems(GlobalRotate);
+        recordView->GlobalRotate -= angle;
+        if (recordView->GlobalRotate > 360.) recordView->GlobalRotate -= 360.;
+        setRotateItems(recordView->GlobalRotate);
         return;
     }  // if Key_W
 }

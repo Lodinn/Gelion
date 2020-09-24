@@ -32,12 +32,10 @@ public slots:
     void selectionZChanged();
     void deleteZGraphItem(zGraph *item);
     void show_profile_for_Z(zGraph *item);
+private:
+    J09::viewRecordType rw;
 public:
-    J09::viewRecordType *recordView;  // указатель на параметры отображения
-    qreal GlobalScale = 1;  qreal GlobalRotate = 0;
-    int GlobalHScrollBar = 0;  int GlobalVScrollBar = 0;
-    int GlobalChannelNum = 0;  int GlobalChannelStep = 1;
-    int GlobalMaskNum = 0;    int GlobalViewMode = 0;  // 0 - z object, rgb, index, chennels ***=== 1 - masks
+    J09::viewRecordType *recordView = &rw;  // указатель на параметры отображения
     bool empty = true;  // сцена не содержит данных
     QList<zGraph *> getZGraphItemsList();  // список рафических объектов на сцене
     QAction *openAct;
