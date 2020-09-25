@@ -30,6 +30,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   im_handler->moveToThread(worker_thread);
 
+  if (GLOBAL_SETTINGS.load_resent_project) load_resent_project();
+
 }
 
 MainWindow::~MainWindow() {
@@ -366,12 +368,16 @@ void MainWindow::createResentFilesList()
     view->resentFilesActions.clear();
     foreach (const QString &childKey, childKeys) {
         QString fname = settings.value(childKey).toString();
+        if (!QFile(fname).exists()) continue;
         QFileInfo info(fname);
         QIcon icon = im_handler->load_icon_from_file(fname, GLOBAL_SETTINGS.main_rgb_rotate_start);
         QAction *recentAct = new QAction(this);
         recentAct->setText(info.fileName());
         recentAct->setData(fname);
         recentAct->setIcon(icon);
+        QString get_tt = im_handler->get_icon_for_tooltip(fname);
+        if (!get_tt.isEmpty())
+            recentAct->setToolTip(QString(tr("<img src='%1'>")).arg(get_tt));
         fileToolBar->addAction(recentAct);
         connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
         recentFileNames.append(fname);
@@ -847,7 +853,7 @@ void MainWindow::add_envi_hdr_pixmap() {
   QApplication::processEvents();
 
   QPixmap pxmap = view->mainPixmap->pixmap();
-  im_handler->current_image()->save_icon_to_file(pxmap, QSize(64,64));
+  im_handler->current_image()->save_icon_to_file(pxmap, QSize(64,64), QSize(128+64,128+64));
 
 }
 
@@ -1167,6 +1173,13 @@ void MainWindow::loadMainSettings()
     GLOBAL_SETTINGS.main_rgb_rotate_start = settings.value( "main_rgb_rotate_start", 90.).toDouble();
     GLOBAL_SETTINGS.main_rgb_scale_start = settings.value( "main_rgb_scale_start", 2.).toDouble();
 
+    GLOBAL_SETTINGS._zobject_list_load = settings.value( "_zobject_list_load", false ).toBool();
+    GLOBAL_SETTINGS._index_save = settings.value( "_index_save", false ).toBool();
+    GLOBAL_SETTINGS._index_load = settings.value( "_index_load", false ).toBool();
+    GLOBAL_SETTINGS._channel_list_load = settings.value( "_channel_list_load", false ).toBool();
+    GLOBAL_SETTINGS._masks_save = settings.value( "_masks_save", false ).toBool();
+    GLOBAL_SETTINGS._masks_load = settings.value( "_masks_load", false ).toBool();
+
     settings.endGroup();
 
 // СПИСОК СПЕКТРАЛЬНЫХ ИНДЕКСОВ
@@ -1181,6 +1194,17 @@ void MainWindow::loadMainSettings()
     }  // foreach
     settings.endGroup();
 
+}
+
+void MainWindow::load_resent_project()
+{
+    if (recentFileNames.isEmpty()) return;
+
+    this->update();  this->repaint();  this->show();
+    QApplication::processEvents();
+
+    worker_thread->msleep(500);
+    emit read_file(recentFileNames[0]);
 }
 
 void MainWindow::saveMainSettings()
@@ -1203,6 +1227,13 @@ void MainWindow::saveMainSettings()
     settings.setValue( "zobjects_prof_deviation_show", GLOBAL_SETTINGS.zobjects_prof_deviation_show );
     settings.setValue( "main_rgb_rotate_start", GLOBAL_SETTINGS.main_rgb_rotate_start );
     settings.setValue( "main_rgb_scale_start", GLOBAL_SETTINGS.main_rgb_scale_start );
+
+    settings.setValue( "_zobject_list_load", GLOBAL_SETTINGS._zobject_list_load );
+    settings.setValue( "_index_save", GLOBAL_SETTINGS._index_save );
+    settings.setValue( "_index_load", GLOBAL_SETTINGS._index_load );
+    settings.setValue( "_channel_list_load", GLOBAL_SETTINGS._channel_list_load );
+    settings.setValue( "_masks_save", GLOBAL_SETTINGS._masks_save );
+    settings.setValue( "_masks_load", GLOBAL_SETTINGS._masks_load );
 
     settings.endGroup();
 
@@ -1570,10 +1601,6 @@ void MainWindow::addRecentFile()
 
 void MainWindow::saveToHiddenFolder()
 {
-//    if (im_handler->get_images_count() == 0) return;  // надо по всем сетам !
-//    im_handler->current_image()->save_indexes_for_restore(im_handler->get_hidden_folder());
-//    im_handler->save_to_hidden_folder();
-
     for (int i=0; i<im_handler->get_images_count(); i++) {    // масштаб, поворот, сдвиг
         SpectralImage *si = im_handler->get_image(i);
         if (!si) continue;
@@ -1612,9 +1639,9 @@ void MainWindow::OpenRecentFile()
         if (num == -1) {
             dataFileName = action->data().toString();
             emit read_file(dataFileName);
-// connect(this, SIGNAL(read_file(QString)),im_handler,SLOT(read_envi_hdr(QString)), Qt::DirectConnection);
+
         } else {
-// сохранияем конфигурацию перед переключениеь на другой набор данных
+// сохранияем конфигурацию перед переключением на другой набор данных
             saveSettings();
             auto set_current = im_handler->set_current_image(num);
             if (!set_current) return;
@@ -1642,7 +1669,13 @@ void MainWindow::updateGraphicsViewParams(bool index_update)
             restoreZGraphList();                      // восстановить список областей интереса из скрытой директории
         if (GLOBAL_SETTINGS._index_load) {                  // восстановить состояние списка изображений включая RGB
             im_handler->current_image()->load_indexes_for_restore(im_handler->get_hidden_folder());
-            restore_index_list();
+            uint32_t depth = im_handler->current_image()->get_bands_count();
+            view->recordView->GlobalChannelNum = depth;
+            view->recordView->GlobalViewMode = 0;
+            im_handler->current_image()->set_current_slice(view->recordView->GlobalChannelNum);
+            int count = restore_index_list();
+// нет сохраненных индексов !!!
+            if (!count) createDockWidgetForIndexes();  // with RGB default + slice++image++brightness
             updateIndexListWidget();  // заголовок окна изображений
         }
         if (GLOBAL_SETTINGS._channel_list_load)
@@ -1696,27 +1729,32 @@ void MainWindow::restoreChannelsVisibility()
     im_handler->current_image()->set_channel_visibility(fname);
 }
 
-void MainWindow::restore_index_list()
+int MainWindow::restore_index_list()
 {
     indexListWidget->clear();
 
+    int count = 0;
     uint32_t depth = im_handler->current_image()->get_bands_count();
     for (int i=0; i<im_handler->current_image()->get_indexes_count(); i++) {
         QListWidgetItem *lwItem = new QListWidgetItem();
         indexListWidget->addItem(lwItem);
         im_handler->current_image()->set_LW_item(lwItem, i+depth);
+        count++;
         slice_magic *sm = im_handler->current_image()->get_index(i);
         if (!sm || i == 0) continue;
         if (sm->get_check_state()) lwItem->setCheckState(Qt::Checked);
         else lwItem->setCheckState(Qt::Unchecked);
         lwItem->setHidden(!sm->get_visible());
     }  // for
+    histogramAct->setEnabled(count > 1);
+    return count;
 }
 
 void MainWindow::restore_mask_list()
 {
     maskListWidget->clear();
 
+    int count = 0;
     for (int i=0; i<im_handler->current_image()->get_masks_count(); i++) {
         slice_magic *sm = im_handler->current_image()->get_mask(i);
         if (!sm) continue;
@@ -1725,7 +1763,9 @@ void MainWindow::restore_mask_list()
         if (sm->get_check_state()) item->setCheckState(Qt::Checked);
         else item->setCheckState(Qt::Unchecked);
         item->setHidden(!sm->get_visible());
+        count++;
     }  // for
+    maskAct->setEnabled(count > 0);
 }
 
 void MainWindow::showContextMenuChannelList(const QPoint &pos)

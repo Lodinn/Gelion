@@ -31,6 +31,7 @@ public:
 //    void save_settings_all_images(QStringList &save_file_names);
     QString getHDRfileNameConvertedFromJPG(QString jpg_name);  // hdr файл, ассоциированный с jpg, при необходимости файл создается
     QIcon load_icon_from_file(QString &fname, double rotation);
+    QString get_icon_for_tooltip(QString &fname);
     QString getWritableLocation();  // активный каталог проекта
     QString getWritableLocationByNum(int num);  // каталог проекта номер num
     void showWarningMessageBox(QMessageBox *mb, QString text);
@@ -42,6 +43,7 @@ protected:
 //    QVector<QVector<QVector<double> > >* raster;
     Q_INVOKABLE double getByWL(double wl);
     QString mainIconFileName = "/main.png";
+    QString mainIconFileNameTT = "/main_tt.png";
 public slots:
   void read_envi_hdr(QString fname);
   void append_index_raster(QString for_eval);

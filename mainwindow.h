@@ -72,7 +72,7 @@ private:
   void updateGraphicsViewParams(bool index_update);  // задать параметры отображения главного изображения
   void restoreZGraphList();  // восстановить список областей интереса из скрытой директории
   void restoreChannelsVisibility();  // восстановить состояние списка каналов
-  void restore_index_list();  // восстановить состояние списка включая RGB
+  int restore_index_list();  // восстановить состояние списка включая RGB
   void restore_mask_list();  // восстановить состояние списка масок
   QStringList recentFileNames;
   void saveSettings();
@@ -83,6 +83,7 @@ private:
   void restoreIndexes();
   void restoreSettings();
   void loadMainSettings();
+  void load_resent_project();
   void saveMainSettings();
   void saveToHiddenFolder();  // hidden
   QString getMainSettingsFileName();

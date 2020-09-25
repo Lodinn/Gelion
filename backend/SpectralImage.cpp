@@ -16,14 +16,20 @@ SpectralImage::~SpectralImage()
     foreach(slice_magic *sm, bands) delete sm;
 }
 
-void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize size)
+void SpectralImage::save_icon_to_file(QPixmap &pixmap, QSize size, QSize size_2)
 {
     QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
     QFileInfo info(get_file_name());
     QString icon_fname = writableLocation + "/" + info.completeBaseName() + mainIconFileName;
-    if (QFile(icon_fname).exists()) return;
-    QPixmap small_pixmap = pixmap.scaled(size);
-    small_pixmap.save(icon_fname);
+    if (!QFile(icon_fname).exists()) {
+        QPixmap small_pixmap = pixmap.scaled(size);
+        small_pixmap.save(icon_fname); }
+
+    QString icon_fname_tt = writableLocation + "/" + info.completeBaseName() + mainIconFileNameTT;
+    if (!QFile(icon_fname_tt).exists()) {
+        QPixmap ttl_pixmap = pixmap.scaled(size_2);
+        QMatrix rm;    rm.rotate(bands[0]->h.rotation);
+        ttl_pixmap.transformed(rm).save(icon_fname_tt); }
 }
 
 QVector<QVector<double> > SpectralImage::get_band(uint16_t num){

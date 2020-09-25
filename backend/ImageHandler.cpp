@@ -140,6 +140,15 @@ QIcon ImageHandler::load_icon_from_file(QString &fname, double rotation)
     return QIcon(pixmap.transformed(rm));
 }
 
+QString ImageHandler::get_icon_for_tooltip(QString &fname)
+{
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    QFileInfo info(fname);
+    QString result = writableLocation + "/" + info.completeBaseName() + mainIconFileNameTT;
+    if (QFile(result).exists()) return result;
+    else return QString("");
+}
+
 QString ImageHandler::getWritableLocation()
 {
     QFileInfo info(current_image()->get_file_name());  // файл данных

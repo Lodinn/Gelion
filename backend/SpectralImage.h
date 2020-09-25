@@ -219,7 +219,7 @@ public:
   dataType datatype = dataType::dtBase;
   J09::viewRecordType recordView;  // параметры отображения
   QString get_file_name() { return fname; }
-  void save_icon_to_file(QPixmap &pixmap, QSize size);
+  void save_icon_to_file(QPixmap &pixmap, QSize size, QSize size_2);
 
   QSize get_raster_x_y_size() { return slice_size; }
   void  calculateHistogram(bool full, uint16_t num);
@@ -228,6 +228,7 @@ public:
   }
   QString get_y_axis_title_for_plot(bool short_title);  // наименование единиц измерения
   QString mainIconFileName = "/main.png";
+  QString mainIconFileNameTT = "/main_tt.png";
 
 public slots:
   void append_slice(QVector<QVector<double> > slice);

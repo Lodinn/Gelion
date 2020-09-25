@@ -50,6 +50,12 @@
       <height>18</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
      <string>при запуске загружать последний проект</string>
     </property>
@@ -196,12 +202,18 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>211</width>
+      <width>251</width>
       <height>18</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
-     <string>загружать список объектов</string>
+     <string>загружать список областей интереса</string>
     </property>
     <property name="checked">
      <bool>false</bool>
@@ -313,11 +325,17 @@
    <widget class="QCheckBox" name="checkBox_index_save">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>10</x>
       <y>20</y>
-      <width>281</width>
+      <width>311</width>
       <height>18</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="text">
      <string>сохранять изображения (индексы) при закрытии</string>
@@ -328,9 +346,15 @@
      <rect>
       <x>330</x>
       <y>20</y>
-      <width>221</width>
+      <width>231</width>
       <height>18</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="text">
      <string>загружать изображения (индексы)</string>
@@ -358,6 +382,12 @@
       <height>18</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
      <string>загружать список каналов</string>
     </property>
@@ -384,6 +414,12 @@
       <height>18</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
     <property name="text">
      <string>сохранять изображения (маски) при закрытии</string>
     </property>
@@ -396,6 +432,12 @@
       <width>211</width>
       <height>18</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="text">
      <string>загружать изображения (маски)</string>
