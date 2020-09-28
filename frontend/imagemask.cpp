@@ -67,15 +67,6 @@ int imageMask::set2MasksToForm()
     setEnabledOfMainGroupsWidgets(true,true,false);
     return count;
 
-/*    int count = 0;
-    for(int row=0; row<maskListWidget->count();row++) {
-        QListWidgetItem *item = maskListWidget->item(row);
-        if (item->checkState() != Qt::Checked) continue;
-        if (count>pixmapLabelsVector.count()-1) return count;
-        pixmapLabelsVector[count]->setNumA(row);  count++;
-    }  // for
-    setEnabledOfMainGroupsWidgets(true,true,false);
-    return count; */
 }
 
 void imageMask::setupUi()

@@ -709,24 +709,6 @@ void imageHistogram::maskSave()
 
     emit appendMask(mask_appended);
 
-//    QString title(title_of_mask->text());
-//    QString formula(formula_of_mask->text());
-/*    mask_appended = new J09::maskRecordType;
-    mask_appended->checked = true;
-
-    mask_appended->title = title_of_mask->text();
-    mask_appended->formula = formula_of_mask->text();
-    mask_appended->formula_step_by_step = QStringList() << mask_appended->formula;
-
-    mask_appended->invers = h_data->rgb_preview == 3;
-
-    mask_appended->mask = calculateMask( mask_appended->invers );
-    mask_appended->img = get_mask_image(mask_appended->mask);
-    mask_appended->brightness = 3.;
-    mask_appended->rotation = h_data->rotation;
-
-    emit appendMask(mask_appended); */
-
 }
 
 void imageHistogram::routate90(bool clockwise)

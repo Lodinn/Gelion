@@ -108,6 +108,7 @@ QT_END_NAMESPACE
 class slice_magic : public QObject {
 public:
     explicit slice_magic(QObject *parent = nullptr);
+    ~slice_magic();
     void save(QDataStream &stream);
     void load(QDataStream &stream);
     J09::histogramType h;  // статистика гистограммы

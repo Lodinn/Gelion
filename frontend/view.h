@@ -47,6 +47,8 @@ public:
     QAction *ellipseAct;
     QAction *polylineAct;
     QAction *polygonAct;
+    QAction *openProjectsAct = new QAction(QIcon(":/icons/folder_open.png"), "Открытые проекты ...");
+    QAction *closeAllProjectsAct = new QAction(QIcon(":/icons/delete-32.png"), "Закрыть все проекты ...");
     QAction *closeAct;
     QAction *winZGraphListAct;
     QAction *indexListAct;
@@ -98,37 +100,8 @@ public:
   void point_picked(QPointF);
   void removeFromzGraphListWidget(zGraph *item);
   void changeZObject(zGraph *item);
-// FIXME: keeping two separate index lists here and in mainwindow. Subclass
-// instead and connect to plot directly?
-//  void roi_position_updated(QPair<int, QPointF> new_position);
+  void closeAllProjects();  // закрыть все проекты
+
 };
-
-/*class ROI : public QObject, public QGraphicsItem {
-  Q_OBJECT
-  Q_INTERFACES(QGraphicsItem)
- public:
-  enum shape_t { Point, Line, Circle, Rectangle, Polygon } shape;
-  explicit ROI(QPointF position, QString label = QString(), shape_t t = Point);
-  QRectF boundingRect() const override;
-  void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-             QWidget *widget) override;
-  void update_position(QPointF new_pos) {
-    pos = new_pos;
-    update();
-  }
-  void update_label(QString new_label) { label = new_label; }
-
- protected:
-  void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-  void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
-  void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
-
-  //  signals:
-  //    void moved();
-
- private:
-  QPointF pos;
-  QString label;
-}; */
 
 #endif  // VIEW_H

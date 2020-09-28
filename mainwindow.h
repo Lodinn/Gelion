@@ -159,6 +159,11 @@ signals:
  void read_file(QString);
  void index_calculate(QString);
 
+private:
+ void closeAllProjects();  // закрыть все проекты
+ void clearConstDockWidgets();
+ void openProjectsWindow();  // показать все открытые проекты
+
 protected:
   QDockWidget *dockZGraphList = new QDockWidget("Области интереса", this);
   QListWidget *zGraphListWidget = new QListWidget(dockZGraphList);

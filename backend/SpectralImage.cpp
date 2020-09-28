@@ -931,6 +931,15 @@ void SpectralImage::set_LW_item(QListWidgetItem *lwItem, int num)
 
 slice_magic::slice_magic(QObject *parent) {}
 
+slice_magic::~slice_magic()
+{
+    slice.clear();    // массив данных об изображении
+    rgb_r.clear();    // rgb red
+    rgb_g.clear();    // rgb green
+    rgb_b.clear();    // rgb blue
+    mask.clear();  // маска
+}
+
 void slice_magic::set_title(QString a_title)
 {
     if (index) {

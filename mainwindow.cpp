@@ -207,6 +207,10 @@ void MainWindow::createActions() {
   connect(view->debugFolderAct, &QAction::triggered, this, &MainWindow::folder_debug);
   fileMenu->addSeparator();
   addSeparatorRecentFile = fileMenu->addSeparator();  // для дальнейшей вставки списка файлов
+  fileMenu->addAction(view->openProjectsAct);
+  connect(view->openProjectsAct, &QAction::triggered, this, &MainWindow::openProjectsWindow);
+  fileMenu->addAction(view->closeAllProjectsAct);
+  connect(view->closeAllProjectsAct, &QAction::triggered, this, &MainWindow::closeAllProjects);
   fileMenu->addAction(view->closeAct);
   connect(view->closeAct, &QAction::triggered, this, &MainWindow::close);
   fileToolBar = addToolBar(fileMenu->title());
@@ -215,6 +219,7 @@ void MainWindow::createActions() {
   fileToolBar->addAction(view->localFolderAct);
   fileToolBar->addAction(view->saveAct);                        // main save
   fileToolBar->addSeparator();
+  view->closeAllProjectsAct->setEnabled(false);
 // &&& inset ROI menu
   QMenu *itemsMenu = menuBar()->addMenu("&Области интереса");
   QToolBar *itemsToolBar = addToolBar("Области интереса");
@@ -331,6 +336,8 @@ void MainWindow::createMainConnections()
     connect( im_handler, &ImageHandler::change_current_image, this, &MainWindow::saveSettingsChannelsToHiddenFolder );
 
     // view
+    connect(view, &gQGraphicsView::closeAllProjects, this, &MainWindow::closeAllProjects);  // закрыть все проекты
+
     connect(view, SIGNAL(point_picked(QPointF)), this,
             SLOT(show_profile(QPointF)));
 
@@ -376,8 +383,14 @@ void MainWindow::createResentFilesList()
         recentAct->setData(fname);
         recentAct->setIcon(icon);
         QString get_tt = im_handler->get_icon_for_tooltip(fname);
-        if (!get_tt.isEmpty())
-            recentAct->setToolTip(QString(tr("<img src='%1'>")).arg(get_tt));
+        if (!get_tt.isEmpty()) {
+// selector.setToolTipText("<html>" + i.getInfo() + "<br/>some text next line</html>" );
+//            QString tooltip = QString("<img src='%1'>").arg(get_tt);
+            QString tooltip = "<html>" + QString("<img src='%1'>").arg(get_tt) + "<br/>"
+                    + info.path() + "/" + "<br/>"
+                    + info.fileName() + "</html>";
+            recentAct->setToolTip(tooltip);
+        }  // if
         fileToolBar->addAction(recentAct);
         connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
         recentFileNames.append(fname);
@@ -847,29 +860,20 @@ void MainWindow::add_envi_hdr_pixmap() {
   view->openAct->setEnabled(true);
   updateNewDataSet(true);
   updateGraphicsViewParams(true);  // задать параметры отображения главного изображения
-  addRecentFile();
+
   view->openAct->setEnabled(true);
   set_action_enabled(true);
   QApplication::processEvents();
 
   QPixmap pxmap = view->mainPixmap->pixmap();
-  im_handler->current_image()->save_icon_to_file(pxmap, QSize(64,64), QSize(128+64,128+64));
+  im_handler->current_image()->save_icon_to_file(pxmap, QSize(64,64), QSize(128+128,128+128));
+  addRecentFile();
 
 }
 
 void MainWindow::updateNewDataSet(bool index_update)
 {
-    view->clearForAllObjects();
-    zGraphListWidget->clear();
-    indexListWidget->clear();
-    chListWidget->clear();
-    maskListWidget->clear();
-
-    imgSpectral->hide();  spectralAct->setEnabled(false); spectralAct->setChecked(false);
-    imgHistogram->hide();  histogramAct->setEnabled(false); histogramAct->setChecked(false);
-    imgMasks->hide();  maskAct->setEnabled(false); maskAct->setChecked(false);
-    slider->setEnabled(true);
-    view->openAct->setEnabled(true);
+    clearConstDockWidgets();
 
     setWindowTitle(QString("%1 - [%2]").arg(appName).arg(dataFileName));
     actual_resent_files.append(dataFileName);
@@ -1591,6 +1595,13 @@ void MainWindow::addRecentFile()
     recentAct->setText(info.fileName());
     recentAct->setData(fname);
     recentAct->setIcon(QIcon(view->mainPixmap->pixmap()));
+    QString get_tt = im_handler->get_icon_for_tooltip(fname);
+    if (!get_tt.isEmpty()) {
+        QString tooltip = "<html>" + QString("<img src='%1'>").arg(get_tt) + "<br/>"
+                + info.path() + "/" + "<br/>"
+                + info.fileName() + "</html>";
+        recentAct->setToolTip(tooltip);
+    }  // if
 
     fileToolBar->addAction(recentAct);
     connect(recentAct, SIGNAL(triggered()), this, SLOT(OpenRecentFile()));
@@ -1746,7 +1757,11 @@ int MainWindow::restore_index_list()
         else lwItem->setCheckState(Qt::Unchecked);
         lwItem->setHidden(!sm->get_visible());
     }  // for
-    histogramAct->setEnabled(count > 1);
+
+//    histogramAct->setEnabled(count > 1);
+
+    histogramAct->setEnabled( view->recordView->GlobalChannelNum > depth);
+
     return count;
 }
 
@@ -1824,6 +1839,13 @@ void MainWindow::show_mask_list()
                 maskListWidget->item(row)->setCheckState(Qt::Unchecked);
             break;
         case 3 : { int count = imgMasks->set2MasksToForm();    // Загрузить 2 выделенные маски в калькулятор
+            if (count < 2) {
+                QMessageBox *msgBox = new QMessageBox;
+                msgBox->setWindowIcon(icon256);
+                im_handler->showWarningMessageBox(msgBox,
+                            " Нет выделенных двух масок !\n Выделите две маски и повторите попытку ! ");
+                 return;
+            }  // if
             if (count > 0) imgMasks->show();  imgMasksUpdatePreviewPixmap();
             break; }
         case 4 : {                                              // Сохранить выделенные изображения маски (*.mask)
@@ -2067,6 +2089,96 @@ void MainWindow::updateDeleteItemsBoxWarning(QMessageBox &mb, QString title, QSt
     mb.setIcon(QMessageBox::Critical);
     mb.setWindowIcon(icon256);
     mb.setDefaultButton(QMessageBox::Cancel);
+}
+
+void MainWindow::closeAllProjects()
+{
+    if (view->empty) return;
+
+    QMessageBox msgBox;
+    updateDeleteItemsBoxWarning(msgBox, "ЗАКРЫТЬ ВСЕ ПРОЕКТЫ",
+      "Вы подтверждаете закрытие всех проектов ?\nНесохраненные данные будут потеряны !");
+
+    int res = msgBox.exec();
+    if (res == QMessageBox::Ok) {   // нажата кнопка Да
+        dataFileName = "";  setWindowTitle(QString("%1").arg(appName));
+        dockIndexList->setWindowTitle("Изображения");
+        saveMainSettings();
+        clearConstDockWidgets();
+        im_handler->close_all_datasets();
+
+        view->empty = true;
+
+        view->closeAllProjectsAct->setEnabled(false);
+        indexAct->setEnabled(false);  index_quick_menu->setEnabled(false);
+        slider->setValue(slider->minimum());  slider->setEnabled(false);
+
+        QPixmap test(QString(":/images/view.jpg"));
+        view->mainPixmap->setPixmap(test);
+        view->mainPixmap->setOpacity(0.7);
+        view->resetMatrix();  view->resetTransform();
+
+    }  // if QMessageBox::Ok
+}
+
+void MainWindow::clearConstDockWidgets()
+{
+    view->clearForAllObjects();
+    zGraphListWidget->clear();
+    indexListWidget->clear();
+    chListWidget->clear();
+    maskListWidget->clear();
+
+    imgSpectral->hide();  spectralAct->setEnabled(false); spectralAct->setChecked(false);
+    imgHistogram->hide();  histogramAct->setEnabled(false); histogramAct->setChecked(false);
+    imgMasks->hide();  maskAct->setEnabled(false); maskAct->setChecked(false);
+    slider->setEnabled(true);
+    view->openAct->setEnabled(true);
+    view->closeAllProjectsAct->setEnabled(true);
+}
+
+void MainWindow::openProjectsWindow()
+{
+    QDockWidget *dw = new QDockWidget("Открытые проекты", this);
+    dw->setObjectName("open projects");
+    dw->move(mapToParent(QPoint(100,100)));  dw->resize(550,400);
+    dw->setWindowFlags(Qt :: FramelessWindowHint | Qt :: Popup);
+    QListWidget *oplw = new QListWidget(dw);
+
+    QSize defaultIconSize = QSize(32+64+64,32+64+64);
+    oplw->setIconSize( defaultIconSize );
+    oplw->setSelectionMode(QAbstractItemView::SingleSelection);
+    oplw->setViewMode( QListWidget::IconMode );
+
+    dw->setWidget(oplw);
+    addDockWidget(Qt::LeftDockWidgetArea, dw);
+    for (int i=0; i<im_handler->get_images_count(); i++) {
+        SpectralImage *si = im_handler->get_image(i);
+        QListWidgetItem *lwitem =new QListWidgetItem(oplw);
+        oplw->addItem(lwitem);
+
+        lwitem->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable );
+
+        QString fname = si->get_file_name();
+        QFileInfo info(fname);
+        QString get_tt = im_handler->get_icon_for_tooltip(fname);
+        QIcon icon(get_tt);
+        lwitem->setIcon(icon);
+        lwitem->setText(info.completeBaseName());
+        lwitem->setToolTip(fname);
+
+        connect(oplw, &QListWidget::itemClicked, [=]()
+        {   int num = oplw->currentRow();
+            int curr_num = im_handler->get_current_image_num();  // текущий проект
+            if ( num == curr_num ) return;  // выбран текущий проект
+            auto set_current = im_handler->set_current_image(num);
+            if (!set_current) return;
+            dataFileName = im_handler->current_image()->get_file_name();
+            updateNewDataSet(false);
+            updateGraphicsViewParams(false);  // задать параметры отображения главного изображения
+        } );  // connect
+
+    }  // for
 }
 
 void MainWindow::show_channel_list_update() {
@@ -2400,6 +2512,8 @@ void MainWindow::settingsDlgShow()
 
 void MainWindow::change_brightness(int value)
 {
+    if (view->empty) return;
+
     QPixmap pxm;
     QImage img = im_handler->current_image()->get_current_image();
     double brightness = im_handler->get_new_brightness(slider, value);

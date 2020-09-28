@@ -52,5 +52,6 @@
         <file>icons/unchecked-checkbox.png</file>
         <file>icons/rainbow_icon_cartoon_style.png</file>
         <file>icons/save.png</file>
+        <file>icons/folder_open.png</file>
     </qresource>
 </RCC>

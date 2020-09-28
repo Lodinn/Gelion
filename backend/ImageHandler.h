@@ -38,6 +38,11 @@ public:
     QString get_hidden_folder();
     QString get_hidden_folder_by_num(int num);
     void save_to_hidden_folder();
+    void close_all_datasets() {
+        for (int i=0; i<image_list.count();i++) { delete image_list[i]; }
+        image_list.clear();
+        index_current_dataset = -1; }
+
 protected:
     int script_y, script_x; // например, в ImageHandler.h
 //    QVector<QVector<QVector<double> > >* raster;

@@ -965,6 +965,10 @@ void gQGraphicsView::keyPressEvent(QKeyEvent *event)
         setRotateItems(recordView->GlobalRotate);
         return;
     }  // if Key_W
+    if (event->key() == Qt::Key_Delete && event->modifiers() == Qt::ControlModifier) {  // закрыть все проекты
+        emit closeAllProjects();  // закрыть все проекты
+        return;
+    }  // if Key_W
 }
 
 void gQGraphicsView::insPoint(QPoint pos)
