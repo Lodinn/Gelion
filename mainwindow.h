@@ -67,6 +67,7 @@ class MainWindow : public QMainWindow {
   void setZGraphDockToggled(zGraph *item);
   void show_profile(QPointF point, int id = -1);
 private:
+
   const QIcon icon256 = QIcon::fromTheme("mainwindow", QIcon(":/icons/256_colors.png"));
   void updateNewDataSet(bool index_update);  // ----------------
   void updateGraphicsViewParams(bool index_update);  // задать параметры отображения главного изображения

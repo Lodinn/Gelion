@@ -817,7 +817,9 @@ void MainWindow::toggleViewAction(bool b)
 }
 
 void MainWindow::open() {
-  QString fname = QFileDialog::getOpenFileName(
+
+    if (im_handler->data_file_reading) return;
+    QString fname = QFileDialog::getOpenFileName(
       this, tr("Открытие файла данных"), "../data",
       tr("ENVI HDR Файлы (*.hdr);;Файлы JPG (*.jpg *.jpeg);;Файлы PNG (*.png);;Файлы TIFF (*.tif *.tiff)"));
   if (fname.isEmpty()) return;
@@ -849,6 +851,7 @@ void MainWindow::open() {
   view->openAct->setEnabled(false);
   QApplication::processEvents();
   emit read_file(fname);
+
 }
 
 void MainWindow::add_envi_hdr_pixmap() {
@@ -1011,6 +1014,7 @@ void MainWindow::stop_reading_file() {
   delete_progress_dialog();
   view->openAct->setEnabled(true);
   QApplication::processEvents();
+
 }
 
 void MainWindow::delete_progress_dialog() {
@@ -1209,6 +1213,7 @@ void MainWindow::load_resent_project()
 
     worker_thread->msleep(500);
     emit read_file(recentFileNames[0]);
+
 }
 
 void MainWindow::saveMainSettings()
@@ -1648,6 +1653,7 @@ void MainWindow::OpenRecentFile()
         QStringList fnames = im_handler->get_image_file_names();
         int num = fnames.indexOf(action->data().toString());
         if (num == -1) {
+            if (im_handler->data_file_reading) return;
             dataFileName = action->data().toString();
             emit read_file(dataFileName);
 
@@ -2094,6 +2100,7 @@ void MainWindow::updateDeleteItemsBoxWarning(QMessageBox &mb, QString title, QSt
 void MainWindow::closeAllProjects()
 {
     if (view->empty) return;
+    if (im_handler->data_file_reading) return;
 
     QMessageBox msgBox;
     updateDeleteItemsBoxWarning(msgBox, "ЗАКРЫТЬ ВСЕ ПРОЕКТЫ",
@@ -2101,6 +2108,9 @@ void MainWindow::closeAllProjects()
 
     int res = msgBox.exec();
     if (res == QMessageBox::Ok) {   // нажата кнопка Да
+
+        saveMainSettings();
+
         dataFileName = "";  setWindowTitle(QString("%1").arg(appName));
         dockIndexList->setWindowTitle("Изображения");
         saveMainSettings();
@@ -2167,8 +2177,10 @@ void MainWindow::openProjectsWindow()
         lwitem->setText(info.completeBaseName());
         lwitem->setToolTip(fname);
 
+
         connect(oplw, &QListWidget::itemClicked, [=]()
-        {   int num = oplw->currentRow();
+        {   if (im_handler->data_file_reading) return;
+            int num = oplw->currentRow();
             int curr_num = im_handler->get_current_image_num();  // текущий проект
             if ( num == curr_num ) return;  // выбран текущий проект
             auto set_current = im_handler->set_current_image(num);
@@ -2450,6 +2462,7 @@ void MainWindow::show_zgraph_list()
 
 void MainWindow::inputIndexDlgShow()
 {
+    if (im_handler->data_file_reading) return;
     inputIndexDlg *dlg = new inputIndexDlg(this);
 // update index list
     dlg->setDefaultIndexList(indexList);
@@ -2491,6 +2504,7 @@ void MainWindow::calculateIndexAndStoreToIndexList(QString title, QString formul
 
 void MainWindow::predefined_index_menu()
 {
+    if (im_handler->data_file_reading) return;
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
         QString title = action->text();

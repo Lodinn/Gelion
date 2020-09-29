@@ -271,7 +271,9 @@ double ImageHandler::getByWL(double wl) {
 
 void ImageHandler::append_index_raster(QString for_eval)
 {
-//  raster = current_image()->get_raster();
+  if (data_file_reading) return;
+  data_file_reading = true;  // переключатель режима чтения
+
   read_file_canceled = false;
   show_progress_mode = ImageHandler::index_mode;
   QJSEngine engine;
@@ -289,14 +291,17 @@ void ImageHandler::append_index_raster(QString for_eval)
       output_array[script_y][script_x] = precompiled.call().toNumber();
     }  // for
     emit reading_progress(script_y);
-    if (read_file_canceled) return;
+    if (read_file_canceled) {
+        data_file_reading = false;  // переключатель режима чтения
+        return;
+    }
     QApplication::processEvents();
   }  // for
-//  current_image()->append_slice(output_array);
-//  emit index_finished(current_image()->get_raster()->length() - 1);
 
   int num = current_image()->append_index(output_array);
+  data_file_reading = false;  // переключатель режима чтения
   emit index_finished(num);
+
 }
 
 void ImageHandler::save_slice(QString fname, QVector<QVector<double> > slice)
@@ -316,8 +321,11 @@ void ImageHandler::read_envi_hdr(QString fname) {
   show_progress_mode = ImageHandler::hdr_mode;
   QFile hdr_f(fname);
   if(!hdr_f.exists()) return;
-  QSettings hdr(fname, QSettings::IniFormat);
 
+  if (data_file_reading) return;
+  data_file_reading = true;  // переключатель режима чтения
+
+  QSettings hdr(fname, QSettings::IniFormat);
   uint32_t h, d, w;
   h = hdr.value("lines").toUInt();
   d = hdr.value("bands").toUInt();
@@ -497,6 +505,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
     emit reading_progress(z);
     if (read_file_canceled) {
       delete image;
+      data_file_reading = false;  // переключатель режима чтения
       return;
     }
     QApplication::processEvents();
@@ -507,6 +516,7 @@ void ImageHandler::read_envi_hdr(QString fname) {
   index_current_dataset = image_list.count() - 1;
   emit change_current_image(old_ds_num);
 
+  data_file_reading = false;  // переключатель режима чтения
   emit finished();
   datfile.close();
 }

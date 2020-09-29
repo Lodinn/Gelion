@@ -74,6 +74,7 @@ public:
   SpectralImage* get_image(int num) {
       if (num < 0 || num > image_list.count()-1) return nullptr;
       return image_list[num]; }
+  bool data_file_reading = false;  // переключатель режима чтения
 signals:
   void numbands_obtained(int);
   void reading_progress(int);
