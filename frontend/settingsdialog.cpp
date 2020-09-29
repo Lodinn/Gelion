@@ -29,6 +29,8 @@ void settingsDialog::setGlobalSettings(J09::globalSettingsType GS)
     if (GS.load_resent_project) ui->checkBox_load_recent_file->setCheckState(Qt::Checked);
     else ui->checkBox_load_recent_file->setCheckState(Qt::Unchecked);
 
+    ui->spinBox->setValue(GS.resent_files_count);
+
     if (GS._zobject_list_load) ui->checkBox_zobject_list_load->setCheckState(Qt::Checked);
     else ui->checkBox_zobject_list_load->setCheckState(Qt::Unchecked);
 
@@ -49,6 +51,7 @@ void settingsDialog::setGlobalSettings(J09::globalSettingsType GS)
 
     ui->lineEdit_global_angle->setText(QString("%1").arg(GS.main_rgb_rotate_start,0,'f',0));
     ui->lineEdit_global_scale->setText(QString("%1").arg(GS.main_rgb_scale_start,0,'f',0));
+
     if (GS.restore_project_settings_view) ui->checkBox_load_project_settings_view->setCheckState(Qt::Checked);
     else ui->checkBox_load_project_settings_view->setCheckState(Qt::Unchecked);
 }
@@ -57,6 +60,7 @@ void settingsDialog::setGlobalSettings(J09::globalSettingsType GS)
 void settingsDialog::getGlobalSettings(J09::globalSettingsType &GS)
 {
     GS.load_resent_project = ui->checkBox_load_recent_file->checkState() == Qt::Checked;
+    GS.resent_files_count = ui->spinBox->value();
     GS._zobject_list_load = ui->checkBox_zobject_list_load->checkState() == Qt::Checked;
     GS._index_save = ui->checkBox_index_save->checkState() == Qt::Checked;
     GS._index_load = ui->checkBox_index_load->checkState() == Qt::Checked;
