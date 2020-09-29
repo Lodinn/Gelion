@@ -299,7 +299,7 @@ void MainWindow::createActions() {
 }
 
 void MainWindow::createStatusBar() {
-    statusBar()->showMessage("Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение");
+    statusBar()->showMessage(statusBarStrBegining);
 }
 
 void MainWindow::imgMasksUpdatePreviewPixmap()

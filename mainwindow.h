@@ -147,6 +147,7 @@ private:
   void createConstDockWidgets();
   void SetupUi();
   void createStatusBar();
+  QString statusBarStrBegining = "beta 2 Ctrl+Скролл-масштабирование*Скролл-перемотка верт.*Alt+Скролл-перемотка гориз.*Левая кн.мышь-перемещение";
 
   QThread *worker_thread = new QThread;
   ImageHandler *im_handler = new ImageHandler();
